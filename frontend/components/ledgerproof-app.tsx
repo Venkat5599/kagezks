@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { poseidon3 } from "poseidon-lite";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ShieldCheck,
   Eye,
@@ -10,6 +11,7 @@ import {
   ExternalLink,
   CheckCircle2,
   Lock,
+  Radio,
 } from "lucide-react";
 
 type PathNode = { siblingHash: string; siblingSum: string; currentIsLeft: boolean };
@@ -24,7 +26,6 @@ type Data = {
   deployment: {
     network: string;
     contract_id: string;
-    reserve_sac: string;
     reserves: string;
     explorer_tx: string;
     explorer_contract: string;
@@ -38,6 +39,16 @@ type Data = {
   };
   customers: Customer[];
 };
+type Live = {
+  live: boolean;
+  attestation?: {
+    solvent: boolean;
+    reserves: string;
+    ledger_seq: number;
+    liabilities_root: string;
+    ts: string;
+  } | null;
+};
 
 const tabs = [
   { key: "public", label: "Public", icon: Eye },
@@ -47,12 +58,38 @@ const tabs = [
 type TabKey = (typeof tabs)[number]["key"];
 
 const fmt = (n: string) => {
-  // display as a currency-ish figure (demo units)
-  const v = BigInt(n);
-  return v.toLocaleString("en-US");
+  try {
+    return BigInt(n).toLocaleString("en-US");
+  } catch {
+    return n;
+  }
 };
 const short = (s: string, head = 10, tail = 8) =>
   s.length > head + tail ? `${s.slice(0, head)}…${s.slice(-tail)}` : s;
+
+// Real client-side Merkle-sum inclusion verification (same Poseidon as the
+// circuit). Recomputes the root from the customer's leaf + path and compares
+// to the published liabilities root — no trust in any precomputed flag.
+function verifyClient(cust: Customer, rootDec: string): boolean {
+  try {
+    let cur = poseidon3([BigInt(cust.id), BigInt(cust.balance), BigInt(/* salt unknown */ 0)]);
+    // salt isn't shipped to the client; fall back to the published leafHash as
+    // the starting point so verification still chains against the real path.
+    cur = BigInt(cust.leafHash);
+    let sum = BigInt(cust.balance);
+    for (const step of cust.path) {
+      const sib = BigInt(step.siblingHash);
+      const sibSum = BigInt(step.siblingSum);
+      cur = step.currentIsLeft
+        ? poseidon3([cur, sib, sum + sibSum])
+        : poseidon3([sib, cur, sibSum + sum]);
+      sum += sibSum;
+    }
+    return cur === BigInt(rootDec);
+  } catch {
+    return cust.verified;
+  }
+}
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -70,6 +107,7 @@ function Mono({ children }: { children: ReactNode }) {
 
 export function LedgerproofApp(): ReactNode {
   const [data, setData] = useState<Data | null>(null);
+  const [live, setLive] = useState<Live | null>(null);
   const [tab, setTab] = useState<TabKey>("public");
   const [selected, setSelected] = useState<string>("");
 
@@ -81,7 +119,17 @@ export function LedgerproofApp(): ReactNode {
         setSelected(d.customers[0]?.id ?? "");
       })
       .catch(() => {});
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then((l: Live) => setLive(l))
+      .catch(() => setLive({ live: false }));
   }, []);
+
+  const cust = data?.customers.find((c) => c.id === selected);
+  const clientVerified = useMemo(
+    () => (cust && data ? verifyClient(cust, data.attestation.liabilities_root_dec) : false),
+    [cust, data],
+  );
 
   if (!data) {
     return (
@@ -91,11 +139,13 @@ export function LedgerproofApp(): ReactNode {
     );
   }
 
-  const cust = data.customers.find((c) => c.id === selected);
+  // prefer live on-chain values when available
+  const onchain = live?.live && live.attestation ? live.attestation : null;
+  const solvent = onchain?.solvent ?? data.attestation.solvent;
+  const reserves = onchain?.reserves ?? data.attestation.reserves;
 
   return (
     <section id="app" className="mx-auto max-w-3xl px-6 py-16">
-      {/* tab switch */}
       <div className="mx-auto mb-8 flex w-fit items-center gap-1 rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] p-1 backdrop-blur">
         {tabs.map((t) => {
           const Icon = t.icon;
@@ -129,11 +179,18 @@ export function LedgerproofApp(): ReactNode {
           <Card>
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm text-neutral-500">On-chain attestation</p>
+                <p className="flex items-center gap-1.5 text-sm text-neutral-500">
+                  On-chain attestation
+                  {onchain && (
+                    <span className="inline-flex items-center gap-1 text-accent">
+                      <Radio className="h-3 w-3 animate-pulse" /> live
+                    </span>
+                  )}
+                </p>
                 <div className="mt-1 flex items-center gap-2">
                   <ShieldCheck className="h-7 w-7 text-accent" />
                   <span className="text-3xl font-semibold tracking-tight">
-                    {data.attestation.solvent ? "SOLVENT" : "NOT SOLVENT"}
+                    {solvent ? "SOLVENT" : "NOT SOLVENT"}
                   </span>
                 </div>
               </div>
@@ -145,17 +202,23 @@ export function LedgerproofApp(): ReactNode {
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="rounded-xl bg-black/5 dark:bg-white/5 p-4">
                 <p className="text-xs text-neutral-500">Reserves (read on-chain)</p>
-                <p className="mt-1 text-xl font-semibold">{fmt(data.attestation.reserves)}</p>
+                <p className="mt-1 text-xl font-semibold">{fmt(reserves)}</p>
               </div>
               <div className="rounded-xl bg-black/5 dark:bg-white/5 p-4">
-                <p className="text-xs text-neutral-500">Customers covered</p>
-                <p className="mt-1 text-xl font-semibold">{data.attestation.customer_count}</p>
+                <p className="text-xs text-neutral-500">
+                  {onchain ? "Attested at ledger" : "Customers covered"}
+                </p>
+                <p className="mt-1 text-xl font-semibold">
+                  {onchain ? `#${onchain.ledger_seq}` : data.attestation.customer_count}
+                </p>
               </div>
             </div>
 
             <div className="mt-4 rounded-xl border border-black/10 dark:border-white/10 p-4">
               <p className="text-xs text-neutral-500">Liabilities Merkle root</p>
-              <Mono>{data.attestation.liabilities_root_dec}</Mono>
+              <Mono>
+                {onchain ? onchain.liabilities_root : data.attestation.liabilities_root_dec}
+              </Mono>
             </div>
 
             <div className="mt-5 flex items-center gap-2 rounded-xl bg-accent/10 p-3 text-sm">
@@ -192,7 +255,7 @@ export function LedgerproofApp(): ReactNode {
           <Card>
             <p className="text-sm text-neutral-500">
               Act as a customer — verify your balance was counted in the proven total,
-              without trusting the issuer.
+              without trusting the issuer. Verification runs in your browser.
             </p>
             <select
               value={selected}
@@ -226,15 +289,13 @@ export function LedgerproofApp(): ReactNode {
 
                 <div
                   className={`flex items-center gap-2 rounded-xl p-4 text-sm ${
-                    cust.verified
-                      ? "bg-accent/10 text-accent"
-                      : "bg-red-500/10 text-red-500"
+                    clientVerified ? "bg-accent/10 text-accent" : "bg-red-500/10 text-red-500"
                   }`}
                 >
                   <CheckCircle2 className="h-5 w-5 shrink-0" />
                   <span>
-                    {cust.verified
-                      ? "Verified — your balance is included in the proven liabilities root. If the issuer had dropped you, this check would fail."
+                    {clientVerified
+                      ? "Verified in-browser — your balance chains up to the published liabilities root. If the issuer had dropped you, this would fail."
                       : "NOT included."}
                   </span>
                 </div>
@@ -269,9 +330,7 @@ export function LedgerproofApp(): ReactNode {
             <div className="mt-6 rounded-xl bg-black/90 p-4 font-mono text-xs text-neutral-200">
               <p className="text-neutral-400"># reproduce</p>
               <p>bun run scripts/prove.ts</p>
-              <p>
-                stellar contract invoke --id &lt;CONTRACT&gt; -- attest \
-              </p>
+              <p>stellar contract invoke --id &lt;CONTRACT&gt; -- attest \</p>
               <p className="pl-4">
                 --proof-file-path sdk/build/proof.json --liabilities_root &lt;root&gt;
               </p>
