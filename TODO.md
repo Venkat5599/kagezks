@@ -36,15 +36,15 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · ⭐ critical-path (demo
 - [x] `status()` view returns latest attestation
 - [x] `init` (admin/reserve_token/reserve_accounts) + `set_vk` admin fns
 - [x] Builds to wasm (soroban-sdk 26, BN254 API confirmed correct), `cargo test` passes
-- [ ] ⭐ Deploy to testnet (real deploy tx)
-- [ ] `scripts/fund-reserves.ts` — issue SAC asset + fund reserve accounts (real txs)
-- [ ] ⭐ `sdk/` converter: snarkjs verification_key.json + proof.json → VkBytes/ProofBytes (BN254 byte layout; watch G2 c0/c1 ordering)
+- [x] ⭐ Deploy to testnet — contract `CA3G57DWPMJLVNXH3KVX55RMU3WEJGRLZJKDT6NGQMRZDSHEFBDB6ZDO`
+- [x] Reserve asset + SAC `CDCMSHPRVF4FA2XP4SNKYCYR6BZEW6XPZCQX2ELBISMF5CE3NF3CEVJ7` (RSV), minted real balance to reserve account
+- [x] ⭐ `sdk/convert.ts` — snarkjs vk/proof → VkBytes/ProofBytes; G2 EIP-197 ordering correct first try
 
-## Day 3 — End-to-end on testnet ⭐
-- [ ] ⭐ Full path: seed ledger → contract reads reserves → gen proof → `attest` → SOLVENT on-chain
-- [ ] ⭐ Confirm every step is a real tx visible on testnet explorer
-- [ ] Negative path: invalid proof → contract reverts, no attestation
-- [ ] `sdk/` — TS wrapper: `generateProof()`, `attest()`, `getStatus()`
+## Day 3 — End-to-end on testnet ⭐ — DONE, SOLVENT published on-chain
+- [x] ⭐ Full path: seed → contract reads reserves (782586410) → prove (bound to live R) → `attest` → SOLVENT on-chain
+- [x] ⭐ Real tx on explorer: https://stellar.expert/explorer/testnet/tx/d54a35de8a6567e021bf52c50af53dc1ced2cd5d05399297be0bddb6c7f1cc05 — event SOLVENT, zero balances exposed
+- [x] Negative path: tampered proof → `HostError(Crypto, InvalidInput)`, tx fails, status() unchanged (no corruption)
+- [ ] `sdk/` — TS wrapper helpers: `generateProof()`, `attest()`, `getStatus()` (currently driven via scripts/CLI)
 
 ## Day 4 — Anti-fraud + tamper demo + UI ⭐
 - [ ] ⭐ `sdk/inclusion.ts` — Merkle inclusion proof for a customer leaf vs published root
