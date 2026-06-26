@@ -44,8 +44,7 @@ export function ShaderBg(): ReactNode {
       ctx.fillRect(0, 0, w, h);
 
       ctx.globalCompositeOperation = "lighter";
-      for (let i = 0; i < blobs.length; i++) {
-        const b = blobs[i];
+      blobs.forEach((b, i) => {
         const px = (b.ax + (b.bx - b.ax) * (0.5 + 0.5 * Math.sin(time + i))) * w;
         const py = (b.ay + (b.by - b.ay) * (0.5 + 0.5 * Math.cos(time * 0.8 + i))) * h;
         const radius = b.r * Math.max(w, h);
@@ -56,7 +55,7 @@ export function ShaderBg(): ReactNode {
         ctx.beginPath();
         ctx.arc(px, py, radius, 0, Math.PI * 2);
         ctx.fill();
-      }
+      });
       ctx.globalCompositeOperation = "source-over";
 
       raf = requestAnimationFrame(draw);
