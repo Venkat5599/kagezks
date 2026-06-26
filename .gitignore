@@ -1,0 +1,32 @@
+# node / bun
+node_modules/
+bun.lockb
+
+# rust / soroban
+target/
+**/target/
+
+# circuit build artifacts (large)
+circuits/build/*.zkey
+circuits/build/*.ptau
+circuits/build/*.wasm
+circuits/build/*.r1cs
+circuits/build/*.sym
+circuits/build/*_js/
+circuits/build/witness.wtns
+
+# generated proofs / inputs (keep examples small if needed)
+circuits/build/proof.json
+circuits/build/public.json
+circuits/build/input.json
+
+# secrets — NEVER commit
+.env
+.env.*
+*.secret
+identity*.toml
+*_seed.txt
+
+# os
+.DS_Store
+Thumbs.db
