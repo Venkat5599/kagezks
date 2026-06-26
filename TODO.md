@@ -7,22 +7,25 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · ⭐ critical-path (demo
 ---
 
 ## Day 0 — Setup & toolchain
-- [ ] Install / verify: `circom` 2.x, `snarkjs`, `rustc` + `cargo`, `stellar` CLI (soroban), `bun`, `node`
-- [ ] Create testnet identity + fund via friendbot (real testnet account)
-- [ ] Init repo structure: `circuits/ contracts/ sdk/ scripts/ client/`
-- [ ] `git init`, add `.gitignore` (keys, `node_modules`, `target`, `build/*.zkey` if large)
-- [ ] Download real Perpetual Powers of Tau file (correct power for tree depth)
+- [x] Install / verify: `circom` 2.2.3, `snarkjs` 0.7.6, `rustc`+`cargo` (GNU toolchain, project-scoped override), `stellar` CLI 27.0.0 (prebuilt binary), `bun`, `node`
+- [x] Create testnet identity + fund via friendbot — alias `issuer` = `GC7T5BU4A52IFL4EY4WJWG2ZFU2XWMOXRPVOE46D5WJZV7XKE66BT3UW` (10000 XLM)
+- [x] Init repo structure: `circuits/ contracts/ sdk/ scripts/ client/` (+ `frontend/`)
+- [x] `git init`, `.gitignore` (keys, node_modules, target, build artifacts) — remote: github.com/Venkat5599/stellar
+- [x] Download real Perpetual Powers of Tau — Hermez `powersOfTau28_hez_final_14.ptau` (18 MB)
 
-## Day 1 — ZK circuit ⭐
-- [ ] `circuits/merkle_sum.circom` — Poseidon Merkle-sum tree (parent = `Poseidon(L,R,sumL+sumR)`)
-- [ ] `circuits/solvency.circom` — main circuit:
-  - [ ] ⭐ recompute `liabilities_root` from `(ids, balances, salts)`
-  - [ ] ⭐ range check every `balances[i] ∈ [0, 2^64)`
-  - [ ] ⭐ assert `Σ balances ≤ total_reserves`
-- [ ] `scripts/seed-ledger.ts` — build realistic N-leaf customer ledger (start N=2^10), output root
-- [ ] Compile circuit, run trusted setup with real ptau → `vk`, `zkey`
-- [ ] ⭐ Generate + verify a proof locally on the seeded ledger (snarkjs)
-- [ ] Bench proving time; lock tree depth for demo
+> **Curve decision:** BN254 (circom/snarkjs default `bn128`) — matches Nethermind `circom-groth16-verifier` (`crypto::bn254`) + circomlib Poseidon native field. Not BLS12-381.
+
+## Day 1 — ZK circuit ⭐ — DONE, proof verifies both directions
+- [x] `circuits/merkle_sum.circom` — Poseidon Merkle-sum tree (parent = `Poseidon(L,R,sumL+sumR)`)
+- [x] `circuits/solvency.circom` — main circuit:
+  - [x] ⭐ recompute `liabilities_root` from `(ids, balances, salts)`
+  - [x] ⭐ range check every `balances[i] ∈ [0, 2^64)`
+  - [x] ⭐ assert `Σ balances ≤ total_reserves`
+- [x] `scripts/seed-ledger.ts` — realistic N-leaf ledger (currently N=2^3 for speed; bump to 2^10)
+- [x] Compile circuit (4601 non-linear constraints), trusted setup with real ptau → `vk`, `zkey`
+- [x] ⭐ Generate + verify proof locally — `snarkJS: OK!` on solvent ledger
+- [x] ⭐ Negative test — insolvent ledger (reserves<liabilities) FAILS witness (assert) — ZK is load-bearing
+- [ ] Bump tree depth 3→10 (1024 customers) + bench proving time
 
 ## Day 2 — Soroban contract ⭐
 - [ ] Fork `stellar/soroban-examples/groth16_verifier` into `contracts/solvency/`
