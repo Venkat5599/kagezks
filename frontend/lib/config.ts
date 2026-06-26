@@ -9,13 +9,13 @@
 
 export const siteConfig = {
   // Brand
-  name: "Circular",
-  tagline: "Build Faster, Ship with Confidence",
-  description: "The modern platform for teams who want to move fast without breaking things",
-  
+  name: "Ledgerproof",
+  tagline: "Prove solvency. Reveal nothing.",
+  description: "Confidential proof-of-solvency on Stellar. Reserves verified on-chain; liabilities proven in zero-knowledge.",
+
   // URLs
-  url: "https://example.com",
-  twitter: "@circular",
+  url: "https://ledgerproof.vercel.app",
+  twitter: "@ledgerproof",
   
   // Navigation
   nav: {
