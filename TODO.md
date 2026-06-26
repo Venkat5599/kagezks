@@ -51,8 +51,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · ⭐ critical-path (demo
 - [x] Customer verifies their balance is counted (defeats FTX omit-liabilities trick)
 - [x] ⭐ tamper demo proven LIVE on testnet: drained reserves 782586410→182586410 → (1) proof gen fails, (2) on-chain attest reverts `Error(Contract,#5)` InvalidProof; restored to SOLVENT
 - [x] `scripts/tamper.ts` + `scripts/prove.ts` + `scripts/fund-reserves.ts` — reproducible orchestration
-- [ ] `frontend/` 3 views: Issuer (gen+publish) · Public (status, no balances) · Customer (verify inclusion)
-- [ ] Deploy frontend to Vercel
+- [x] `frontend/` 3 views: Issuer · Public · Customer (+ dark shader-gradient hero) — production build green
+- [x] Deploy frontend to Vercel (public, SSO protection disabled): https://frontend-gim99xuqr-venkat5599s-projects.vercel.app
 
 ## Day 5 — Ship ⭐
 - [ ] ⭐ `README.md` — what it is, how to run, ZK explainer, **honesty ledger** (testnet, self-run issuer, reserves revealed v1, real ptau)

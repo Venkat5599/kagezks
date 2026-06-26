@@ -4,6 +4,7 @@
 
 > Stellar Hacks · Real-World ZK. ZK is load-bearing: remove it and the issuer must either publish every customer balance (a privacy breach) or be trusted on its word (the FTX hole).
 
+- **Live demo:** https://frontend-gim99xuqr-venkat5599s-projects.vercel.app
 - **Repo:** https://github.com/Venkat5599/stellar
 - **Contract (testnet):** [`CA3G57DW…B6ZDO`](https://stellar.expert/explorer/testnet/contract/CA3G57DWPMJLVNXH3KVX55RMU3WEJGRLZJKDT6NGQMRZDSHEFBDB6ZDO)
 - **Live SOLVENT attestation tx:** [`d54a35de…cc05`](https://stellar.expert/explorer/testnet/tx/d54a35de8a6567e021bf52c50af53dc1ced2cd5d05399297be0bddb6c7f1cc05)
