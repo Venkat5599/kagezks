@@ -47,10 +47,12 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · ⭐ critical-path (demo
 - [ ] `sdk/` — TS wrapper helpers: `generateProof()`, `attest()`, `getStatus()` (currently driven via scripts/CLI)
 
 ## Day 4 — Anti-fraud + tamper demo + UI ⭐
-- [ ] ⭐ `sdk/inclusion.ts` — Merkle inclusion proof for a customer leaf vs published root
-- [ ] Customer verifies their balance is counted (defeats FTX omit-liabilities trick)
-- [ ] ⭐ `scripts/tamper.ts` — drop reserves / inflate liability → proof fails OR contract rejects
-- [ ] `client/` minimal 3 views: Issuer (gen+publish) · Public (status, no balances) · Customer (verify inclusion)
+- [x] ⭐ `sdk/inclusion.ts` — Merkle inclusion proof for a customer leaf vs published root (verified: customer 1004 rebuilds root)
+- [x] Customer verifies their balance is counted (defeats FTX omit-liabilities trick)
+- [x] ⭐ tamper demo proven LIVE on testnet: drained reserves 782586410→182586410 → (1) proof gen fails, (2) on-chain attest reverts `Error(Contract,#5)` InvalidProof; restored to SOLVENT
+- [x] `scripts/tamper.ts` + `scripts/prove.ts` + `scripts/fund-reserves.ts` — reproducible orchestration
+- [ ] `frontend/` 3 views: Issuer (gen+publish) · Public (status, no balances) · Customer (verify inclusion)
+- [ ] Deploy frontend to Vercel
 
 ## Day 5 — Ship ⭐
 - [ ] ⭐ `README.md` — what it is, how to run, ZK explainer, **honesty ledger** (testnet, self-run issuer, reserves revealed v1, real ptau)
