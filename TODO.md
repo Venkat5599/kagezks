@@ -27,16 +27,18 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · ⭐ critical-path (demo
 - [x] ⭐ Negative test — insolvent ledger (reserves<liabilities) FAILS witness (assert) — ZK is load-bearing
 - [ ] Bump tree depth 3→10 (1024 customers) + bench proving time
 
-## Day 2 — Soroban contract ⭐
-- [ ] Fork `stellar/soroban-examples/groth16_verifier` into `contracts/solvency/`
-- [ ] ⭐ `attest(proof, liabilities_root, ledger_seq)` — groth16_verify via BN254 host fns
-- [ ] ⭐ Read real reserve balance on-chain (Stellar Asset Contract) → `R`
-- [ ] ⭐ Bind: assert proof public input `total_reserves == R`
-- [ ] Store attestation `{ liabilities_root, R, ledger_seq, SOLVENT, ts }` + emit event
-- [ ] `status()` view returns latest attestation
-- [ ] `set_vk` / `set_reserve_accounts` admin fns
+## Day 2 — Soroban contract ⭐ — contract AUTHORED + BUILDS (wasm 7677 bytes), unit test green
+- [x] Wrote `contracts/solvency/contracts/solvency/src/lib.rs` modeled on Nethermind bn254 verifier (stellar init scaffold, not the BLS12-381 example)
+- [x] ⭐ `attest(proof, liabilities_root, ledger_seq)` — groth16_verify via BN254 host fns (`g1_msm`, `g1_add`, `pairing_check`, `-A` neg)
+- [x] ⭐ Read real reserve balance on-chain — `reserves()` sums SAC `token::Client.balance()` over configured accounts
+- [x] ⭐ Bind: contract injects on-chain `R` as the `total_reserves` public input (issuer cannot supply it)
+- [x] Store attestation `{ liabilities_root, R, ledger_seq, SOLVENT, ts }` + emit `solvency/SOLVENT` event
+- [x] `status()` view returns latest attestation
+- [x] `init` (admin/reserve_token/reserve_accounts) + `set_vk` admin fns
+- [x] Builds to wasm (soroban-sdk 26, BN254 API confirmed correct), `cargo test` passes
 - [ ] ⭐ Deploy to testnet (real deploy tx)
 - [ ] `scripts/fund-reserves.ts` — issue SAC asset + fund reserve accounts (real txs)
+- [ ] ⭐ `sdk/` converter: snarkjs verification_key.json + proof.json → VkBytes/ProofBytes (BN254 byte layout; watch G2 c0/c1 ordering)
 
 ## Day 3 — End-to-end on testnet ⭐
 - [ ] ⭐ Full path: seed ledger → contract reads reserves → gen proof → `attest` → SOLVENT on-chain
