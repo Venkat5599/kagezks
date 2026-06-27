@@ -1,0 +1,208 @@
+{
+  "deployment": {
+    "network": "testnet",
+    "contract_id": "CA3G57DWPMJLVNXH3KVX55RMU3WEJGRLZJKDT6NGQMRZDSHEFBDB6ZDO",
+    "reserve_sac": "CDCMSHPRVF4FA2XP4SNKYCYR6BZEW6XPZCQX2ELBISMF5CE3NF3CEVJ7",
+    "reserve_asset": "RSV:GC7T5BU4A52IFL4EY4WJWG2ZFU2XWMOXRPVOE46D5WJZV7XKE66BT3UW",
+    "issuer": "GC7T5BU4A52IFL4EY4WJWG2ZFU2XWMOXRPVOE46D5WJZV7XKE66BT3UW",
+    "reserve_account": "GC3KDBUQ53VQ377LUDUNSV3RQL3MFRYWYYLXD76TXRVR5O7AEO7Y4CAA",
+    "reserves": "782586410",
+    "total_liabilities": "355721096",
+    "first_attest_tx": "d54a35de8a6567e021bf52c50af53dc1ced2cd5d05399297be0bddb6c7f1cc05",
+    "explorer_tx": "https://stellar.expert/explorer/testnet/tx/d54a35de8a6567e021bf52c50af53dc1ced2cd5d05399297be0bddb6c7f1cc05",
+    "explorer_contract": "https://stellar.expert/explorer/testnet/contract/CA3G57DWPMJLVNXH3KVX55RMU3WEJGRLZJKDT6NGQMRZDSHEFBDB6ZDO"
+  },
+  "attestation": {
+    "solvent": true,
+    "reserves": "782586410",
+    "liabilities_root_dec": "3703424478525485893549124142614686261373305782242418748310596367867540090086",
+    "total_liabilities": "355721096",
+    "customer_count": 8
+  },
+  "customers": [
+    {
+      "id": "1000",
+      "balance": "4341254",
+      "leafHash": "12866904163607491963789535492929877503054378661779868073323612526818413924765",
+      "path": [
+        {
+          "siblingHash": "2891379710509454632047407314895654911962319102711234325842561690579832025983",
+          "siblingSum": "178314",
+          "currentIsLeft": true
+        },
+        {
+          "siblingHash": "8471772381341295466748014424764023175025523922631445258187942661032699931970",
+          "siblingSum": "432128",
+          "currentIsLeft": true
+        },
+        {
+          "siblingHash": "19561414455146263658087808193143894627489830752201460813120205219650128011882",
+          "siblingSum": "350769400",
+          "currentIsLeft": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "id": "1001",
+      "balance": "178314",
+      "leafHash": "2891379710509454632047407314895654911962319102711234325842561690579832025983",
+      "path": [
+        {
+          "siblingHash": "12866904163607491963789535492929877503054378661779868073323612526818413924765",
+          "siblingSum": "4341254",
+          "currentIsLeft": false
+        },
+        {
+          "siblingHash": "8471772381341295466748014424764023175025523922631445258187942661032699931970",
+          "siblingSum": "432128",
+          "currentIsLeft": true
+        },
+        {
+          "siblingHash": "19561414455146263658087808193143894627489830752201460813120205219650128011882",
+          "siblingSum": "350769400",
+          "currentIsLeft": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "id": "1002",
+      "balance": "245637",
+      "leafHash": "2101982426081271814884993645609723567393625968940091022645123061850178836895",
+      "path": [
+        {
+          "siblingHash": "16073492581826596941031964892092688559777282435470301903095282828946194512872",
+          "siblingSum": "186491",
+          "currentIsLeft": true
+        },
+        {
+          "siblingHash": "9033153142247409235880636606900187911533737642624752530374012316411453128047",
+          "siblingSum": "4519568",
+          "currentIsLeft": false
+        },
+        {
+          "siblingHash": "19561414455146263658087808193143894627489830752201460813120205219650128011882",
+          "siblingSum": "350769400",
+          "currentIsLeft": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "id": "1003",
+      "balance": "186491",
+      "leafHash": "16073492581826596941031964892092688559777282435470301903095282828946194512872",
+      "path": [
+        {
+          "siblingHash": "2101982426081271814884993645609723567393625968940091022645123061850178836895",
+          "siblingSum": "245637",
+          "currentIsLeft": false
+        },
+        {
+          "siblingHash": "9033153142247409235880636606900187911533737642624752530374012316411453128047",
+          "siblingSum": "4519568",
+          "currentIsLeft": false
+        },
+        {
+          "siblingHash": "19561414455146263658087808193143894627489830752201460813120205219650128011882",
+          "siblingSum": "350769400",
+          "currentIsLeft": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "id": "1004",
+      "balance": "349991847",
+      "leafHash": "12052802406714739488939732335705706836592386324987543132370523726262764339901",
+      "path": [
+        {
+          "siblingHash": "19811411666516807168693873147042063987642950207905669203760623776407365881427",
+          "siblingSum": "63319",
+          "currentIsLeft": true
+        },
+        {
+          "siblingHash": "19484884099784598979399567644848404524838559259678477229684153590552005225952",
+          "siblingSum": "714234",
+          "currentIsLeft": true
+        },
+        {
+          "siblingHash": "15709147715306659163798218011647591946127342378282468720981178947334127266310",
+          "siblingSum": "4951696",
+          "currentIsLeft": false
+        }
+      ],
+      "verified": true
+    },
+    {
+      "id": "1005",
+      "balance": "63319",
+      "leafHash": "19811411666516807168693873147042063987642950207905669203760623776407365881427",
+      "path": [
+        {
+          "siblingHash": "12052802406714739488939732335705706836592386324987543132370523726262764339901",
+          "siblingSum": "349991847",
+          "currentIsLeft": false
+        },
+        {
+          "siblingHash": "19484884099784598979399567644848404524838559259678477229684153590552005225952",
+          "siblingSum": "714234",
+          "currentIsLeft": true
+        },
+        {
+          "siblingHash": "15709147715306659163798218011647591946127342378282468720981178947334127266310",
+          "siblingSum": "4951696",
+          "currentIsLeft": false
+        }
+      ],
+      "verified": true
+    },
+    {
+      "id": "1006",
+      "balance": "371709",
+      "leafHash": "11162893110605514024721710428461294520165361367453610929440784879001161413096",
+      "path": [
+        {
+          "siblingHash": "7953040845433458313731293025788295141058315359951621797921567787084737374398",
+          "siblingSum": "342525",
+          "currentIsLeft": true
+        },
+        {
+          "siblingHash": "16761388320707588851903810607972316355300795981783609177873234217256542759191",
+          "siblingSum": "350055166",
+          "currentIsLeft": false
+        },
+        {
+          "siblingHash": "15709147715306659163798218011647591946127342378282468720981178947334127266310",
+          "siblingSum": "4951696",
+          "currentIsLeft": false
+        }
+      ],
+      "verified": true
+    },
+    {
+      "id": "1007",
+      "balance": "342525",
+      "leafHash": "7953040845433458313731293025788295141058315359951621797921567787084737374398",
+      "path": [
+        {
+          "siblingHash": "11162893110605514024721710428461294520165361367453610929440784879001161413096",
+          "siblingSum": "371709",
+          "currentIsLeft": false
+        },
+        {
+          "siblingHash": "16761388320707588851903810607972316355300795981783609177873234217256542759191",
+          "siblingSum": "350055166",
+          "currentIsLeft": false
+        },
+        {
+          "siblingHash": "15709147715306659163798218011647591946127342378282468720981178947334127266310",
+          "siblingSum": "4951696",
+          "currentIsLeft": false
+        }
+      ],
+      "verified": true
+    }
+  ]
+}
