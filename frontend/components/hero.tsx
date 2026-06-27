@@ -4,6 +4,7 @@ import { LogoLoop, type LogoItem } from "@/components/logo-loop";
 import { ArrowDownRight } from "lucide-react";
 import { motion, useMotionValue, useSpring } from "motion/react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useRef, type ReactNode, type MouseEvent } from "react";
 
 const ease = [0.23, 1, 0.32, 1] as const;
@@ -32,6 +33,7 @@ const logos: LogoItem[] = [
 const PARALLAX_INTENSITY = 20;
 
 export function Hero(): ReactNode {
+  const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   
   const mouseX = useMotionValue(0);
@@ -123,6 +125,7 @@ export function Hero(): ReactNode {
 
           <motion.button
             type="button"
+            onClick={() => router.push("/dashboard")}
             className="group relative cursor-pointer inline-flex items-center max-[850px]:w-full"
             variants={fadeInScale}
             transition={{ duration: 0.8, ease }}
