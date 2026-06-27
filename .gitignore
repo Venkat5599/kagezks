@@ -30,3 +30,5 @@ identity*.toml
 # os
 .DS_Store
 Thumbs.db
+
+.playwright-mcp/
