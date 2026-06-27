@@ -4,7 +4,6 @@ import { LogoLoop, type LogoItem } from "@/components/logo-loop";
 import { ArrowDownRight } from "lucide-react";
 import { motion, useMotionValue, useSpring } from "motion/react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useRef, type ReactNode, type MouseEvent } from "react";
 
 const ease = [0.23, 1, 0.32, 1] as const;
@@ -33,7 +32,6 @@ const logos: LogoItem[] = [
 const PARALLAX_INTENSITY = 20;
 
 export function Hero(): ReactNode {
-  const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   
   const mouseX = useMotionValue(0);
@@ -94,7 +92,7 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            Private payments · Stellar
+            Now Available
             <span className="text-accent">✦</span>
           </motion.div>
 
@@ -104,14 +102,14 @@ export function Hero(): ReactNode {
               variants={fadeInUp}
               transition={{ duration: 0.8, ease }}
             >
-              Send money.
+              Build Faster
             </motion.span>
             <motion.span
               className="block"
               variants={fadeInUp}
               transition={{ duration: 0.8, ease }}
             >
-              Reveal <span className="italic font-serif text-accent">nothing</span>.
+              Ship with <span className="italic font-serif text-accent">Confidence</span>
             </motion.span>
           </h1>
 
@@ -120,13 +118,11 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            Confidential USDC payments on Stellar. Stealth addresses and zero-knowledge proofs
-            hide who paid whom, how much, and which deposit funded which withdrawal.
+            The modern platform for teams who want to move fast without breaking things
           </motion.p>
 
           <motion.button
             type="button"
-            onClick={() => router.push("/dashboard")}
             className="group relative cursor-pointer inline-flex items-center max-[850px]:w-full"
             variants={fadeInScale}
             transition={{ duration: 0.8, ease }}

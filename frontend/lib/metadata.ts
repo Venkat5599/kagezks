@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
 
 export const siteConfig = {
-  name: "Veil",
+  name: "React Bits Pro - SaaS Template",
   description:
-    "Confidential payments on Stellar. Stealth notes and zero-knowledge proofs hide who paid whom, how much, and which deposit funded which withdrawal.",
-  url: "https://veil.vercel.app",
+    "A modern, accessible landing page template built with Next.js, Tailwind CSS, and TypeScript.",
+  url: "https://example.com",
   ogImage: "/og-image.png",
-  creator: "@veil",
+  creator: "@yourhandle",
   authors: [
     {
-      name: "Veil",
-      url: "https://veil.vercel.app",
+      name: "Your Name",
+      url: "https://example.com",
     },
   ],
   keywords: [
-    "Stellar",
-    "zero-knowledge",
-    "private payments",
-    "Soroban",
-    "stealth address",
-    "ZK",
+    "landing page",
+    "template",
+    "Next.js",
+    "React",
+    "Tailwind CSS",
+    "TypeScript",
   ],
 } as const;
 
