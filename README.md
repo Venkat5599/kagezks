@@ -1,95 +1,99 @@
-# Ledgerproof
+# Veil
 
-**Confidential proof-of-solvency on Stellar.** A token issuer (stablecoin, exchange, RWA) proves on-chain that its reserves fully back everything it owes customers — a zero-knowledge proof of solvency — **without revealing any individual customer balance.**
+**Private payments on Stellar — stealth notes + a ZK shielded pool.** A sender
+pays a recipient in USDC so that **no one, including a chain observer, learns
+who was paid, how much, or which deposit funded which withdrawal.**
 
-> Stellar Hacks · Real-World ZK. ZK is load-bearing: remove it and the issuer must either publish every customer balance (a privacy breach) or be trusted on its word (the FTX hole).
+> Stellar Hacks · Real-World ZK. ZK is load-bearing: remove it and the
+> deposit→withdrawal link is public — there is no privacy left.
 
-- **Live demo:** https://frontend-gim99xuqr-venkat5599s-projects.vercel.app
-- **Repo:** https://github.com/Venkat5599/stellar
-- **Contract (testnet):** [`CA3G57DW…B6ZDO`](https://stellar.expert/explorer/testnet/contract/CA3G57DWPMJLVNXH3KVX55RMU3WEJGRLZJKDT6NGQMRZDSHEFBDB6ZDO)
-- **Live SOLVENT attestation tx:** [`d54a35de…cc05`](https://stellar.expert/explorer/testnet/tx/d54a35de8a6567e021bf52c50af53dc1ced2cd5d05399297be0bddb6c7f1cc05)
+Pivoted from the earlier Ledgerproof proof-of-solvency build; reuses its proven
+crypto stack (Circom + snarkjs Groth16, Poseidon, Soroban **BN254** verifier).
 
 ---
 
 ## What it does
 
-| Side | Where it lives | Visibility |
-|------|----------------|------------|
-| **Reserves** | Real Stellar testnet balances (SAC) | **Public — the Soroban contract reads them itself on-chain.** The issuer can't lie. |
-| **Liabilities** | Issuer's private internal customer ledger | **Hidden — only a Merkle-sum root is published.** Proven `≤ reserves` in zero-knowledge. |
+| Layer | Hides | How |
+|-------|-------|-----|
+| **Stealth notes** (Umbra-style) | *who* is paid | Recipient publishes a scan key `V`. Sender does ECDH (`shared = r·V`), derives the note secrets from `shared`, announces only the ephemeral `R`. Only `V`'s holder recomputes `shared = v·R` and finds the payment. |
+| **ZK shielded pool** (Tornado/Privacy-Pools-style) | *which deposit ↔ which withdrawal*, and the amount link | Deposits insert a Poseidon commitment into a Merkle tree. A withdrawal proves in zero knowledge it owns *some* unspent leaf — without revealing which — plus a fresh nullifier (double-spend guard). |
 
-The contract verifies a Groth16 proof (BN254 host functions, Protocol 25/26) that `Σ liabilities ≤ reserves`, binds the proof's `total_reserves` to the balance it read itself, and publishes a public `SOLVENT` attestation — with **zero customer balances on-chain.**
+The chain only ever sees: commitments, random `R` values, a Merkle root, and
+nullifier hashes. Never an identity, an amount tied to a person, or a
+deposit↔withdrawal link.
 
-## How ZK is load-bearing
+## Why ZK is load-bearing
 
-1. **Circuit** (`circuits/solvency.circom`) proves, over private `(ids, balances, salts)`:
-   - the Poseidon **Merkle-sum tree** reproduces the published `liabilities_root`,
-   - every balance is in range `[0, 2^64)` (no negative/overflow tricks),
-   - `Σ balances ≤ total_reserves`.
-2. **Contract** (`contracts/solvency`) reads real reserves on-chain, injects that figure as the proof's `total_reserves` public input, and runs `bn254.pairing_check`. A valid proof can only exist if the issuer is genuinely solvent against the **live** reserves.
-3. **Customer inclusion** (`sdk/inclusion.ts`) lets any customer verify their exact balance is inside the proven total — defeating the "omit some liabilities to look solvent" fraud.
+- **Remove the pool proof** → the withdrawal must name its deposit → link is public → no privacy.
+- **Remove the nullifier** → a note is spendable twice → the pool drains.
+- **Remove the recipient binding** → a relayer front-runs the withdrawal and redirects the payout.
 
-## Proven end-to-end (all real testnet transactions)
+## How the tree stays trustless without on-chain Poseidon
 
-- ✅ Solvent ledger → Groth16 proof verifies locally (`snarkjs`) and **on-chain** → `SOLVENT` published, no balances exposed.
-- ✅ Contract reads reserves itself on-chain (`reserves() = 782586410`), binds them into the proof.
-- ✅ Customer rebuilds a Merkle-inclusion proof against the published root.
-- ✅ **Tamper demo:** drain reserves below liabilities → (1) a solvency proof can no longer be generated (circuit assert fails), and (2) any stale proof is **rejected on-chain** with `InvalidProof (#5)`. Restored to SOLVENT afterward.
+Stellar's host Poseidon2 constants don't match circomlib's Poseidon, so the
+contract can't recompute the circuit's root on-chain. Instead, **every deposit
+carries a Groth16 "insert" proof** that `new_root` correctly appends
+`commitment` to the tree at the contract's current root. The contract checks
+`old_root == current`, runs only the BN254 pairing check, and advances the root.
+All hashing stays in circomlib-Poseidon land; the contract trusts no root it
+didn't verify.
 
-## Stack
-
-- **Circuit:** Circom 2 + snarkjs Groth16, Poseidon hash, **BN254** (`bn128`). Real Hermez Perpetual Powers of Tau (`powersOfTau28_hez_final_14.ptau`).
-- **Contract:** Rust / Soroban SDK 26, `crypto::bn254` host functions (`g1_msm`, `g1_add`, `pairing_check`).
-- **SDK/scripts:** Bun + TypeScript, `@stellar/stellar-sdk`, Stellar CLI.
-- **Frontend:** Next.js + Tailwind (Issuer / Public / Customer views).
-- **Network:** Stellar testnet (Protocol 26).
-
-## Repo layout
+## Components
 
 ```
-circuits/      solvency.circom, merkle_sum.circom  (+ build/ artifacts)
-contracts/     solvency/ — Soroban verifier + attestation registry (Rust)
-sdk/           convert.ts (snarkjs→Soroban bytes), inclusion.ts
-scripts/       seed-ledger, prove, fund-reserves, tamper, gen-frontend-data
-frontend/      Next.js 3-view app
+circuits/
+  veil_withdraw.circom   membership + nullifier + amount range + recipient bind
+  veil_insert.circom     old_root -> new_root append proof (per deposit)
+sdk/
+  veil.ts                X25519 ECDH stealth notes, Poseidon Merkle tree, stealth Stellar addr
+  veil-convert.ts        snarkjs -> Soroban BN254 byte layout
+contracts/.../veil/      Soroban pool: deposit (insert-verify), withdraw (membership-verify + nullifier)
+scripts/
+  veil-flow.ts           full off-chain flow: derive -> tree -> recognise -> prove
+  veil-gen-insert.ts     build an insert witness
 ```
+
+Public-input layouts (contract mirrors circuits exactly):
+- insert: `[old_root, new_root, commitment, leaf_index]`
+- withdraw: `[root, nullifier_hash, recipient, amount]`
+
+## Proven so far (all local, real Groth16)
+
+- ✅ Withdraw circuit: 3005 constraints, proves + `snarkjs verify` OK.
+- ✅ Insert circuit: 4910 constraints, proves + `snarkjs verify` OK.
+- ✅ SDK ⇄ circuit: real X25519 note → SDK Merkle proof → withdraw proof verifies (Poseidon matches in and out of circuit).
+- ✅ Recipient recognises its own ECDH note; one-time stealth Stellar address derived.
+- ✅ Contract builds (`veil.wasm`, BN254 verifier, keccak-bound payout) + smoke test passes.
 
 ## Run it
 
-Prereqs: `bun`, `circom`, `snarkjs`, Rust, `stellar` CLI, a funded testnet identity (`stellar keys generate issuer --network testnet --fund`).
+Prereqs: `bun`, `circom`, `snarkjs`, Rust (GNU toolchain on Windows), `stellar` CLI, a funded testnet identity.
 
 ```bash
 bun install
 
-# 1. Circuit: seed a ledger, compile, trusted setup, prove
-bun run scripts/seed-ledger.ts
-bun run circuit:compile
-# (one-time) snarkjs groth16 setup + zkey contribute + export verificationkey
+# circuits (reuses the existing pot14 ptau)
+bun run circuit:withdraw && bun run circuit:insert
+# (one-time) snarkjs groth16 setup + zkey contribute + export verificationkey for each
 
-# 2. Contract: build + deploy
+# off-chain end-to-end (derive -> tree -> recognise -> prove)
+bun run flow
+snarkjs groth16 verify circuits/build/veil_vk.json \
+  circuits/build/veil_flow_public.json circuits/build/veil_flow_proof.json
+
+# contract
 cd contracts/solvency && stellar contract build && cd ../..
-stellar contract deploy --wasm contracts/solvency/target/wasm32v1-none/release/solvency.wasm --source issuer --network testnet
-
-# 3. Reserves + proof bound to LIVE on-chain balance
-bun run scripts/fund-reserves.ts
-bun run scripts/prove.ts          # reads on-chain R, proves Σliab ≤ R, converts to bytes
-
-# 4. Attest on-chain
-stellar contract invoke --id <CONTRACT> --source issuer --network testnet -- set_vk --vk-file-path sdk/build/vk.json
-stellar contract invoke --id <CONTRACT> --source issuer --network testnet -- attest \
-  --proof-file-path sdk/build/proof.json --liabilities_root $(cat sdk/build/root.txt) --ledger_seq 1
-
-# 5. Customer inclusion + tamper demo
-bun run sdk/inclusion.ts 1004
-bun run scripts/tamper.ts         # drain -> insolvent;  `restore` to undo
+bun run convert     # snarkjs vk/proof -> Soroban bytes
 ```
 
 ## Honesty ledger
 
 - **Testnet only.** No mainnet, no real funds.
-- **We run our own real testnet issuer.** No real third-party custodian's books are audited — the only thing simulated is *being the issuer*, because no custodian hands a hackathon its treasury. The cryptography and every transaction are real.
-- **v1 reveals the reserve total** (the standard, fraud-relevant split — hide liabilities, expose reserves). Hiding reserves too is a documented stretch (FR10).
-- **Demo tree is small** (8 leaves) for fast proving on a laptop; the construction scales (note the path to 2^10–2^20). The cryptography is identical at any size.
-- **Trusted setup** uses the real Hermez Perpetual Powers of Tau; a production deployment would run its own ceremony.
-- The internal customer ledger is realistic **seeded** data over the real circuit/contract path — the numbers are ours, the ZK and the chain are real.
-- Frontend customer view ships precomputed inclusion proofs from the public demo ledger; the real verification logic is in `sdk/inclusion.ts` and runs against the published root.
+- Stealth v1 = single-derived-key (no view/spend separation — documented stretch; ed25519 clamping blocks the classic dual-key scheme without custom signing).
+- Demo tree depth 10 (1024 notes); identical circuit scales to depth 20.
+- Fixed-denomination notes in the demo for a clean anonymity set.
+- Trusted setup reuses the real Hermez Perpetual Powers of Tau.
+- The ZK and every transaction are real; only the parties are ours.
+
+See `VEIL.md` for the full architecture.
