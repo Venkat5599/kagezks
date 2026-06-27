@@ -1,0 +1,4 @@
+[     371ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/6c31e_next_dist_cf8a5dca._.js:2297
+[     477ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/6c31e_next_dist_cf8a5dca._.js:2297
+[     651ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/icon-192.png:0
+[     660ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:3000/icon-192.png (Download error or resource isn't a valid image) @ http://localhost:3000/:0

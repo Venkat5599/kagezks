@@ -1,0 +1,38 @@
+- generic [active] [ref=e1]:
+  - img
+  - img
+  - img
+  - img
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link [ref=e4] [cursor=pointer]:
+        - /url: "#"
+      - navigation [ref=e6]:
+        - button "Products" [ref=e8]:
+          - text: Products
+          - img [ref=e9]
+        - button "Resources" [ref=e12]:
+          - text: Resources
+          - img [ref=e13]
+        - link "Pricing" [ref=e15] [cursor=pointer]:
+          - /url: "#pricing"
+      - generic [ref=e16]:
+        - link "Sign in" [ref=e17] [cursor=pointer]:
+          - /url: "#"
+        - link "Try for free" [ref=e18] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e20]: Try for free
+          - img [ref=e22]
+    - img
+    - img
+  - button "Toggle theme" [disabled] [ref=e26]
+  - link "Skip to main content" [ref=e27] [cursor=pointer]:
+    - /url: "#main-content"
+  - main [ref=e28]:
+    - generic [ref=e29]:
+      - paragraph [ref=e30]: Live on Stellar testnet
+      - heading "Veil" [level=1] [ref=e31]
+      - paragraph [ref=e32]: A real private payment on-chain — stealth notes, a ZK shielded pool, and no deposit↔withdrawal link the chain can see.
+    - generic [ref=e33]: Loading on-chain state…
+  - button "Open Next.js Dev Tools" [ref=e39] [cursor=pointer]:
+    - img [ref=e40]

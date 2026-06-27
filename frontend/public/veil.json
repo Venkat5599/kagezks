@@ -1,0 +1,16 @@
+{
+  "network": "testnet",
+  "contract_id": "CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD",
+  "usdc_sac": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+  "explorer_contract": "https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD",
+  "deposit_tx": "https://stellar.expert/explorer/testnet/tx/5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231",
+  "withdraw_tx": "https://stellar.expert/explorer/testnet/tx/dca610418cc3b2d3ebfaf05282b96beffcfa620914b8ade9991bf4c4b1f7cc81",
+  "amount": "10000000",
+  "amount_display": "1.0",
+  "commitment": "1d21a2d1a8a2898f5caa255f5d879bdf310a8a415e57495cf411e429b9f56d52",
+  "ephemeral_pubkey": "ad9a0a3a7cfe4c67eab03e81dd15396a376e59c93b3ceb504fdbc6d9f9f88d16",
+  "new_root": "158f14f798a90f4120531ae84bb40f9e01a5789d07ab1ca7a128f0561114d6e9",
+  "nullifier_hash": "23c1eae0d9b4fc3a865378654a9d3679f3591b9220a90216e62fdcdfe98ead67",
+  "stealth_payout": "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y",
+  "double_spend": "rejected (#9 NullifierUsed)"
+}

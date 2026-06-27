@@ -1,0 +1,196 @@
+- generic [active] [ref=e1]:
+  - img
+  - img
+  - img
+  - img
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Veil" [ref=e4] [cursor=pointer]:
+        - /url: "#"
+        - generic: Veil
+      - navigation [ref=e6]:
+        - button "Products" [ref=e8]:
+          - text: Products
+          - img [ref=e9]
+        - button "Resources" [ref=e12]:
+          - text: Resources
+          - img [ref=e13]
+        - link "Pricing" [ref=e15] [cursor=pointer]:
+          - /url: "#pricing"
+      - generic [ref=e16]:
+        - link "Sign in" [ref=e17] [cursor=pointer]:
+          - /url: "#"
+        - link "Try for free" [ref=e18] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e20]: Try for free
+          - img [ref=e22]
+    - img
+    - img
+  - button "Toggle theme" [disabled] [ref=e26]
+  - link "Skip to main content" [ref=e27] [cursor=pointer]:
+    - /url: "#main-content"
+  - main [ref=e28]:
+    - generic [ref=e29]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - text: Private payments · Stellar
+          - generic [ref=e34]: ✦
+        - heading "Send money. Reveal nothing." [level=1] [ref=e35]:
+          - generic [ref=e36]: Send money.
+          - generic [ref=e37]: Reveal nothing.
+        - paragraph [ref=e38]: Confidential USDC payments on Stellar. Stealth addresses and zero-knowledge proofs hide who paid whom, how much, and which deposit funded which withdrawal.
+        - button "Get Started" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: Get Started
+          - img [ref=e43]
+      - img "Dashboard preview" [ref=e49]
+      - generic [ref=e53]:
+        - list [ref=e54]:
+          - listitem [ref=e55]:
+            - img "Acme Corp" [ref=e57]
+          - listitem [ref=e58]:
+            - img "Altshift" [ref=e60]
+          - listitem [ref=e61]:
+            - img "Biosynthesis" [ref=e63]
+          - listitem [ref=e64]:
+            - img "Boltshift" [ref=e66]
+          - listitem [ref=e67]:
+            - img "Capsule" [ref=e69]
+          - listitem [ref=e70]:
+            - img "Catalog" [ref=e72]
+          - listitem [ref=e73]:
+            - img "Cloudwatch" [ref=e75]
+          - listitem [ref=e76]:
+            - img "Commandr" [ref=e78]
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - img [ref=e82]
+          - listitem [ref=e83]:
+            - img [ref=e85]
+          - listitem [ref=e86]:
+            - img [ref=e88]
+          - listitem [ref=e89]:
+            - img [ref=e91]
+          - listitem [ref=e92]:
+            - img [ref=e94]
+          - listitem [ref=e95]:
+            - img [ref=e97]
+          - listitem [ref=e98]:
+            - img [ref=e100]
+          - listitem [ref=e101]:
+            - img [ref=e103]
+    - generic [ref=e104]:
+      - heading "Private in three moves" [level=2] [ref=e105]
+      - paragraph [ref=e106]: Stealth addressing hides the recipient; a zero-knowledge pool hides the link and the amount.
+      - generic [ref=e107]:
+        - generic [ref=e108]:
+          - img [ref=e110]
+          - heading "Send" [level=3] [ref=e113]
+          - paragraph [ref=e114]: Pay from the recipient's published scan key. An ECDH shared secret derives the note; only they can find it. The chain sees a random commitment — never the recipient.
+        - generic [ref=e115]:
+          - img [ref=e117]
+          - heading "Pool" [level=3] [ref=e121]
+          - paragraph [ref=e122]: The commitment is inserted into an on-chain Merkle tree with a zero-knowledge insert proof. USDC is pulled in. No amount is tied to any identity.
+        - generic [ref=e123]:
+          - img [ref=e125]
+          - heading "Receive" [level=3] [ref=e128]
+          - paragraph [ref=e129]: The recipient scans for their note, then withdraws to a one-time stealth address — proving they own an unspent leaf without revealing which deposit it was.
+    - generic [ref=e130]:
+      - heading "ZK is load-bearing, not decorative" [level=2] [ref=e131]
+      - generic [ref=e132]:
+        - generic [ref=e133]:
+          - img [ref=e134]
+          - heading "Remove the pool proof" [level=3] [ref=e138]
+          - paragraph [ref=e139]: The withdrawal must name its deposit → the deposit↔withdrawal link is public → no privacy.
+        - generic [ref=e140]:
+          - img [ref=e141]
+          - heading "Remove the nullifier" [level=3] [ref=e146]
+          - paragraph [ref=e147]: A note becomes spendable twice → the pool drains. The nullifier is the double-spend guard, proven in-circuit.
+        - generic [ref=e148]:
+          - img [ref=e149]
+          - heading "Remove the stealth notes" [level=3] [ref=e152]
+          - paragraph [ref=e153]: The recipient's identity leaks at deposit time, and the sender must hand secrets over out-of-band.
+    - generic [ref=e154]:
+      - heading "Proven on Stellar testnet" [level=2] [ref=e155]
+      - paragraph [ref=e156]: Real transactions — not a mockup. Every proof verified on-chain (BN254).
+      - generic [ref=e157]:
+        - link "Deposit — insert proof verified, USDC pooled" [ref=e158] [cursor=pointer]:
+          - /url: https://stellar.expert/explorer/testnet/tx/5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231
+          - generic [ref=e159]: Deposit — insert proof verified, USDC pooled
+          - img [ref=e160]
+        - link "Withdraw — membership proof, paid to a stealth address" [ref=e164] [cursor=pointer]:
+          - /url: https://stellar.expert/explorer/testnet/tx/dca610418cc3b2d3ebfaf05282b96beffcfa620914b8ade9991bf4c4b1f7cc81
+          - generic [ref=e165]: Withdraw — membership proof, paid to a stealth address
+          - img [ref=e166]
+        - link "Pool contract" [ref=e170] [cursor=pointer]:
+          - /url: https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD
+          - generic [ref=e171]: Pool contract
+          - img [ref=e172]
+        - generic [ref=e176]: Double-spend the same note → rejected on-chain (NullifierUsed).
+    - generic [ref=e177]:
+      - heading "Questions" [level=2] [ref=e178]
+      - generic [ref=e179]:
+        - button "Is this just a mixer?" [ref=e181]:
+          - generic [ref=e182]: Is this just a mixer?
+          - img [ref=e183]
+        - button "How is the tree trustless without on-chain Poseidon?" [ref=e185]:
+          - generic [ref=e186]: How is the tree trustless without on-chain Poseidon?
+          - img [ref=e187]
+        - button "Can a relayer steal the payout?" [ref=e189]:
+          - generic [ref=e190]: Can a relayer steal the payout?
+          - img [ref=e191]
+        - button "What's the honest scope?" [ref=e193]:
+          - generic [ref=e194]: What's the honest scope?
+          - img [ref=e195]
+    - generic [ref=e196]:
+      - generic [ref=e200]:
+        - heading "Start building something truly amazing today" [level=2] [ref=e201]
+        - generic [ref=e202]:
+          - generic [ref=e203]:
+            - img [ref=e204]
+            - textbox "Email address" [ref=e207]:
+              - /placeholder: Enter your email
+          - button "Join Waitlist" [ref=e208]:
+            - text: Join Waitlist
+            - img [ref=e209]
+      - generic [ref=e212]:
+        - generic [ref=e213]:
+          - link "Circular home" [ref=e214] [cursor=pointer]:
+            - /url: "#"
+            - generic: Circular
+          - navigation "Footer navigation" [ref=e216]:
+            - generic [ref=e217]:
+              - heading "Menu" [level=3] [ref=e218]
+              - list [ref=e219]:
+                - listitem [ref=e220]:
+                  - link "Customers" [ref=e221] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e222]:
+                  - link "Resources" [ref=e223] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e224]:
+                  - link "Careers" [ref=e225] [cursor=pointer]:
+                    - /url: "#"
+            - generic [ref=e226]:
+              - heading "Company" [level=3] [ref=e227]
+              - list [ref=e228]:
+                - listitem [ref=e229]:
+                  - link "Help" [ref=e230] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e231]:
+                  - link "Terms" [ref=e232] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e233]:
+                  - link "Security" [ref=e234] [cursor=pointer]:
+                    - /url: "#"
+            - generic [ref=e235]:
+              - heading "Social" [level=3] [ref=e236]
+              - list [ref=e237]:
+                - listitem [ref=e238]:
+                  - link "X (Twitter)" [ref=e239] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e240]:
+                  - link "LinkedIn" [ref=e241] [cursor=pointer]:
+                    - /url: "#"
+        - paragraph [ref=e243]: © 2026 Circular. All rights reserved.
+  - button "Open Next.js Dev Tools" [ref=e249] [cursor=pointer]:
+    - img [ref=e250]

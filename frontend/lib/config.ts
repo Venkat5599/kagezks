@@ -9,13 +9,13 @@
 
 export const siteConfig = {
   // Brand
-  name: "Ledgerproof",
-  tagline: "Prove solvency. Reveal nothing.",
-  description: "Confidential proof-of-solvency on Stellar. Reserves verified on-chain; liabilities proven in zero-knowledge.",
+  name: "Veil",
+  tagline: "Send money. Reveal nothing.",
+  description: "Confidential payments on Stellar — stealth notes and zero-knowledge proofs hide who paid whom, how much, and which deposit funded which withdrawal.",
 
   // URLs
-  url: "https://ledgerproof.vercel.app",
-  twitter: "@ledgerproof",
+  url: "https://veil.vercel.app",
+  twitter: "@veil",
   
   // Navigation
   nav: {
@@ -89,7 +89,7 @@ export const footerConfig = {
     placeholder: "Enter your email",
     button: "Join Waitlist",
   },
-  copyright: `© ${new Date().getFullYear()} Circular. All rights reserved.`,
+  copyright: `© ${new Date().getFullYear()} Veil. All rights reserved.`,
 };
 
 /**

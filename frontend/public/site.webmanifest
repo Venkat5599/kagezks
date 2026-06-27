@@ -1,27 +1,16 @@
 {
-  "name": "Your Site Name",
-  "short_name": "Site",
-  "description": "A modern, accessible landing page template built with Next.js, Tailwind CSS, and TypeScript.",
+  "name": "Veil — private payments on Stellar",
+  "short_name": "Veil",
+  "description": "Confidential payments on Stellar. Stealth notes and zero-knowledge proofs hide who paid whom, how much, and which deposit funded which withdrawal.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#a8d946",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

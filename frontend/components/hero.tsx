@@ -94,7 +94,7 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            Now Available
+            Private payments · Stellar
             <span className="text-accent">✦</span>
           </motion.div>
 
@@ -104,14 +104,14 @@ export function Hero(): ReactNode {
               variants={fadeInUp}
               transition={{ duration: 0.8, ease }}
             >
-              Build Faster
+              Send money.
             </motion.span>
             <motion.span
               className="block"
               variants={fadeInUp}
               transition={{ duration: 0.8, ease }}
             >
-              Ship with <span className="italic font-serif text-accent">Confidence</span>
+              Reveal <span className="italic font-serif text-accent">nothing</span>.
             </motion.span>
           </h1>
 
@@ -120,7 +120,8 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            The modern platform for teams who want to move fast without breaking things
+            Confidential USDC payments on Stellar. Stealth addresses and zero-knowledge proofs
+            hide who paid whom, how much, and which deposit funded which withdrawal.
           </motion.p>
 
           <motion.button
