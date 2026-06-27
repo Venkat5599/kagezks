@@ -6,6 +6,8 @@
 // used so off-chain commitments match in-circuit ones exactly.
 import { x25519 } from "@noble/curves/ed25519.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { keccak_256 } from "@noble/hashes/sha3.js";
+import { Address } from "@stellar/stellar-sdk";
 import { buildPoseidon } from "circomlibjs";
 
 // BN254 scalar field prime (must match circom's bn128 field).
@@ -173,11 +175,15 @@ export class MerkleTree {
   }
 }
 
-// Reduce a 32-byte Stellar account id (ed25519 pubkey) to a BN254 field element
-// for the circuit's `recipient` public input. The contract applies the same
-// reduction so the binding matches.
-export function addressToField(raw32: Uint8Array): bigint {
-  return bytesToBig(raw32) % P;
+// recipient public input = keccak256(ScVal::Address XDR) with the top byte
+// zeroed (so the 248-bit result is always a canonical BN254 field element).
+// MUST byte-for-byte match the contract's `address_field` so the proof's
+// recipient equals what the contract recomputes from the payout `Address`.
+export function recipientField(strkey: string): bigint {
+  const xdr = new Uint8Array(Address.fromString(strkey).toScVal().toXDR());
+  const h = keccak_256(xdr);
+  h[0] = 0; // ensure < BN254 prime — mirrors the contract
+  return bytesToBig(h);
 }
 
 export { hexToBig, bigToHex, bytesToBig };

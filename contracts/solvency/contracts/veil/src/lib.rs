@@ -247,11 +247,15 @@ impl Veil {
         Ok(())
     }
 
-    /// recipient field = keccak256(ScAddress XDR) reduced to 32 BE bytes. The
-    /// SDK computes the identical value when generating the withdraw proof.
+    /// recipient field = keccak256(ScVal::Address XDR) with the top byte zeroed
+    /// so the 248-bit result is always a canonical BN254 field element. The SDK
+    /// computes the identical value when generating the withdraw proof, binding
+    /// the payout address into the proof.
     fn address_field(env: &Env, to: &Address) -> BytesN<32> {
         let xdr: Bytes = to.clone().to_xdr(env);
-        env.crypto().keccak256(&xdr).to_bytes()
+        let mut arr = env.crypto().keccak256(&xdr).to_bytes().to_array();
+        arr[0] = 0; // ensure < BN254 prime
+        BytesN::from_array(env, &arr)
     }
 
     /// Standard Groth16 check:

@@ -58,13 +58,19 @@ Public-input layouts (contract mirrors circuits exactly):
 - insert: `[old_root, new_root, commitment, leaf_index]`
 - withdraw: `[root, nullifier_hash, recipient, amount]`
 
-## Proven so far (all local, real Groth16)
+## Proven end-to-end (real testnet transactions)
+
+- **Contract (testnet):** [`CCM4HXQH…23YD`](https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD)
+- ✅ **Deposit** — [`5aa164a0…c231`](https://stellar.expert/explorer/testnet/tx/5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231): the on-chain **insert proof** verified (BN254), USDC pulled into the pool, commitment + ephemeral pubkey announced.
+- ✅ **Withdraw** — [`dca61041…cc81`](https://stellar.expert/explorer/testnet/tx/dca610418cc3b2d3ebfaf05282b96beffcfa620914b8ade9991bf4c4b1f7cc81): the **membership proof** verified, payout paid to a **stealth address** bound into the proof (keccak(ScAddress) matched cross-language). No deposit↔withdrawal link on chain.
+- ✅ **Double-spend rejected** — replaying the same nullifier reverts with `NullifierUsed (#9)`.
+
+### Local (real Groth16)
 
 - ✅ Withdraw circuit: 3005 constraints, proves + `snarkjs verify` OK.
 - ✅ Insert circuit: 4910 constraints, proves + `snarkjs verify` OK.
 - ✅ SDK ⇄ circuit: real X25519 note → SDK Merkle proof → withdraw proof verifies (Poseidon matches in and out of circuit).
 - ✅ Recipient recognises its own ECDH note; one-time stealth Stellar address derived.
-- ✅ Contract builds (`veil.wasm`, BN254 verifier, keccak-bound payout) + smoke test passes.
 
 ## Run it
 

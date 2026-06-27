@@ -1,0 +1,9 @@
+{
+  "network": "testnet",
+  "contract_id": "CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD",
+  "usdc_sac": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+  "deposit_tx": "5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231",
+  "withdraw_tx": "dca610418cc3b2d3ebfaf05282b96beffcfa620914b8ade9991bf4c4b1f7cc81",
+  "stealth_payout": "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y",
+  "double_spend": "rejected (#9 NullifierUsed)"
+}
