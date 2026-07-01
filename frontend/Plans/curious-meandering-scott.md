@@ -101,7 +101,7 @@ Declarative, reusable, agent-readable steps = `{ tool | onchain | condition }`.
 
 ### 5. Demo agent — `agent/demo-agent.ts` (NEW)
 An MCP **client** driving Claude: connects to the MCP server, lists tools, and on a natural-
-language instruction ("pay this contractor 5 USDC privately") selects + runs the `pay-if-budget`
+language instruction ("pay this payee 5 USDC privately") selects + runs the `pay-if-budget`
 workflow autonomously. Prints the discovered tools, the chosen steps, and the resulting
 `commitment` + testnet tx link. This is the live demo.
 

@@ -1,200 +1,58 @@
-# SaaS Landing Page Template
+# Veil — frontend
 
-A premium, production-ready Next.js 16+ landing page template designed for SaaS products, startups, and digital products. Features modern animations, dark mode, full accessibility, and a beautiful design system.
+The web app for [Veil](../README.md): **private payments for autonomous agents on
+Stellar.** A marketing site plus a live shielded-pool dashboard that reads the Veil
+contract on testnet and lets a connected wallet deposit into / withdraw from the ZK
+pool.
 
-## ✨ Highlights
+Next.js 16 (App Router) · TypeScript · Tailwind v4 · Motion · Freighter wallet ·
+snarkjs (in-browser Groth16 proving).
 
-- 🎨 **Premium Design** - Modern, polished UI with attention to every detail
-- 🌙 **Dark Mode** - Seamless light/dark theme switching
-- **Blazing Fast** - Optimized for Core Web Vitals
-- 📱 **Fully Responsive** - Looks great on all devices
-- ♿ **Accessible** - WCAG 2.1 AA compliant
-- **Easy to Customize** - Centralized configuration file
+## What's here
 
-## Features
+```
+app/
+  page.tsx           # landing: "Agents that pay. Leak nothing."
+  dashboard/page.tsx # live pool dashboard (root, leaf count, deposit/withdraw, agent-fabric)
+  api/veil/route.ts  # read-only pool state proxy (RPC)
+components/
+  hero, how-it-works, feature-showcase, features-bento, convergence, faq, footer
+  veil-dashboard.tsx # the dashboard shell (Overview · Connect & pay · Pool ledger ·
+                     #   Proven flow · Chain vs private · Agent fabric · The ZK)
+  veil-actions.tsx   # connect wallet, deposit, withdraw
+lib/
+  config.ts          # ⭐ all marketing copy (single source of truth)
+  veil-chain.ts      # browser chain layer: pool reads, tree rebuild, prove, submit
+  veil-browser.ts    # browser stealth notes + Poseidon Merkle tree (mirrors sdk/veil.ts)
+public/
+  zk/                # veil_insert.wasm, veil_withdraw.wasm, *_final.zkey, *_vk.json
+  veil.json          # deployed contract id + USDC SAC + explorer links
+```
 
-- **Next.js 16+** with App Router
-- **TypeScript** (strict mode)
-- **Tailwind CSS v4** with design tokens
-- **Smooth Scrolling** via Lenis
-- **Motion** via motion/react with reduced-motion support
-- **SEO Ready** - metadata, Open Graph, Twitter cards
-- **Accessibility** - skip links, focus rings, ARIA labels
-- **Edge Compatible** - deploy anywhere
+## The idea, on screen
 
-## Quick Start
+- **Landing** frames it: give an AI agent a raw key on a public chain and it leaks
+  every payment and can be drained. Veil gives the agent a **scoped key it can't
+  drain** and seals each payment in **zero-knowledge**.
+- **Dashboard** proves it live: deposit a stealth note (in-browser insert proof),
+  watch the pool root advance, withdraw to a fresh stealth address, and see a
+  double-spend rejected. The **Agent fabric** section explains autonomy without
+  custody (`SessionAccount.__check_auth`).
 
-### 1. Install dependencies
+## Run
 
 ```bash
-npm install
+npm install      # (repo root uses bun; the frontend is a standard npm workspace)
+npm run dev      # http://localhost:3000
+npm run typecheck && npm run lint
 ```
 
-### 2. Start development server
+The dashboard talks to the Veil contract in `public/veil.json` on Stellar testnet.
+> The deployed contract predates the deposit **amount-binding** fix — redeploy the
+> current `veil.wasm` + `set_vks` and update `public/veil.json` before live deposits
+> (the insert proof now carries a 5th public input).
 
-```bash
-npm run dev
-```
+## Editing copy
 
-Open [http://localhost:3000](http://localhost:3000)
-
-### 3. Customize your site
-
-Edit `lib/config.ts` to update all text, links, and settings in one place.
-
-## 📁 Project Structure
-
-```
-├── app/
-│   ├── globals.css        # Design tokens & theme colors
-│   ├── layout.tsx         # Root layout with providers
-│   ├── page.tsx           # Landing page
-│   └── ...
-├── components/
-│   ├── hero.tsx           # Hero section with parallax
-│   ├── features-bento.tsx # Bento grid features
-│   ├── testimonials.tsx   # Auto-rotating testimonials
-│   ├── how-it-works.tsx   # Steps with scroll progress
-│   ├── pricing.tsx        # 3-tier pricing cards
-│   ├── faq.tsx            # Accordion FAQ
-│   ├── footer.tsx         # CTA card + footer links
-│   └── ...
-├── lib/
-│   ├── config.ts          # ⭐ EDIT THIS - All site config
-│   ├── metadata.ts        # SEO utilities
-│   └── motion.tsx         # Motion components
-└── public/
-    ├── BG.jpg             # Hero background
-    ├── dashboardmock.png  # Product screenshot
-    └── mock-logos/        # Company logos
-```
-
-## 🎨 Customization Guide
-
-### Step 1: Update Site Configuration
-
-Edit `lib/config.ts` - this is your **single source of truth** for all text content:
-
-```ts
-export const siteConfig = {
-  name: "Your Brand",
-  tagline: "Your Tagline",
-  description: "Your description",
-  // ...
-};
-
-export const heroConfig = {
-  headline: {
-    line1: "Your Headline",
-    line2: "Second Line",
-    accent: "Accent Word",
-  },
-  // ...
-};
-```
-
-### Step 2: Update Theme Colors
-
-Edit `app/globals.css` to change your brand colors:
-
-```css
-:root {
-  --accent: #a8d946;        /* Your primary brand color */
-  --background: #f5f5f5;    /* Light mode background */
-  --foreground: #0a0a0a;    /* Light mode text */
-  /* ... */
-}
-
-.dark {
-  --background: #141414;    /* Dark mode background */
-  --foreground: #fafafa;    /* Dark mode text */
-  /* ... */
-}
-```
-
-### Step 3: Replace Assets
-
-| File | Purpose | Dimensions |
-|------|---------|------------|
-| `public/BG.jpg` | Hero background | 1920×1080+ |
-| `public/dashboardmock.png` | Product screenshot | 1920×1080 |
-| `public/mock-logos/*.svg` | Company logos | ~120×40 |
-| `app/icon.svg` | Favicon | 32×32 |
-| `app/apple-icon.svg` | Apple touch icon | 180×180 |
-
-### Step 4: Toggle Features
-
-In `lib/config.ts`, enable/disable features:
-
-```ts
-export const features = {
-  smoothScroll: true,      // Lenis smooth scrolling
-  testimonialAutoplay: true, // Auto-rotate testimonials
-  parallaxHero: true,      // Mouse parallax on hero
-  blurInHeadline: true,    // Scroll blur animation
-};
-```
-
-## Section Components
-
-Each section is a standalone component you can customize or remove:
-
-| Component | Description |
-|-----------|-------------|
-| `Hero` | Full-width hero with parallax background, headline, CTA |
-| `BlurInHeadline` | Scroll-driven text reveal animation |
-| `FeaturesBento` | Bento grid with phone mockups and stats |
-| `Testimonials` | Auto-rotating testimonials with avatars |
-| `HowItWorks` | Sticky sidebar + scrolling steps |
-| `Pricing` | 3-tier pricing cards with popular highlight |
-| `FAQ` | Accordion with smooth animations |
-| `Footer` | CTA email capture + link columns |
-
-## 📱 Responsive Breakpoints
-
-The template uses custom breakpoints for precise control:
-
-- `max-[1200px]` - Tablet landscape
-- `max-[850px]` - Tablet portrait / Mobile
-- `sm:` / `md:` / `lg:` - Standard Tailwind breakpoints
-
-## ♿ Accessibility Features
-
-- Skip-to-content link
-- Proper heading hierarchy (h1 → h2 → h3)
-- ARIA labels on all interactive elements
-- Keyboard navigation support
-- Focus visible rings
-- Reduced motion support
-- Screen reader announcements for dynamic content
-
-## Deployment
-
-The template is Edge-compatible and works with:
-
-- **Vercel** (recommended)
-- **Netlify**
-- **Cloudflare Pages**
-- Any static hosting
-
-```bash
-npm run build
-```
-
-## 📜 Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run typecheck` | Run TypeScript checks |
-
-## 📄 License
-
-This template is licensed for use in commercial projects. You may not resell or redistribute the template itself.
-
----
-
-Built with ❤️ using Next.js, Tailwind CSS, and Motion
+`lib/config.ts` is the single source of truth for all marketing text (brand, hero,
+how-it-works, FAQ, footer). Theme colors live in `app/globals.css`.
