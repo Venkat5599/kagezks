@@ -6,29 +6,29 @@ import { useState, type ReactNode } from "react";
 
 const faqs = [
   {
-    question: "How does the 14-day free trial work?",
+    question: "Why not just encrypt the payments?",
     answer:
-      "Start using our platform immediately with full access to all features. No credit card required. At the end of your trial, choose a plan that fits your needs or continue with our free tier.",
+      "Encryption hides data but trusts whoever holds the key — a server, a custodian, you. Veil makes the agent→payee link unprovable to anyone, enforced by the zk-SNARK and the chain itself. No party holds a secret that could reconstruct who paid whom.",
   },
   {
-    question: "Can I switch plans at any time?",
+    question: "What exactly does the chain see?",
     answer:
-      "Absolutely! You can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access to new features. When downgrading, changes take effect at your next billing cycle.",
+      "Only Poseidon commitments, random ephemeral keys, a Merkle root, and nullifier hashes. Never a payee's identity, never an amount tied to a party, and never a link from the agent's deposit to a payee's withdrawal.",
   },
   {
-    question: "What integrations do you support?",
+    question: "Why is ZK load-bearing — couldn't you drop it?",
     answer:
-      "We integrate with all major platforms including Slack, Zendesk, Salesforce, HubSpot, Intercom, and 50+ other tools. Our API also allows custom integrations for enterprise customers.",
+      "No. Remove the pool proof and every withdrawal must name the agent's deposit, so the whole agent spend graph goes public. Remove the nullifier and a payment note can be claimed twice, draining the pool. Remove the recipient binding and a relayer can redirect a payee's funds. The privacy is the proof.",
   },
   {
-    question: "How secure is my data?",
+    question: "Is this real, or a mockup?",
     answer:
-      "Security is our top priority. We use bank-level encryption (AES-256), are SOC 2 Type II certified, and GDPR compliant. All data is stored in secure, redundant data centers with 99.99% uptime.",
+      "Real. The withdraw circuit (3005 constraints) and insert circuit (4910) both prove and verify with snarkjs Groth16. The Soroban pool ran a full deposit → withdraw → rejected double-spend on Stellar testnet, with the BN254 pairing check passing on-chain.",
   },
   {
-    question: "Do you offer dedicated support?",
+    question: "What's honestly still a demo limitation?",
     answer:
-      "All plans include email support with 24-hour response times. Premium plans get priority support with 4-hour response times. Enterprise customers receive a dedicated success manager and phone support.",
+      "Testnet only, no real funds. v1 stealth uses a single-derived key (no view/spend separation — a documented stretch). Demo tree depth is 10 (1024 notes); the same circuit scales to depth 20. Fixed-denomination notes keep the anonymity set clean. The ZK and every transaction are real; only the parties are ours.",
   },
 ];
 
@@ -102,7 +102,7 @@ export function FAQ(): ReactNode {
   };
 
   return (
-    <section className="w-full px-6 py-20 sm:py-28">
+    <section id="faq" className="w-full px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -112,31 +112,35 @@ export function FAQ(): ReactNode {
           className="mb-12 text-center sm:mb-16"
         >
           <span className="text-sm font-medium text-muted-foreground">
-            Frequently Asked Questions
+            The honest version
           </span>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            Everything you need to know
+            What judges usually ask
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Can&apos;t find the answer you&apos;re looking for? Reach out!
+            Scope, trust assumptions, and why the ZK is the whole point.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <motion.a
-              href="#"
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center rounded-xl bg-foreground px-6 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
             >
-              Get Started
+              View on GitHub
             </motion.a>
             <motion.a
-              href="#"
+              href="https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD"
+              target="_blank"
+              rel="noopener noreferrer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center rounded-xl border border-border bg-frame px-6 py-2.5 text-sm font-semibold text-foreground transition-colors"
             >
-              Contact Support
+              View the contract
             </motion.a>
           </div>
         </motion.div>

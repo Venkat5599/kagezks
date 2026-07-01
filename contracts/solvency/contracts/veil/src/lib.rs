@@ -136,17 +136,26 @@ impl Veil {
             .get(&DataKey::InsertVk)
             .ok_or(Error::NoVerificationKey)?;
 
-        // Public inputs: [old_root, new_root, commitment, leaf_index].
+        // Public inputs: [old_root, new_root, commitment, leaf_index, amount].
+        // `amount` binds the pulled USDC to the note's committed value — the insert
+        // circuit proves commitment == Poseidon(amount, secret, nullifier), so a
+        // depositor cannot commit a large note while under-funding the pool.
         let pub_inputs = vec![
             &env,
             Bn254Fr::from_bytes(current.clone()),
             Bn254Fr::from_bytes(new_root.clone()),
             Bn254Fr::from_bytes(commitment.clone()),
             Bn254Fr::from_bytes(u32_to_fr_bytes(&env, leaf_index)),
+            Bn254Fr::from_bytes(i128_to_fr_bytes(&env, amount)),
         ];
         if !Self::groth16_verify(&env, &vk, &proof, &pub_inputs) {
             return Err(Error::InvalidProof);
         }
+
+        // Advance the tree BEFORE the token move (Checks-Effects-Interactions).
+        env.storage().instance().set(&DataKey::CurrentRoot, &new_root);
+        env.storage().instance().set(&DataKey::LeafCount, &(count + 1));
+        env.storage().persistent().set(&DataKey::Root(new_root.clone()), &true);
 
         // Pull USDC into the pool.
         let usdc: Address = env.storage().instance().get(&DataKey::Usdc).unwrap();
@@ -155,11 +164,6 @@ impl Veil {
             &env.current_contract_address(),
             &amount,
         );
-
-        // Advance the tree.
-        env.storage().instance().set(&DataKey::CurrentRoot, &new_root);
-        env.storage().instance().set(&DataKey::LeafCount, &(count + 1));
-        env.storage().persistent().set(&DataKey::Root(new_root.clone()), &true);
 
         env.events().publish(
             (symbol_short!("veil"), symbol_short!("deposit")),

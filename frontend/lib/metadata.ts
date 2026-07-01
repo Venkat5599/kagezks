@@ -1,25 +1,27 @@
 import type { Metadata } from "next";
 
 export const siteConfig = {
-  name: "React Bits Pro - SaaS Template",
+  name: "Veil — Private payments for autonomous agents on Stellar",
   description:
-    "A modern, accessible landing page template built with Next.js, Tailwind CSS, and TypeScript.",
-  url: "https://example.com",
+    "Give an AI agent a scoped session key and it pays on-chain by itself — bounded so it can never drain or redirect funds, and every payment sealed in zero-knowledge so no one sees who it paid or how much. Built on Stellar with Groth16 + a Soroban BN254 verifier.",
+  url: "https://veil-pay.vercel.app",
   ogImage: "/og-image.png",
-  creator: "@yourhandle",
+  creator: "@veilpay",
   authors: [
     {
-      name: "Your Name",
-      url: "https://example.com",
+      name: "Veil",
+      url: "https://veil-pay.vercel.app",
     },
   ],
   keywords: [
-    "landing page",
-    "template",
-    "Next.js",
-    "React",
-    "Tailwind CSS",
-    "TypeScript",
+    "autonomous agents",
+    "agent payments",
+    "account abstraction",
+    "session keys",
+    "zero-knowledge",
+    "Stellar",
+    "Soroban",
+    "Groth16",
   ],
 } as const;
 

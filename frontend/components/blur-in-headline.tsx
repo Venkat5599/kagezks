@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 const headline =
-  "Modern teams use our platform to elevate every customer touchpoint, blending human expertise with AI capabilities in a unified system that drives continuous improvement across all channels.";
+  "Let an AI agent pay on a transparent chain and you publish its every counterparty, every amount, and a map of everything your treasury touches. Veil seals all of it — and bounds the agent so it can never drain you — enforced by math and the chain, not by trusting a custodian.";
 
 export function BlurInHeadline(): ReactNode {
   const containerRef = useRef<HTMLDivElement>(null);

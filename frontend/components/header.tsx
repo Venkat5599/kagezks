@@ -2,20 +2,22 @@
 
 import { ArrowDownRight, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { VeilMark } from "@/components/veil-logo";
 
 const menus = {
   products: [
-    { label: "Analytics", description: "Track your metrics in real-time" },
-    { label: "Automation", description: "Streamline your workflows" },
-    { label: "Integrations", description: "Connect with 100+ tools" },
-    { label: "API", description: "Build custom solutions" },
+    { label: "Stealth notes", description: "Hide which payee is paid (X25519 ECDH)" },
+    { label: "Shielded pool", description: "Break the agent→payee link in ZK" },
+    { label: "Nullifiers", description: "One payment note, claimable once" },
+    { label: "Stealth payout", description: "Fresh one-time address per payee" },
   ],
   resources: [
-    { label: "Documentation", description: "Learn how to get started" },
-    { label: "Blog", description: "Tips and best practices" },
-    { label: "Case Studies", description: "See how others succeed" },
-    { label: "Community", description: "Join the conversation" },
+    { label: "How it works", description: "The three-step agent payment flow" },
+    { label: "Architecture", description: "Circuits, SDK, Soroban contract" },
+    { label: "Live contract", description: "Deposit + withdraw on testnet" },
+    { label: "FAQ", description: "Scope and trust assumptions" },
   ],
 };
 
@@ -145,9 +147,13 @@ const CornerSVG = ({ className }: { className: string }) => (
 );
 
 export function Header(): ReactNode {
+  const pathname = usePathname();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+
+  // The dashboard is a full app shell with its own left dock — no marketing nav.
+  if (pathname?.startsWith("/dashboard")) return null;
 
   const closeMobile = () => setMobileMenuOpen(false);
   const toggleExpanded = (key: string) => setMobileExpanded(mobileExpanded === key ? null : key);
@@ -161,8 +167,10 @@ export function Header(): ReactNode {
     >
       <div className="h-20 max-[850px]:h-18 flex items-center justify-between px-4 max-[850px]:px-6">
         <a href="#" className="flex items-center gap-2 ml-4 max-[850px]:ml-0">
-          <div className="w-6 h-6 rounded-full bg-foreground" />
-          <span className="text-lg font-semibold text-foreground leading-0 max-[1200px]:hidden max-[850px]:inline">Circular</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground text-background">
+            <VeilMark className="h-4 w-4" />
+          </span>
+          <span className="text-lg font-semibold text-foreground leading-0 max-[1200px]:hidden max-[850px]:inline">Veil</span>
         </a>
 
         <nav className="flex items-center gap-1 max-[1200px]:gap-0 max-[850px]:hidden">
@@ -180,18 +188,21 @@ export function Header(): ReactNode {
             onOpen={() => setActiveMenu("resources")}
             onClose={() => setActiveMenu(null)}
           />
-          <a href="#pricing" className="px-4 py-2 max-[1200px]:px-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5">
-            Pricing
+          <a href="/dashboard" className="px-4 py-2 max-[1200px]:px-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5">
+            Dashboard
+          </a>
+          <a href="#how-it-works" className="px-4 py-2 max-[1200px]:px-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5">
+            How it works
           </a>
         </nav>
 
         <div className="flex items-center gap-4 max-[850px]:hidden">
-          <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors">
-            Sign in
+          <a href="#faq" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors">
+            FAQ
           </a>
-          <a href="#" className="group relative inline-flex items-center">
+          <a href="/dashboard" className="group relative inline-flex items-center">
             <span className="absolute right-0 inset-y-0 w-[calc(100%-1.5rem)] rounded-xl bg-accent" />
-            <span className="relative z-10 px-5 py-3 rounded-xl bg-foreground text-background text-sm font-medium">Try for free</span>
+            <span className="relative z-10 px-5 py-3 rounded-xl bg-foreground text-background text-sm font-medium">Live dashboard</span>
             <span className="relative -left-px z-10 w-10 h-10 rounded-xl flex items-center justify-center text-black">
               <ArrowDownRight className="w-4 h-4 transition-transform duration-300 group-hover:-rotate-45" />
             </span>
@@ -219,8 +230,8 @@ export function Header(): ReactNode {
           >
             <div className="px-6 pb-4">
               <nav className="space-y-0">
-                <a href="#" className="flex items-center justify-between py-4 text-base font-medium text-foreground border-b border-foreground/10" onClick={closeMobile}>
-                  Customers
+                <a href="#faq" className="flex items-center justify-between py-4 text-base font-medium text-foreground border-b border-foreground/10" onClick={closeMobile}>
+                  FAQ
                 </a>
                 <MobileExpandable
                   label="Products"
@@ -236,18 +247,21 @@ export function Header(): ReactNode {
                   onToggle={() => toggleExpanded("resources")}
                   onClose={closeMobile}
                 />
-                <a href="#pricing" className="flex items-center justify-between py-4 text-base font-medium text-foreground" onClick={closeMobile}>
-                  Pricing
+                <a href="/dashboard" className="flex items-center justify-between py-4 text-base font-medium text-foreground border-b border-foreground/10" onClick={closeMobile}>
+                  Dashboard
+                </a>
+                <a href="#how-it-works" className="flex items-center justify-between py-4 text-base font-medium text-foreground" onClick={closeMobile}>
+                  How it works
                 </a>
               </nav>
 
               <div className="flex items-center justify-between pt-8 pb-2">
-                <a href="#" className="text-base font-medium text-foreground" onClick={closeMobile}>
-                  Sign in
+                <a href="#faq" className="text-base font-medium text-foreground" onClick={closeMobile}>
+                  FAQ
                 </a>
-                <a href="#" className="group relative inline-flex items-center" onClick={closeMobile}>
+                <a href="/dashboard" className="group relative inline-flex items-center" onClick={closeMobile}>
                   <span className="absolute right-0 inset-y-0 w-[calc(100%-1.5rem)] rounded-2xl bg-accent" />
-                  <span className="relative z-10 px-5 py-3 rounded-2xl bg-foreground text-background text-sm font-medium">Try for free</span>
+                  <span className="relative z-10 px-5 py-3 rounded-2xl bg-foreground text-background text-sm font-medium">Live dashboard</span>
                   <span className="relative -left-px z-10 w-10 h-10 rounded-2xl flex items-center justify-center text-foreground">
                     <ArrowDownRight className="w-4 h-4 transition-transform duration-300 group-hover:-rotate-45" />
                   </span>

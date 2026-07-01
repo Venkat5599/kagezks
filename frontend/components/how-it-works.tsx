@@ -2,27 +2,27 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
-import { CalendarCheck, Users, Rocket } from "lucide-react";
+import { KeyRound, Landmark, Banknote } from "lucide-react";
 import type { ReactNode } from "react";
 
 const steps = [
   {
-    icon: CalendarCheck,
-    title: "Schedule kickoff",
+    icon: KeyRound,
+    title: "Owner delegates a scoped key",
     description:
-      "Align on scope, structure, and timeline. Whether it's a quick setup or a full migration, we'll take it from there.",
+      "The owner deploys a session account and hands the agent one capped, expiring key that may only pay into the Veil pool. Never the owner's key, never a way to drain or redirect funds — anything off-policy reverts on-chain.",
   },
   {
-    icon: Users,
-    title: "Real-time collaboration",
+    icon: Landmark,
+    title: "Agent pays into the pool",
     description:
-      "Work alongside our team with full visibility. Every step follows best practices and thorough QA to ensure quality.",
+      "Acting on its own, the agent does ECDH against the payee's scan key, derives a private note, and deposits USDC as a Poseidon commitment in the shielded Merkle pool. The chain sees a commitment and a random ephemeral key — nothing else.",
   },
   {
-    icon: Rocket,
-    title: "Launch and scale",
+    icon: Banknote,
+    title: "Payee withdraws the funds",
     description:
-      "Go live with confidence. Our AI continuously learns and improves, helping your team scale effortlessly.",
+      "The payee recognises their note, proves in zero-knowledge they own some unspent leaf — without revealing which — and is paid at a fresh stealth address. No one links the payout back to the agent.",
   },
 ];
 
@@ -65,6 +65,7 @@ export function HowItWorks(): ReactNode {
 
   return (
     <section
+      id="how-it-works"
       ref={containerRef}
       className="relative w-full bg-background"
     >
@@ -74,17 +75,19 @@ export function HowItWorks(): ReactNode {
             How it works
           </h2>
           <p className="mt-6 max-w-md text-lg leading-relaxed text-foreground/60">
-            Your platform, configured by experts and launched on an{" "}
-            <span className="font-medium text-foreground">Enterprise plan</span>
-            , ready to grow with you.
+            Three steps. The agent→payee link{" "}
+            <span className="font-medium text-foreground">never touches the chain</span>
+            {" "}— it&apos;s broken by a zero-knowledge proof, not by a promise.
           </p>
           <motion.a
-            href="#"
+            href="https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD"
+            target="_blank"
+            rel="noopener noreferrer"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="mt-8 inline-flex items-center rounded-xl bg-foreground px-6 py-3 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
           >
-            Schedule kickoff
+            View the live contract
           </motion.a>
         </div>
 

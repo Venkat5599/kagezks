@@ -45,7 +45,7 @@ const insertVk = vkBytes(read("insert_vk.json"));
 const withdrawVk = vkBytes(read("veil_vk.json"));
 write("insert_vk.json", insertVk);
 write("withdraw_vk.json", withdrawVk);
-console.log(`insert vk   ic length = ${insertVk.ic.length} (expect 5)`);
+console.log(`insert vk   ic length = ${insertVk.ic.length} (expect 6)`);
 console.log(`withdraw vk ic length = ${withdrawVk.ic.length} (expect 5)`);
 
 // e2e proofs (present after the prove step).

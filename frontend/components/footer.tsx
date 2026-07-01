@@ -2,21 +2,23 @@
 
 import { ArrowRight, Mail } from "lucide-react";
 import type { ReactNode } from "react";
+import { VeilMark } from "@/components/veil-logo";
+
+const CONTRACT_URL =
+  "https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD";
+
+const TX = "https://stellar.expert/explorer/testnet/tx/";
 
 const footerLinks = {
   menu: [
-    { label: "Customers", href: "#" },
-    { label: "Resources", href: "#" },
-    { label: "Careers", href: "#" },
+    { label: "Live dashboard", href: "/dashboard" },
+    { label: "How it works", href: "#how-it-works" },
+    { label: "FAQ", href: "#faq" },
   ],
-  company: [
-    { label: "Help", href: "#" },
-    { label: "Terms", href: "#" },
-    { label: "Security", href: "#" },
-  ],
-  social: [
-    { label: "X (Twitter)", href: "#" },
-    { label: "LinkedIn", href: "#" },
+  onchain: [
+    { label: "Pool contract", href: CONTRACT_URL },
+    { label: "Deposit tx", href: `${TX}5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231` },
+    { label: "Withdraw tx", href: `${TX}dca610418cc3b2d3ebfaf05282b96beffcfa620914b8ade9991bf4c4b1f7cc81` },
   ],
 };
 
@@ -33,24 +35,26 @@ export function Footer(): ReactNode {
           
           <div className="relative z-10 flex flex-col items-center text-center px-12 py-24 max-[850px]:px-6 max-[850px]:py-6 max-[850px]:pt-12">
             <h2 className="text-6xl max-[850px]:text-3xl text-black font-medium tracking-tight max-w-2xl mb-14 max-[850px]:mb-8">
-              Start building something truly amazing today
+              Agent payments you can trust — and no one can read.
             </h2>
-            
+
             <form className="flex items-center w-full max-w-md bg-background rounded-xl p-1.5 shadow-lg max-[850px]:flex-col max-[850px]:p-3 max-[850px]:gap-3 max-[850px]:max-w-none">
               <div className="flex items-center flex-1 w-full">
                 <Mail className="w-5 h-5 text-muted-foreground ml-3 flex-none max-[850px]:ml-1" aria-hidden="true" />
                 <input
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="you@company.com"
                   aria-label="Email address"
+                  suppressHydrationWarning
                   className="flex-1 px-3 py-2.5 text-sm bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
               <button
                 type="submit"
+                suppressHydrationWarning
                 className="flex items-center justify-center gap-2 px-5 py-2.5 bg-foreground hover:bg-foreground/90 text-background rounded-lg text-sm font-medium transition-colors whitespace-nowrap max-[850px]:w-full max-[850px]:py-3"
               >
-                Join Waitlist
+                Get early access
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </button>
             </form>
@@ -61,9 +65,11 @@ export function Footer(): ReactNode {
       <div className="bg-accent rounded-tr-[3rem] rounded-tl-[3rem] pt-96 pb-16 max-[850px]:pt-72">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex items-start justify-between gap-12 max-[850px]:flex-col max-[850px]:gap-10">
-            <a href="#" className="flex items-center gap-2" aria-label="Circular home">
-              <div className="w-8 h-8 rounded-full bg-neutral-900" />
-              <span className="text-xl font-semibold text-neutral-900 leading-0">Circular</span>
+            <a href="#" className="flex items-center gap-2" aria-label="Veil home">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-accent">
+                <VeilMark className="h-5 w-5" />
+              </span>
+              <span className="text-xl font-semibold text-neutral-900 leading-0">Veil</span>
             </a>
 
             <nav className="flex gap-16 max-[850px]:gap-10 max-[850px]:flex-wrap" aria-label="Footer navigation">
@@ -81,24 +87,11 @@ export function Footer(): ReactNode {
               </div>
 
               <div>
-                <h3 className="text-xs font-medium text-neutral-900/50 uppercase tracking-wider mb-4">Company</h3>
+                <h3 className="text-xs font-medium text-neutral-900/50 uppercase tracking-wider mb-4">On-chain</h3>
                 <ul className="space-y-2">
-                  {footerLinks.company.map((link) => (
+                  {footerLinks.onchain.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="text-xs font-medium text-neutral-900/50 uppercase tracking-wider mb-4">Social</h3>
-                <ul className="space-y-2">
-                  {footerLinks.social.map((link) => (
-                    <li key={link.label}>
-                      <a href={link.href} className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
+                      <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
                         {link.label}
                       </a>
                     </li>
@@ -110,7 +103,7 @@ export function Footer(): ReactNode {
 
           <div className="mt-16 pt-6">
             <p className="text-sm text-neutral-900/50 text-center">
-              © {new Date().getFullYear()} Circular. All rights reserved.
+              © {new Date().getFullYear()} Veil · Stellar Hacks · Real-World ZK
             </p>
           </div>
         </div>

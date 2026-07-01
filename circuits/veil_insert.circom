@@ -11,8 +11,14 @@ include "circomlib/circuits/bitify.circom";
 // its current root and runs only the BN254 pairing check — no on-chain Poseidon
 // (the host's Poseidon2 constants differ from circomlib's; see VEIL.md §4).
 //
-// Public:  oldRoot, newRoot, commitment, leafIndex
-// Private: pathElements[DEPTH]
+// It ALSO binds the deposited `amount` to the commitment: the circuit proves
+// `commitment == Poseidon(amount, secret, nullifier)`. The contract passes the
+// USDC amount it actually pulled as the public `amount`, so a depositor cannot
+// commit a large note while under-funding the pool (accounting desync → drain).
+// The same amount is what the withdraw circuit binds, so deposited == withdrawn.
+//
+// Public:  oldRoot, newRoot, commitment, leafIndex, amount
+// Private: secret, nullifier, pathElements[DEPTH]
 
 template HashLeftRight() {
     signal input left;
@@ -55,8 +61,22 @@ template Insert(DEPTH) {
     signal input newRoot;
     signal input commitment;
     signal input leafIndex;
+    signal input amount;
     // private
+    signal input secret;
+    signal input nullifier;
     signal input pathElements[DEPTH];
+
+    // Bind the deposited amount to the commitment. The contract feeds the USDC
+    // amount it pulls as the public `amount`; this constraint forces the note's
+    // committed value to equal it, so the pool can never be under-funded.
+    component rng = Num2Bits(64);          // amount in [0, 2^64)
+    rng.in <== amount;
+    component cm = Poseidon(3);
+    cm.inputs[0] <== amount;
+    cm.inputs[1] <== secret;
+    cm.inputs[2] <== nullifier;
+    commitment === cm.out;
 
     // leafIndex -> path bits.
     component idx = Num2Bits(DEPTH);
@@ -81,4 +101,4 @@ template Insert(DEPTH) {
     newRoot === newR.root;
 }
 
-component main { public [oldRoot, newRoot, commitment, leafIndex] } = Insert(10);
+component main { public [oldRoot, newRoot, commitment, leafIndex, amount] } = Insert(10);

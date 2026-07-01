@@ -6,23 +6,23 @@ A premium, production-ready Next.js 16+ landing page template designed for SaaS 
 
 - 🎨 **Premium Design** - Modern, polished UI with attention to every detail
 - 🌙 **Dark Mode** - Seamless light/dark theme switching
-- ⚡ **Blazing Fast** - Optimized for Core Web Vitals
+- **Blazing Fast** - Optimized for Core Web Vitals
 - 📱 **Fully Responsive** - Looks great on all devices
 - ♿ **Accessible** - WCAG 2.1 AA compliant
-- 🔧 **Easy to Customize** - Centralized configuration file
+- **Easy to Customize** - Centralized configuration file
 
 ## Features
 
-- ✅ **Next.js 16+** with App Router
-- ✅ **TypeScript** (strict mode)
-- ✅ **Tailwind CSS v4** with design tokens
-- ✅ **Smooth Scrolling** via Lenis
-- ✅ **Motion** via motion/react with reduced-motion support
-- ✅ **SEO Ready** - metadata, Open Graph, Twitter cards
-- ✅ **Accessibility** - skip links, focus rings, ARIA labels
-- ✅ **Edge Compatible** - deploy anywhere
+- **Next.js 16+** with App Router
+- **TypeScript** (strict mode)
+- **Tailwind CSS v4** with design tokens
+- **Smooth Scrolling** via Lenis
+- **Motion** via motion/react with reduced-motion support
+- **SEO Ready** - metadata, Open Graph, Twitter cards
+- **Accessibility** - skip links, focus rings, ARIA labels
+- **Edge Compatible** - deploy anywhere
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Install dependencies
 
@@ -135,7 +135,7 @@ export const features = {
 };
 ```
 
-## 🎯 Section Components
+## Section Components
 
 Each section is a standalone component you can customize or remove:
 
@@ -168,7 +168,7 @@ The template uses custom breakpoints for precise control:
 - Reduced motion support
 - Screen reader announcements for dynamic content
 
-## 🚀 Deployment
+## Deployment
 
 The template is Edge-compatible and works with:
 

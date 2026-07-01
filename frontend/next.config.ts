@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@stellar/stellar-sdk"],
+  serverExternalPackages: ["@stellar/stellar-sdk", "snarkjs"],
+  outputFileTracingExcludes: {
+    "*": ["node_modules/snarkjs/**", "node_modules/web-worker/**"],
+  },
   images: {
     remotePatterns: [
       {

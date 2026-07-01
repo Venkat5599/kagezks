@@ -26,6 +26,9 @@ circuits/build/input.json
 *.secret
 identity*.toml
 *_seed.txt
+# generated build artifacts that embed testnet private keys
+sdk/build/veil_manifest.json
+sdk/build/agent_fabric.json
 
 # os
 .DS_Store

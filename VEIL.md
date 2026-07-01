@@ -1,19 +1,26 @@
-# Veil — private payments on Stellar (stealth notes + ZK shielded pool)
+# Veil — private payments for autonomous agents on Stellar (scoped session key + ZK shielded pool)
 
-> Umbra-style stealth payments, made ZK-native on Stellar. A sender pays a
-> recipient without anyone — including a chain observer — learning **who was
-> paid, how much, or which deposit funded which withdrawal.** ZK is
-> load-bearing: remove it and the deposit→withdrawal link is public, killing
-> the privacy.
+> Real-world problem: **give an AI agent a key on a public ledger and its every
+> payment is a leak** — every counterparty, every amount, a map of everything
+> your treasury touches — and a raw key means the agent (or an attacker) can
+> **drain you**. Veil ports
+> [`nschwermann/agent_fabric`](https://github.com/nschwermann/agent_fabric)'s
+> thesis ("autonomy without custody") to Stellar and makes settlement
+> **ZK-private**: the agent pays under a scoped key it can't drain, and no
+> observer learns who it paid or how much. ZK is load-bearing: remove it and the
+> agent→payee link is public, killing the privacy.
 
-Supersedes the earlier Ledgerproof (proof-of-solvency) design. Reuses its
-crypto stack: Circom + snarkjs Groth16, Poseidon, Soroban BN254 verifier.
+Reuses the crypto stack of an earlier build: Circom + snarkjs Groth16, Poseidon,
+Soroban BN254 verifier.
 
 ---
 
 ## 1. The idea
 
-Two privacy layers stacked:
+An **owner** delegates a scoped session key to an **agent**; the agent is the
+depositor that pays into the pool, and each **payee** is a recipient who later
+withdraws. The session contract (`__check_auth`) bounds the agent so it can never
+drain or redirect funds (see §7). On top of that scope, two privacy layers stack:
 
 1. **Stealth notes (Umbra layer).** The recipient publishes a *meta-address*
    (a scan public key `V`). A sender, paying that recipient, picks a random
@@ -67,7 +74,7 @@ Two privacy layers stacked:
 **Private:** `secret`, `nullifier`, `pathElements[DEPTH]`, `pathIndices[DEPTH]`.
 
 Constraints:
-1. `amount ∈ [0, 2^64)` (range; reused from Ledgerproof).
+1. `amount ∈ [0, 2^64)` (range).
 2. `commitment = Poseidon(amount, secret, nullifier)`.
 3. `nullifierHash === Poseidon(nullifier)` (binds the public nullifier to the secret one).
 4. Merkle membership: hashing `commitment` up `pathElements/pathIndices` with `Poseidon(2)` yields `root`.
@@ -79,10 +86,13 @@ construction is identical at depth 20.
 ## 4. Soroban pool contract (`contracts/veil/`)
 
 - `init(admin, usdc_token)` — config.
-- `deposit(from, commitment, ephemeral_pubkey, amount)` — pull `amount` USDC
-  from `from` (SAC `transfer`), insert `commitment` as the next leaf of an
-  on-chain **incremental Merkle tree** (Poseidon), push the new root into a
-  rolling set of known roots, emit `Announce{commitment, ephemeral_pubkey, amount}`.
+- `deposit(from, commitment, ephemeral_pubkey, amount, new_root, leaf_index, proof)` —
+  verify the Groth16 **insert** proof `[old_root, new_root, commitment, leaf_index, amount]`
+  (BN254), which both appends `commitment` to the on-chain **incremental Merkle
+  tree** (Poseidon) at the current root AND binds `commitment ==
+  Poseidon(amount, secret, nullifier)` so the pulled USDC equals the note's
+  committed value; then pull `amount` USDC from `from` (SAC `transfer`), advance
+  the known-roots set, emit `Announce{commitment, ephemeral_pubkey, amount, leaf_index}`.
 - `withdraw(proof, root, nullifier_hash, recipient, amount)` —
   1. assert `root` ∈ known-roots.
   2. assert `nullifier_hash` unused.

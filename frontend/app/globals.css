@@ -195,3 +195,9 @@ body {
     display: none;
   }
 }
+
+/* Infinite logo marquee (two copies of the track, translate -50% for seamless loop) */
+@keyframes veil-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}

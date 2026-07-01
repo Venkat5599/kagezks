@@ -1,108 +1,96 @@
 /**
  * ============================================================================
- * SITE CONFIGURATION
+ * SITE CONFIGURATION — Veil
  * ============================================================================
- * 
- * Customize your landing page by editing the values below.
- * All text, links, and settings are centralized here for easy editing.
+ *
+ * Private payments for autonomous agents on Stellar. All marketing copy is centralized here.
  */
 
 export const siteConfig = {
   // Brand
-  name: "Ledgerproof",
-  tagline: "Prove solvency. Reveal nothing.",
-  description: "Confidential proof-of-solvency on Stellar. Reserves verified on-chain; liabilities proven in zero-knowledge.",
+  name: "Veil",
+  tagline: "Agents that pay. Leak nothing.",
+  description:
+    "Private payments for autonomous agents on Stellar. An agent pays in USDC under a scoped key it can't drain, with the amount, the recipient, and the agent→payee link hidden in zero-knowledge.",
 
   // URLs
-  url: "https://ledgerproof.vercel.app",
-  twitter: "@ledgerproof",
-  
+  url: "https://veil-pay.vercel.app",
+  twitter: "@veilpay",
+
   // Navigation
   nav: {
     cta: {
-      text: "Try for free",
-      href: "#",
+      text: "Read the docs",
+      href: "#how-it-works",
     },
     signIn: {
-      text: "Sign in",
+      text: "GitHub",
       href: "#",
     },
   },
 };
 
 export const heroConfig = {
-  badge: "Now Available",
+  badge: "Live on Stellar testnet",
   headline: {
-    line1: "Build Faster",
-    line2: "Ship with",
-    accent: "Confidence",
+    line1: "Agents that pay.",
+    line2: "Leak",
+    accent: "nothing.",
   },
-  subheadline: "The modern platform for teams who want to move fast without breaking things",
+  subheadline:
+    "On a public ledger, an autonomous agent's payments are a leak — every counterparty, every amount, your whole treasury map. Veil gives the agent a scoped key it can't drain, and seals each payment in zero-knowledge.",
   cta: {
-    text: "Get Started",
-    href: "#",
+    text: "See how it works",
+    href: "#how-it-works",
   },
 };
 
 export const blurHeadlineConfig = {
-  text: "Modern teams use our platform to elevate every customer touchpoint, blending human expertise with AI capabilities in a unified system that drives continuous improvement across all channels.",
-};
-
-export const testimonialsConfig = {
-  title: "Trusted by teams worldwide",
-  autoplayInterval: 10000, // milliseconds
+  text: "Let an AI agent pay on a transparent chain and you publish its every counterparty, every amount, and a map of everything your treasury touches. Veil seals all of it — and bounds the agent so it can never drain you — enforced by math and the chain, not by trusting a custodian.",
 };
 
 export const howItWorksConfig = {
   title: "How it works",
-  description: "Your platform, configured by experts and launched on an Enterprise plan, ready to grow with you.",
+  description:
+    "A payee shares a scan key once. The agent pays into a shielded pool under a scoped key; the payee withdraws to a fresh stealth address. The chain never links the two.",
   cta: {
-    text: "Schedule kickoff",
-    href: "#",
+    text: "Read the architecture",
+    href: "https://github.com",
   },
 };
 
-export const pricingConfig = {
-  title: "Simple, transparent pricing",
-  description: "Choose the plan that works best for your team. All plans include a 14-day free trial.",
-  billingNote: "Billed annually",
-};
-
 export const faqConfig = {
-  title: "Everything you need to know",
-  description: "Can't find the answer you're looking for? Reach out!",
+  title: "What judges usually ask",
+  description: "The honest version — scope, trust assumptions, and why ZK is load-bearing.",
   cta: {
     primary: {
-      text: "Get Started",
+      text: "View on GitHub",
       href: "#",
     },
     secondary: {
-      text: "Contact Support",
-      href: "#",
+      text: "View the contract",
+      href: "https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD",
     },
   },
 };
 
 export const footerConfig = {
   cta: {
-    headline: "Start building something amazing today",
-    placeholder: "Enter your email",
-    button: "Join Waitlist",
+    headline: "Agent payments you can trust — and no one can read.",
+    placeholder: "you@company.com",
+    button: "Get early access",
   },
-  copyright: `© ${new Date().getFullYear()} Circular. All rights reserved.`,
+  copyright: `© ${new Date().getFullYear()} Veil. Stellar Hacks · Real-World ZK.`,
 };
 
 /**
  * ============================================================================
  * FEATURE FLAGS
  * ============================================================================
- * 
- * Toggle features on/off without touching component code.
  */
 
 export const features = {
   smoothScroll: true,
-  testimonialAutoplay: true,
   parallaxHero: true,
   blurInHeadline: true,
 };
@@ -111,9 +99,6 @@ export const features = {
  * ============================================================================
  * THEME CONFIGURATION
  * ============================================================================
- * 
- * Colors are defined in globals.css using CSS custom properties.
- * This config controls which theme features are enabled.
  */
 
 export const themeConfig = {

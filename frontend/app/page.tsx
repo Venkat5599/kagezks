@@ -1,18 +1,18 @@
 import { BlurInHeadline } from "@/components/blur-in-headline";
+import { Convergence } from "@/components/convergence";
 import { FAQ } from "@/components/faq";
 import { FeaturesBento } from "@/components/features-bento";
+import { FeatureShowcase } from "@/components/feature-showcase";
 import { Footer } from "@/components/footer";
 import { Hero } from "@/components/hero";
 import { HowItWorks } from "@/components/how-it-works";
-import { Pricing } from "@/components/pricing";
-import { Testimonials } from "@/components/testimonials";
 import { createMetadata, siteConfig } from "@/lib/metadata";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = createMetadata({
-  title: "Ledgerproof — Prove solvency, reveal nothing",
-  description: `Welcome to ${siteConfig.name}. ${siteConfig.description}`,
+  title: "Veil — Agents that pay. Never leak. Never drain.",
+  description: siteConfig.description,
   path: "/",
 });
 
@@ -22,9 +22,9 @@ export default function HomePage(): ReactNode {
       <Hero />
       <BlurInHeadline />
       <FeaturesBento />
-      <Testimonials />
+      <FeatureShowcase />
       <HowItWorks />
-      <Pricing />
+      <Convergence />
       <FAQ />
       <Footer />
     </main>
