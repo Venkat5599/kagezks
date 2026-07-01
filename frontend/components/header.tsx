@@ -191,6 +191,9 @@ export function Header(): ReactNode {
           <a href="/dashboard" className="px-4 py-2 max-[1200px]:px-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5">
             Dashboard
           </a>
+          <a href="/agent" className="px-4 py-2 max-[1200px]:px-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5">
+            Agent demo
+          </a>
           <a href="#how-it-works" className="px-4 py-2 max-[1200px]:px-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5">
             How it works
           </a>
@@ -249,6 +252,9 @@ export function Header(): ReactNode {
                 />
                 <a href="/dashboard" className="flex items-center justify-between py-4 text-base font-medium text-foreground border-b border-foreground/10" onClick={closeMobile}>
                   Dashboard
+                </a>
+                <a href="/agent" className="flex items-center justify-between py-4 text-base font-medium text-foreground border-b border-foreground/10" onClick={closeMobile}>
+                  Agent demo
                 </a>
                 <a href="#how-it-works" className="flex items-center justify-between py-4 text-base font-medium text-foreground" onClick={closeMobile}>
                   How it works

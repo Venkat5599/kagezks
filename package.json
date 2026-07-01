@@ -9,6 +9,8 @@
     "circuit:insert": "circom circuits/veil_insert.circom --r1cs --wasm --sym -l node_modules -o circuits/build",
     "flow": "bun run scripts/veil-flow.ts",
     "agent:fabric": "bun run scripts/agent-fabric.ts",
+    "agent:serve": "bun run agent/mcp-server.ts",
+    "agent:demo": "bun run agent/demo-agent.ts",
     "gen:insert": "bun run scripts/veil-gen-insert.ts",
     "convert": "bun run sdk/veil-convert.ts"
   },

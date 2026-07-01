@@ -25,7 +25,7 @@
   },
   "circuits": {
     "withdraw": { "constraints": 3005, "public": ["root", "nullifierHash", "recipient", "amount"], "private": ["secret", "nullifier", "pathElements[10]", "pathIndices[10]"] },
-    "insert": { "constraints": 4910, "public": ["oldRoot", "newRoot", "commitment", "leafIndex"], "private": ["pathElements[10]"] },
+    "insert": { "constraints": 5238, "public": ["oldRoot", "newRoot", "commitment", "leafIndex", "amount"], "private": ["secret", "nullifier", "pathElements[10]"] },
     "depth": 10,
     "scheme": "Groth16 over BN254 (alt_bn128)",
     "hash": "circomlib Poseidon",
