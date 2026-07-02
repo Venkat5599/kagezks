@@ -96,9 +96,23 @@ function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
       </Panel>
 
       <Panel>
-        <p className="font-semibold text-white">Connect an agent</p>
-        <p className="mt-1 text-sm text-neutral-500">Add this to your MCP client config (Claude Code <span className="font-mono text-neutral-400">.mcp.json</span> or Claude Desktop). Your agent discovers the tools and can pay privately.</p>
-        <div className="relative mt-4">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-white">Connect from any agent</p>
+          <Chip accent>live endpoint</Chip>
+        </div>
+        <p className="mt-1 text-sm text-neutral-500">This is a real MCP server — connect from Claude Code, Claude Desktop, Codex, or any MCP client. It speaks Streamable HTTP.</p>
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
+          <span className="text-xs text-neutral-500">Endpoint</span>
+          <span className="flex-1 truncate font-mono text-xs text-white">{url}</span>
+          <CopyBtn text={url} />
+        </div>
+        <p className="mt-4 text-xs font-medium text-neutral-400">Claude Code — one command</p>
+        <div className="relative mt-1.5">
+          <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{`claude mcp add ${mcp.slug ?? "server"} --transport http ${url}`}</pre>
+          <div className="absolute right-3 top-3"><CopyBtn text={`claude mcp add ${mcp.slug ?? "server"} --transport http ${url}`} /></div>
+        </div>
+        <p className="mt-4 text-xs font-medium text-neutral-400">Or a config file (.mcp.json / claude_desktop_config.json)</p>
+        <div className="relative mt-1.5">
           <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{config}</pre>
           <div className="absolute right-3 top-3"><CopyBtn text={config} /></div>
         </div>
