@@ -1,6 +1,16 @@
 "use client";
 
-import type { ReactNode, InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { useState, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { Copy, Check } from "lucide-react";
+
+export function CopyBtn({ text }: { text: string }) {
+  const [ok, setOk] = useState(false);
+  return (
+    <button type="button" onClick={() => { navigator.clipboard.writeText(text); setOk(true); setTimeout(() => setOk(false), 1200); }} className="shrink-0 text-neutral-500 hover:text-accent">
+      {ok ? <Check className="h-3.5 w-3.5 text-accent" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
 
 export const short = (s: string | null | undefined, head = 8, tail = 6) =>
   !s ? "—" : s.length > head + tail ? `${s.slice(0, head)}…${s.slice(-tail)}` : s;

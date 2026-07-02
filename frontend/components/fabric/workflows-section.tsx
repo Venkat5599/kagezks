@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ArrowLeft, Loader2, Search, Trash2, Globe, Link2 } from "lucide-react";
-import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty } from "./ui";
+import { Plus, ArrowLeft, Loader2, Search, Trash2, Globe, Link2, Play } from "lucide-react";
+import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, CopyBtn, short } from "./ui";
 
 type Wf = {
   id: string; name: string; slug: string | null; description: string | null; is_public: boolean;
   input_variables: { name: string; type: string }[]; steps: { name: string; type: string }[];
+  output_mapping?: { key: string; expr: string }[]; allowed_contracts?: string[];
   tags: string[];
 };
 type Step = { name: string; type: "http" | "onchain" | "condition"; outputKey: string; method: string; url: string; body: string };
@@ -15,12 +16,14 @@ type Output = { key: string; expr: string };
 
 export function WorkflowsSection() {
   const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<Wf | null>(null);
   const [wfs, setWfs] = useState<Wf[] | null>(null);
   const [q, setQ] = useState("");
   const load = () => fetch("/api/workflows").then((r) => r.json()).then((d) => setWfs(d.workflows ?? [])).catch(() => setWfs([]));
   useEffect(() => { load(); }, []);
 
   if (creating) return <CreateWorkflowForm onDone={() => { setCreating(false); load(); }} onCancel={() => setCreating(false)} />;
+  if (selected) return <WorkflowDetail wf={selected} onBack={() => setSelected(null)} />;
   const filtered = (wfs ?? []).filter((w) => !q || (w.name + w.description).toLowerCase().includes(q.toLowerCase()));
 
   return (
@@ -45,24 +48,98 @@ export function WorkflowsSection() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {filtered.map((w) => (
-            <Panel key={w.id} className="transition hover:border-accent/40">
-              <div className="flex items-center gap-2">
-                <p className="text-lg font-semibold text-white">{w.name}</p>
-                {w.is_public && <Globe className="h-3.5 w-3.5 text-neutral-500" />}
-              </div>
-              <p className="mt-0.5 font-mono text-xs text-neutral-500">/{w.slug}</p>
-              <p className="mt-3 line-clamp-2 text-sm text-neutral-500">{w.description}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                {(w.tags ?? []).map((t) => <Chip key={t} accent={t === "zk" || t === "onchain"}>{t}</Chip>)}
-              </div>
-              <div className="mt-4 flex items-center justify-between text-xs text-neutral-500">
-                <span>{(w.steps ?? []).length} steps</span>
-                <span>{(w.input_variables ?? []).length} inputs</span>
-              </div>
-            </Panel>
+            <button key={w.id} type="button" onClick={() => setSelected(w)} className="text-left">
+              <Panel className="h-full cursor-pointer transition hover:border-accent/40 hover:bg-white/[0.04]">
+                <div className="flex items-center gap-2">
+                  <p className="text-lg font-semibold text-white">{w.name}</p>
+                  {w.is_public && <Globe className="h-3.5 w-3.5 text-neutral-500" />}
+                </div>
+                <p className="mt-0.5 font-mono text-xs text-neutral-500">/{w.slug}</p>
+                <p className="mt-3 line-clamp-2 text-sm text-neutral-500">{w.description}</p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {(w.tags ?? []).map((t) => <Chip key={t} accent={t === "zk" || t === "onchain"}>{t}</Chip>)}
+                </div>
+                <div className="mt-4 flex items-center justify-between text-xs text-neutral-500">
+                  <span>{(w.steps ?? []).length} steps</span>
+                  <span>{(w.input_variables ?? []).length} inputs</span>
+                </div>
+              </Panel>
+            </button>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function WorkflowDetail({ wf, onBack }: { wf: Wf; onBack: () => void }) {
+  const inputs = wf.input_variables ?? [];
+  const runExample = JSON.stringify(
+    { tool: "workflow_run", arguments: { name: wf.slug ?? wf.name, ...Object.fromEntries(inputs.map((v) => [v.name, `<${v.type}>`])) } },
+    null, 2,
+  );
+  const stepColor = (t: string) => (t === "onchain" ? "text-accent" : t === "condition" ? "text-amber-400" : "text-sky-400");
+  return (
+    <div className="space-y-6">
+      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to Workflows</button>
+      <div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-semibold tracking-tight text-white">{wf.name}</h1>
+          {wf.is_public && <Globe className="h-4 w-4 text-neutral-500" />}
+        </div>
+        <p className="mt-1 font-mono text-xs text-neutral-500">/{wf.slug}</p>
+        <div className="mt-2 flex flex-wrap gap-2">{(wf.tags ?? []).map((t) => <Chip key={t} accent={t === "zk" || t === "onchain"}>{t}</Chip>)}</div>
+      </div>
+
+      <Panel><p className="text-sm text-neutral-300">{wf.description}</p></Panel>
+
+      <Panel>
+        <p className="font-semibold text-white">Steps</p>
+        <ol className="mt-4 space-y-2">
+          {(wf.steps ?? []).map((s, i) => (
+            <li key={i} className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-xs text-neutral-400">{i + 1}</span>
+              <span className="flex-1 text-sm text-white">{s.name || `step ${i + 1}`}</span>
+              <span className={`font-mono text-[11px] ${stepColor(s.type)}`}>{s.type}</span>
+            </li>
+          ))}
+          {(wf.steps ?? []).length === 0 && <li className="text-sm text-neutral-500">no steps</li>}
+        </ol>
+      </Panel>
+
+      {inputs.length > 0 && (
+        <Panel>
+          <p className="font-semibold text-white">Inputs</p>
+          <div className="mt-3 space-y-2">
+            {inputs.map((v, i) => (
+              <div key={i} className="flex items-center justify-between rounded-xl border border-white/[0.08] px-4 py-2 text-sm">
+                <span className="font-mono text-white">{v.name}</span><span className="text-neutral-500">{v.type}</span>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {(wf.allowed_contracts ?? []).length > 0 && (
+        <Panel>
+          <div className="flex items-center gap-2"><Link2 className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Scope (allowed contracts)</p></div>
+          <p className="mt-1 text-sm text-neutral-500">Baked into the SessionAccount policy — the agent&apos;s scoped key may call only these.</p>
+          <div className="mt-3 space-y-2">
+            {(wf.allowed_contracts ?? []).map((c, i) => (
+              <div key={i} className="flex items-center gap-2 rounded-xl border border-white/[0.08] px-4 py-2"><span className="flex-1 truncate font-mono text-xs text-white">{c}</span><span className="font-mono text-[11px] text-neutral-500">{short(c, 6, 5)}</span></div>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      <Panel>
+        <div className="flex items-center gap-2"><Play className="h-4 w-4 text-accent" /><p className="font-semibold text-white">How to run</p></div>
+        <p className="mt-1 text-sm text-neutral-500">An agent runs the whole flow with one MCP call:</p>
+        <div className="relative mt-4">
+          <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{runExample}</pre>
+          <div className="absolute right-3 top-3"><CopyBtn text={runExample} /></div>
+        </div>
+      </Panel>
     </div>
   );
 }

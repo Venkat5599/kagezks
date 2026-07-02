@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ArrowLeft, Store, Loader2, Terminal, Search } from "lucide-react";
-import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, short } from "./ui";
+import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, KeyRound, Zap } from "lucide-react";
+import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, short, CopyBtn } from "./ui";
 
 type Api = {
   id: string; name: string; slug: string | null; description: string | null; category: string | null;
   tags: string[]; payment_address: string | null; target_url: string; http_method: string;
-  price: string; is_public: boolean; request_count: number;
+  content_type?: string; query_params?: string | null; example_response?: string | null;
+  price: string; is_public: boolean; request_count: number; success_count?: number; earnings?: string;
 };
 
 export function ApisSection() {
   const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<Api | null>(null);
   const [apis, setApis] = useState<Api[] | null>(null);
   const [q, setQ] = useState("");
 
@@ -19,6 +21,7 @@ export function ApisSection() {
   useEffect(() => { load(); }, []);
 
   if (creating) return <CreateApiForm onDone={() => { setCreating(false); load(); }} onCancel={() => setCreating(false)} />;
+  if (selected) return <ApiDetail api={selected} onBack={() => setSelected(null)} />;
 
   const filtered = (apis ?? []).filter((a) => !q || (a.name + a.description + (a.tags ?? []).join(" ")).toLowerCase().includes(q.toLowerCase()));
 
@@ -44,22 +47,98 @@ export function ApisSection() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {filtered.map((a) => (
-            <Panel key={a.id} className="transition hover:border-accent/40">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10"><Store className="h-5 w-5 text-accent" /></div>
-                <span className="font-mono text-[11px] text-neutral-500">{short(a.payment_address, 6, 4)}</span>
-              </div>
-              <p className="mt-3 text-lg font-semibold text-white">{a.name}</p>
-              <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{a.description}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Chip accent>{a.price} USDC / call</Chip>
-                <Chip>{a.http_method}</Chip>
-                {(a.tags ?? []).slice(0, 2).map((t) => <Chip key={t}>{t}</Chip>)}
-              </div>
-            </Panel>
+            <button key={a.id} type="button" onClick={() => setSelected(a)} className="text-left">
+              <Panel className="h-full cursor-pointer transition hover:border-accent/40 hover:bg-white/[0.04]">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10"><Store className="h-5 w-5 text-accent" /></div>
+                  <span className="font-mono text-[11px] text-neutral-500">{short(a.payment_address, 6, 4)}</span>
+                </div>
+                <p className="mt-3 text-lg font-semibold text-white">{a.name}</p>
+                <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{a.description}</p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <Chip accent>{a.price} USDC / call</Chip>
+                  <Chip>{a.http_method}</Chip>
+                  {(a.tags ?? []).slice(0, 2).map((t) => <Chip key={t}>{t}</Chip>)}
+                </div>
+              </Panel>
+            </button>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function ApiDetail({ api, onBack }: { api: Api; onBack: () => void }) {
+  const endpoint = `https://kageai.me/x402/${api.slug ?? api.id}`;
+  const curl = [
+    `# 1. call it — unpaid requests get an x402 quote (HTTP 402)`,
+    `curl -i ${endpoint}`,
+    ``,
+    `# 2. pay ${api.price} USDC to the payment address (memo = the quote nonce),`,
+    `#    then retry with the payment proof:`,
+    `curl ${endpoint} \\`,
+    `  -H 'X-PAYMENT: <base64({ nonce, txHash })>'`,
+    `# -> proxied to ${api.target_url}`,
+  ].join("\n");
+
+  return (
+    <div className="space-y-6">
+      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to APIs</button>
+
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10"><Store className="h-6 w-6 text-accent" /></div>
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-white">{api.name}</h1>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <Chip accent><Zap className="h-3 w-3" /> {api.price} USDC / call</Chip>
+              <Chip>{api.http_method}</Chip>
+              <Chip>{api.is_public ? "public" : "private"}</Chip>
+              {(api.tags ?? []).map((t) => <Chip key={t}>{t}</Chip>)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Panel>
+        <p className="text-sm text-neutral-300">{api.description}</p>
+        <div className="mt-5 space-y-3">
+          <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
+            <span className="text-xs text-neutral-500">Endpoint</span>
+            <span className="flex-1 truncate font-mono text-xs text-white">{endpoint}</span>
+            <CopyBtn text={endpoint} />
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
+            <KeyRound className="h-3.5 w-3.5 text-accent" />
+            <span className="text-xs text-neutral-500">Pays to</span>
+            <span className="flex-1 truncate font-mono text-xs text-white">{api.payment_address ?? "—"}</span>
+            {api.payment_address && <CopyBtn text={api.payment_address} />}
+          </div>
+        </div>
+      </Panel>
+
+      <Panel>
+        <div className="flex items-center gap-2"><Terminal className="h-4 w-4 text-accent" /><p className="font-semibold text-white">How to use (x402)</p></div>
+        <p className="mt-1 text-sm text-neutral-500">Agents pay per call. Unpaid requests get a <span className="font-mono text-neutral-400">402</span> + quote; pay the USDC fee on Stellar, then retry with the proof. The gateway proxies to your target after payment.</p>
+        <div className="relative mt-4">
+          <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs leading-relaxed text-neutral-200">{curl}</pre>
+          <div className="absolute right-3 top-3"><CopyBtn text={curl} /></div>
+        </div>
+      </Panel>
+
+      {api.example_response && (
+        <Panel>
+          <p className="font-semibold text-white">Example response</p>
+          <pre className="mt-3 overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{api.example_response}</pre>
+        </Panel>
+      )}
+
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Requests"><span className="text-2xl font-semibold text-white">{api.request_count ?? 0}</span></Field>
+        <Field label="Success"><span className="text-2xl font-semibold text-white">{api.success_count ?? 0}</span></Field>
+        <Field label="Earnings"><span className="text-2xl font-semibold text-white">${Number(api.earnings ?? 0).toFixed(2)}</span></Field>
+      </div>
     </div>
   );
 }
