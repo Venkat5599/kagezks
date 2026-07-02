@@ -1,0 +1,21 @@
+{
+  "_comment": "MCP client config for the Veil server. Drop into an MCP-capable agent (Claude Code: .mcp.json; Claude Desktop: claude_desktop_config.json). Pick ONE of the entries below.",
+
+  "mcpServers": {
+    "veil-remote": {
+      "_comment": "Deployed server — set url to your VPS/domain + /mcp (Streamable HTTP).",
+      "type": "http",
+      "url": "https://your-domain.example/mcp"
+    },
+
+    "veil-local": {
+      "_comment": "Local server over stdio — spawns it directly. Needs VEIL_FEE_SECRET in env. Path is the repo root.",
+      "command": "bun",
+      "args": ["run", "/absolute/path/to/stellar-hacks/agent/mcp-server.ts", "--stdio"],
+      "env": {
+        "VEIL_FEE_SECRET": "S...",
+        "VEIL_OPERATOR": "GC3KDBUQ53VQ377LUDUNSV3RQL3MFRYWYYLXD76TXRVR5O7AEO7Y4CAA"
+      }
+    }
+  }
+}
