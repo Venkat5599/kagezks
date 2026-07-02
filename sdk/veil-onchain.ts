@@ -127,33 +127,89 @@ export async function remainingBudget(sessionId?: string): Promise<bigint> {
 }
 
 // ---- rebuild the incremental tree from on-chain deposit events ----------------
-const GENESIS_LEAF = "1d21a2d1a8a2898f5caa255f5d879bdf310a8a415e57495cf411e429b9f56d52";
-
+// The RPC returns events in pages (a single call can miss recent leaves), so we
+// paginate to collect EVERY deposit. Reconstructing the exact prior leaf set is
+// required: the insert proof's oldRoot must equal the pool's current root and the
+// leaf index must equal the pool's leaf_count, or the deposit reverts (StaleRoot /
+// BadLeafIndex). We verify the rebuilt tree against `leafCount` before returning.
 async function rebuildTree(veil: string, leafCount: number): Promise<MerkleTree> {
   const tree = await MerkleTree.create();
-  const found: { idx: number; commitment: bigint }[] = [];
-  try {
-    const s = server();
-    const latest = await s.getLatestLedger();
-    const res = await s.getEvents({
-      startLedger: Math.max(1, latest.sequence - 17000),
-      filters: [{ type: "contract", contractIds: [veil] }],
-      limit: 1000,
-    });
+  const byIdx = new Map<number, bigint>();
+  const s = server();
+  const latest = await s.getLatestLedger();
+  let cursor: string | undefined;
+  let startLedger: number | undefined = Math.max(1, latest.sequence - 16000);
+  for (let page = 0; page < 20; page++) {
+    const res = await s.getEvents(
+      cursor
+        ? { filters: [{ type: "contract", contractIds: [veil] }], limit: 200, cursor }
+        : { startLedger: startLedger!, filters: [{ type: "contract", contractIds: [veil] }], limit: 200 },
+    );
     for (const ev of res.events ?? []) {
+      const topics = (ev.topic ?? []).map((t) => {
+        try {
+          return String(scValToNative(t));
+        } catch {
+          return "";
+        }
+      });
+      if (!topics.includes("deposit")) continue;
       try {
         const v = scValToNative(ev.value) as unknown[];
-        if (Array.isArray(v) && v.length >= 4 && v[0] instanceof Uint8Array) {
-          const commitment = BigInt("0x" + Buffer.from(v[0]).toString("hex"));
-          const idx = Number(v[3]);
-          if (Number.isFinite(idx)) found.push({ idx, commitment });
+        if (Array.isArray(v) && v[0] instanceof Uint8Array && Number.isFinite(Number(v[3]))) {
+          byIdx.set(Number(v[3]), BigInt("0x" + Buffer.from(v[0]).toString("hex")));
         }
       } catch {}
     }
-  } catch {}
-  if (found.length > 0) found.sort((a, b) => a.idx - b.idx).forEach((f) => tree.insert(f.commitment));
-  else if (leafCount > 0) tree.insert(BigInt("0x" + GENESIS_LEAF));
+    cursor = res.cursor;
+    startLedger = undefined;
+    if (!res.events || res.events.length === 0) break;
+  }
+  // Insert leaves in index order (0..leafCount-1).
+  for (let i = 0; i < leafCount; i++) {
+    const c = byIdx.get(i);
+    if (c === undefined) {
+      throw new Error(`could not rebuild pool tree: missing deposit event for leaf ${i} (found ${byIdx.size}/${leafCount})`);
+    }
+    tree.insert(c);
+  }
   return tree;
+}
+
+// Keep the scoped session alive. Session policies carry an `expiry`; once past it,
+// __check_auth returns Expired and the agent's deposit traps. If the fee/submit source
+// IS the session owner (the common demo case), auto-extend before paying so a lapsed
+// policy never blocks a run. If it isn't the owner, we leave it (only the owner may extend).
+export async function ensureSessionLive(sessionId: string, ownerSecret: string): Promise<{ extended: boolean; expiry: number }> {
+  const p = (await simRead(sessionId, "policy")) as { owner?: string; cap?: bigint | number; expiry?: bigint | number } | null;
+  if (!p || p.expiry == null) return { extended: false, expiry: 0 };
+  const expiry = Number(p.expiry);
+  const now = Math.floor(Date.now() / 1000);
+  if (expiry > now + 300) return { extended: false, expiry }; // still live (5-min buffer)
+
+  const owner = Keypair.fromSecret(ownerSecret);
+  if (String(p.owner) !== owner.publicKey()) return { extended: false, expiry }; // not the owner — can't extend
+
+  const newExpiry = now + 30 * 24 * 3600;
+  const s = server();
+  const src = await s.getAccount(owner.publicKey());
+  const op = new Contract(sessionId).call(
+    "extend",
+    nativeToScVal(BigInt(p.cap ?? 0), { type: "i128" }),
+    nativeToScVal(newExpiry, { type: "u64" }),
+  );
+  const tx = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: PASSPHRASE }).addOperation(op).setTimeout(60).build();
+  const prepared = await s.prepareTransaction(tx);
+  prepared.sign(owner);
+  const sent = await s.sendTransaction(prepared);
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const g = await s.getTransaction(sent.hash);
+      if (g.status !== "NOT_FOUND") break;
+    } catch {}
+  }
+  return { extended: true, expiry: newExpiry };
 }
 
 // ---- custom-account (SessionAccount) auth: sign the Soroban auth entry with the
@@ -210,6 +266,10 @@ export async function payThroughSession(args: {
   const s = server();
   const agent = Keypair.fromSecret(agentSecret);
   const feeSource = Keypair.fromSecret(args.feeSourceSecret);
+
+  onStep?.("checking session policy");
+  const live = await ensureSessionLive(sessionId, args.feeSourceSecret);
+  if (live.extended) onStep?.("session had lapsed — auto-extended 30d");
 
   onStep?.("reading pool state");
   const { leafCount } = await poolStatus();

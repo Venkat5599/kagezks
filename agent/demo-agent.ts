@@ -13,18 +13,24 @@
 //
 // Prints: discovered tools, the steps taken, and the resulting commitment + testnet tx.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-const MCP_URL = process.env.VEIL_MCP_URL ?? "http://localhost:8402/mcp";
 const MODEL = process.env.VEIL_AGENT_MODEL ?? "claude-sonnet-4-6";
 
 type TextContent = { type: string; text?: string };
 const textOf = (r: { content?: TextContent[] }) =>
   (r.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("\n");
 
+// Connect over stdio: spawn the MCP server as a subprocess and talk MCP over its
+// stdin/stdout. Most reliable transport; passes our env (VEIL_FEE_SECRET etc) through.
 async function connect(): Promise<Client> {
   const client = new Client({ name: "veil-demo-agent", version: "0.1.0" });
-  await client.connect(new StreamableHTTPClientTransport(new URL(MCP_URL)));
+  const transport = new StdioClientTransport({
+    command: "bun",
+    args: ["run", `${import.meta.dir}/mcp-server.ts`, "--stdio"],
+    env: process.env as Record<string, string>,
+  });
+  await client.connect(transport);
   return client;
 }
 
@@ -37,16 +43,26 @@ async function scripted(scanKey: string, amount: string) {
   console.log("\n1. veil_pool_status");
   console.log(textOf(await client.callTool({ name: "veil_pool_status", arguments: {} })));
 
-  console.log("\n2. veil_quote (get x402 nonce)");
+  console.log("\n2. veil_quote (get x402 price + nonce)");
   const quoteRes = textOf(await client.callTool({ name: "veil_quote", arguments: { amount } }));
   console.log(quoteRes);
-  const nonce = JSON.parse(quoteRes)?.callPrice?.nonce as string | undefined;
+  const cp = JSON.parse(quoteRes)?.callPrice as { nonce: string; payTo: string; amount: string } | undefined;
 
-  console.log("\n3. veil_pay (retry with x402 payment proof)");
-  const pay = await client.callTool({
-    name: "veil_pay",
-    arguments: { recipientScanKey: scanKey, amount, payment: { nonce, txHash: "demo-x402-settlement" } },
-  });
+  console.log("\n3. pay the x402 fee on-chain (real Stellar payment to the operator)");
+  const feeSecret = process.env.VEIL_FEE_SECRET;
+  if (!cp || !feeSecret) throw new Error("no quote nonce or VEIL_FEE_SECRET to settle x402");
+  const { payX402 } = await import("./x402.ts");
+  const x402Tx = await payX402(feeSecret, cp);
+  console.log(`   x402 settled: ${x402Tx}`);
+
+  console.log("\n4. veil_pay (retry with verified x402 payment proof)");
+  // The on-chain ZK deposit takes ~90s (proof + submit + poll); raise the MCP
+  // request timeout above the default 60s so the client waits for the result.
+  const pay = await client.callTool(
+    { name: "veil_pay", arguments: { recipientScanKey: scanKey, amount, payment: { nonce: cp.nonce, txHash: x402Tx } } },
+    undefined,
+    { timeout: 240_000 },
+  );
   console.log(textOf(pay));
 
   await client.close();
@@ -96,7 +112,11 @@ async function llmDriven(instruction: string) {
     const results: Anthropic.ToolResultBlockParam[] = [];
     for (const tu of toolUses) {
       console.log(`\n→ ${tu.name}(${JSON.stringify(tu.input)})`);
-      const out = await client.callTool({ name: tu.name, arguments: tu.input as Record<string, unknown> });
+      const out = await client.callTool(
+        { name: tu.name, arguments: tu.input as Record<string, unknown> },
+        undefined,
+        { timeout: 240_000 },
+      );
       const text = textOf(out as { content?: TextContent[] });
       console.log(text);
       results.push({ type: "tool_result", tool_use_id: tu.id, content: text });

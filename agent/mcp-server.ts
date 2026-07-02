@@ -28,9 +28,9 @@ import { quoteFor, verifyPayment } from "./x402.ts";
 const PORT = Number(process.env.VEIL_MCP_PORT ?? 8402);
 // The G-account that pays the tx fee and submits (owner/relayer). Never the agent key.
 const FEE_SECRET = process.env.VEIL_FEE_SECRET ?? "";
-// Where x402 per-call fees are paid (operator). Falls back to a placeholder for the demo.
-const OPERATOR = process.env.VEIL_OPERATOR ?? "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF5";
-const CALL_PRICE = process.env.VEIL_CALL_PRICE ?? "100000"; // 0.01 USDC per veil_pay
+// Where x402 per-call fees are paid (operator, a real testnet account by default).
+const OPERATOR = process.env.VEIL_OPERATOR ?? "GC3KDBUQ53VQ377LUDUNSV3RQL3MFRYWYYLXD76TXRVR5O7AEO7Y4CAA";
+const CALL_PRICE = process.env.VEIL_CALL_PRICE ?? "100000"; // 0.01 XLM per veil_pay
 
 const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] });
 
@@ -147,24 +147,39 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, contract: cfg?.VEIL ?? null, session: cfg?.session ?? null });
 });
 
-// One persistent server + transport for the process. Streamable HTTP in stateless
-// mode (sessionIdGenerator: undefined); a single long-lived transport correctly
-// carries the client's initialize -> initialized -> tool-call handshake, which a
-// fresh-per-request transport cannot.
-const server = buildServer();
-const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-await server.connect(transport);
-
-app.post("/mcp", async (req, res) => {
-  await transport.handleRequest(req, res, req.body);
-});
-
-app.listen(PORT, () => {
-  console.log(`Veil MCP server on http://localhost:${PORT}/mcp  (health: /health)`);
+// Two transports. `--stdio` (used by the demo agent) speaks MCP over stdin/stdout —
+// the most reliable transport and immune to the Streamable-HTTP handshake quirks
+// under Bun. Default is Streamable HTTP for networked clients. In stdio mode NOTHING
+// may be written to stdout except the protocol, so all logging goes to stderr.
+if (process.argv.includes("--stdio")) {
+  const { StdioServerTransport } = await import("@modelcontextprotocol/sdk/server/stdio.js");
+  const server = buildServer();
+  await server.connect(new StdioServerTransport());
   try {
     const c = config();
-    console.log(`  pool ${c.VEIL}  session ${c.session ?? "(none — run bun run agent:fabric)"}`);
+    console.error(`Veil MCP (stdio) ready · pool ${c.VEIL} · session ${c.session ?? "(none)"}`);
   } catch {
-    console.log("  no deployment yet — run scripts/veil-deploy.ts + agent:fabric");
+    console.error("Veil MCP (stdio) ready · no deployment yet");
   }
-});
+} else {
+  // One persistent server + transport for the process. Streamable HTTP in stateless
+  // mode (sessionIdGenerator: undefined); a single long-lived transport correctly
+  // carries the client's initialize -> initialized -> tool-call handshake.
+  const server = buildServer();
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  await server.connect(transport);
+
+  app.post("/mcp", async (req, res) => {
+    await transport.handleRequest(req, res, req.body);
+  });
+
+  app.listen(PORT, () => {
+    console.error(`Veil MCP server on http://localhost:${PORT}/mcp  (health: /health)`);
+    try {
+      const c = config();
+      console.error(`  pool ${c.VEIL}  session ${c.session ?? "(none — run bun run agent:fabric)"}`);
+    } catch {
+      console.error("  no deployment yet — run scripts/veil-deploy.ts + agent:fabric");
+    }
+  });
+}

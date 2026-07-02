@@ -54,7 +54,7 @@ console.log(`session acct = ${session}`);
 
 // 2. Owner delegates the scoped policy: only this pool, only USDC, cap 5 USDC, ~1h.
 const CAP = 50_000_000; // 5.0 USDC (7 decimals)
-const EXPIRY = Math.floor(Date.now() / 1000) + 3600;
+const EXPIRY = Math.floor(Date.now() / 1000) + 30 * 24 * 3600; // 30 days (was 1h)
 const initRes = await $`stellar contract invoke --id ${session} --source ${OWNER} --network ${NET} -- init \
   --owner ${owner} --agent ${agentHex} --pool ${VEIL} --token ${USDC} --cap ${CAP} --expiry ${EXPIRY}`.nothrow();
 if (initRes.exitCode !== 0) throw new Error(`session init failed:\n${initRes.stderr}`);
