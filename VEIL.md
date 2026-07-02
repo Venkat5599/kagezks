@@ -3,12 +3,10 @@
 > Real-world problem: **give an AI agent a key on a public ledger and its every
 > payment is a leak** — every counterparty, every amount, a map of everything
 > your treasury touches — and a raw key means the agent (or an attacker) can
-> **drain you**. Veil ports
-> [`nschwermann/agent_fabric`](https://github.com/nschwermann/agent_fabric)'s
-> thesis ("autonomy without custody") to Stellar and makes settlement
-> **ZK-private**: the agent pays under a scoped key it can't drain, and no
-> observer learns who it paid or how much. ZK is load-bearing: remove it and the
-> agent→payee link is public, killing the privacy.
+> **drain you**. Veil gives the agent "autonomy without custody" on Stellar and
+> makes settlement **ZK-private**: the agent pays under a scoped key it can't
+> drain, and no observer learns who it paid or how much. ZK is load-bearing:
+> remove it and the agent→payee link is public, killing the privacy.
 
 Reuses the crypto stack of an earlier build: Circom + snarkjs Groth16, Poseidon,
 Soroban BN254 verifier.

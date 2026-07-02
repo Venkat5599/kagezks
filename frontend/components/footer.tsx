@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { VeilMark } from "@/components/veil-logo";
 
 const CONTRACT_URL =
-  "https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD";
+  "https://stellar.expert/explorer/testnet/contract/CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B";
 
 const TX = "https://stellar.expert/explorer/testnet/tx/";
 
@@ -17,8 +17,8 @@ const footerLinks = {
   ],
   onchain: [
     { label: "Pool contract", href: CONTRACT_URL },
-    { label: "Deposit tx", href: `${TX}5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231` },
-    { label: "Withdraw tx", href: `${TX}dca610418cc3b2d3ebfaf05282b96beffcfa620914b8ade9991bf4c4b1f7cc81` },
+    { label: "Deposit tx", href: `${TX}308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597` },
+    { label: "Withdraw tx", href: `${TX}044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b` },
   ],
 };
 

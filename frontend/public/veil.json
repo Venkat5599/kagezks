@@ -1,27 +1,28 @@
 {
   "network": "testnet",
-  "contractId": "CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD",
+  "contractId": "CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B",
   "usdcSac": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+  "sessionAccount": "CBJOY7CX36SI6P6JQJXM3MM4L3J4GTPWBTKUHN23J3HDAGJLHBOKWGR4",
   "explorer": {
-    "contract": "https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD",
-    "depositTx": "https://stellar.expert/explorer/testnet/tx/5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231",
-    "withdrawTx": "https://stellar.expert/explorer/testnet/tx/dca610418cc3b2d3ebfaf05282b96beffcfa620914b8ade9991bf4c4b1f7cc81"
+    "contract": "https://stellar.expert/explorer/testnet/contract/CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B",
+    "depositTx": "https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597",
+    "withdrawTx": "https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b"
   },
   "proven": [
-    { "step": "Deposit", "result": "verified", "detail": "on-chain insert proof verified (BN254), USDC pulled into the pool, commitment + ephemeral key announced", "tx": "5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231" },
-    { "step": "Withdraw", "result": "verified", "detail": "membership proof verified, payout paid to a stealth address bound into the proof (keccak(ScAddress) matched cross-language)", "tx": "dca610418cc3b2d3ebfaf05282b96beffcfa620914b8ade9991bf4c4b1f7cc81" },
+    { "step": "Deposit", "result": "verified", "detail": "on-chain insert proof verified (BN254) with amount binding, USDC pulled into the pool, commitment + ephemeral key announced", "tx": "308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597" },
+    { "step": "Withdraw", "result": "verified", "detail": "membership proof verified, payout paid to a stealth address bound into the proof (keccak(ScAddress) matched cross-language)", "tx": "044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b" },
     { "step": "Double-spend", "result": "rejected", "detail": "replaying the same nullifier reverts with NullifierUsed (#9)", "tx": null }
   ],
   "onchainNote": {
     "amount": "10000000",
     "leafIndex": 0,
     "emptyRoot": "1b7201da72494f1e28717ad1a52eb469f95892f957713533de6175e5da190af2",
-    "newRoot": "158f14f798a90f4120531ae84bb40f9e01a5789d07ab1ca7a128f0561114d6e9",
-    "commitment": "1d21a2d1a8a2898f5caa255f5d879bdf310a8a415e57495cf411e429b9f56d52",
-    "ephemeralPub": "ad9a0a3a7cfe4c67eab03e81dd15396a376e59c93b3ceb504fdbc6d9f9f88d16",
-    "nullifierHash": "23c1eae0d9b4fc3a865378654a9d3679f3591b9220a90216e62fdcdfe98ead67",
-    "recipientField": "00fb38030bb5f53f38db313be0d213cdd7bef548068e42997f7dcd91d4b94850",
-    "stealthAddress": "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y"
+    "newRoot": "02c0566a8b27e960b96c5f662779bd9ba6f001099c2342eb4d85e73e5810ad36",
+    "commitment": "057206e8b530c5dae19f754d6072f1ef375df2501bfd9144e294e7262b8466a7",
+    "ephemeralPub": "0bbeaae7ab6fecce5c68cf63fd4a8a5b91f6d4d21ad27cbdc83a68c2e3446f53",
+    "nullifierHash": "29ac5fdb4f26ad08cba65991236bb87a88813ebba7d6288101e3635906567b77",
+    "recipientField": "0094e68b6ce8e6a531fce62fcafc0d3a7a535d517fb4b534157a00fc4e8a5f90",
+    "stealthAddress": "GABNZK3PEA5BMU6LME6PAJH54WUX6ITT6F35SQSWXEBYJQDWTIN5M72F"
   },
   "circuits": {
     "withdraw": { "constraints": 3005, "public": ["root", "nullifierHash", "recipient", "amount"], "private": ["secret", "nullifier", "pathElements[10]", "pathIndices[10]"] },

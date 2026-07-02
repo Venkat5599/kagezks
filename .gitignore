@@ -35,3 +35,7 @@ sdk/build/agent_fabric.json
 Thumbs.db
 
 .playwright-mcp/
+
+# transient agent prover scratch
+circuits/build/agent_insert_*.json
+sdk/build/veil_contract.txt
