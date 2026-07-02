@@ -169,13 +169,14 @@ const fadeInScale = {
 const PARALLAX_INTENSITY = 20;
 
 const PHRASES = [
-  "The agent pays by itself",
-  "Scoped key — can't drain",
+  "Groth16 membership proof",
+  "Prove you own a note — not which one",
+  "Poseidon commitments",
+  "Nullifiers stop double-spend",
+  "BN254 pairing on Soroban",
   "No counterparty on chain",
   "Paid to a one-time stealth address",
-  "Unlinkable withdrawals",
-  "Proven on-chain, not promised",
-  "Owner never hands over a key",
+  "Verified on-chain, not promised",
 ];
 
 export function Hero(): ReactNode {
@@ -239,7 +240,7 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            Live on Stellar testnet
+            Real-World ZK · Live on Stellar testnet
             <Sparkles className="h-3.5 w-3.5 text-accent" strokeWidth={1.8} />
           </motion.div>
 
@@ -249,14 +250,14 @@ export function Hero(): ReactNode {
               variants={fadeInUp}
               transition={{ duration: 0.8, ease }}
             >
-              Agents that pay.
+              Agent payments,
             </motion.span>
             <motion.span
               className="block"
               variants={fadeInUp}
               transition={{ duration: 0.8, ease }}
             >
-              Leak <span className="italic font-serif text-accent">nothing</span>.
+              proven in <span className="italic font-serif text-accent">zero-knowledge</span>.
             </motion.span>
           </h1>
 
@@ -265,7 +266,7 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            On a public ledger, an autonomous agent&apos;s payments are a leak — every counterparty, every amount, your whole treasury map. Veil gives the agent a scoped key it can&apos;t drain, and seals each payment in zero-knowledge.
+            Every payment is a Groth16 proof: the payee proves it owns an unspent note in the pool <span className="text-black">without revealing which</span> — so who was paid, how much, and the agent→payee link never touch the chain. Verified on-chain over BN254, enforced by math, not a custodian.
           </motion.p>
 
           <motion.div
@@ -296,6 +297,26 @@ export function Hero(): ReactNode {
               Live dashboard
               <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </motion.a>
+          </motion.div>
+
+          <motion.div
+            className="mt-8 flex flex-col items-center gap-2 max-[850px]:items-start"
+            variants={fadeInUp}
+            transition={{ duration: 0.8, ease }}
+          >
+            <div className="flex flex-wrap items-center justify-center gap-2 max-[850px]:justify-start">
+              {["Groth16", "Poseidon", "BN254 pairing", "Merkle + nullifier", "verified on-chain"].map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full border border-black/10 bg-white/70 px-3 py-1 font-mono text-[11px] font-medium text-neutral-700 backdrop-blur"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+            <p className="font-mono text-[11px] text-neutral-500">
+              withdraw 3,005 · insert 5,238 constraints · depth-10 tree · Hermez ptau
+            </p>
           </motion.div>
         </motion.div>
       </div>

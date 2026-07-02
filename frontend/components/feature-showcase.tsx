@@ -90,7 +90,7 @@ export function FeatureShowcase(): ReactNode {
           transition={{ duration: 0.6, ease }}
           className="mx-auto max-w-3xl text-center text-3xl font-semibold tracking-tight text-white sm:text-5xl"
         >
-          Privacy at every step of an agent payment
+          The zero-knowledge, at every step of a payment
         </motion.h2>
 
         <div className="mt-16 grid gap-6 lg:grid-cols-2">

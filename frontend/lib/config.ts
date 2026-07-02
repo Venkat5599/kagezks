@@ -9,9 +9,9 @@
 export const siteConfig = {
   // Brand
   name: "Veil",
-  tagline: "Agents that pay. Leak nothing.",
+  tagline: "Agent payments, proven in zero-knowledge.",
   description:
-    "Private payments for autonomous agents on Stellar. An agent pays in USDC under a scoped key it can't drain, with the amount, the recipient, and the agent→payee link hidden in zero-knowledge.",
+    "Zero-knowledge payments for autonomous agents on Stellar. Every payment is a Groth16 proof (Poseidon commitments, Merkle membership, nullifiers, BN254 verifier) — who was paid, how much, and the agent→payee link never touch the chain. The agent pays under a scoped key it can't drain.",
 
   // URLs
   url: "https://veil-pay.vercel.app",
@@ -31,14 +31,14 @@ export const siteConfig = {
 };
 
 export const heroConfig = {
-  badge: "Live on Stellar testnet",
+  badge: "Real-World ZK · Live on Stellar testnet",
   headline: {
-    line1: "Agents that pay.",
-    line2: "Leak",
-    accent: "nothing.",
+    line1: "Agent payments,",
+    line2: "proven in",
+    accent: "zero-knowledge.",
   },
   subheadline:
-    "On a public ledger, an autonomous agent's payments are a leak — every counterparty, every amount, your whole treasury map. Veil gives the agent a scoped key it can't drain, and seals each payment in zero-knowledge.",
+    "Every payment is a Groth16 proof: the payee proves it owns an unspent note in the pool without revealing which — so who was paid, how much, and the agent→payee link never touch the chain. Verified on-chain over BN254, enforced by math, not a custodian.",
   cta: {
     text: "See how it works",
     href: "#how-it-works",

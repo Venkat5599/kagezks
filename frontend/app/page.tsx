@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = createMetadata({
-  title: "Veil — Agents that pay. Never leak. Never drain.",
+  title: "Veil — Agent payments, proven in zero-knowledge.",
   description: siteConfig.description,
   path: "/",
 });
