@@ -18,13 +18,11 @@ import {
   ListTree,
   GitBranch,
   Users,
-  Wallet,
+  Lock,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
-import { VeilActions } from "@/components/veil-actions";
 import { VeilMark } from "@/components/veil-logo";
-import { Loader2 } from "lucide-react";
-import { requestAccess, getAddress } from "@stellar/freighter-api";
 
 type Proven = { step: string; result: string; detail: string; tx: string | null };
 type VeilData = {
@@ -69,16 +67,27 @@ const short = (s: string, head = 10, tail = 8) =>
   s.length > head + tail ? `${s.slice(0, head)}…${s.slice(-tail)}` : s;
 const usdc = (raw: string) => `${(Number(raw) / 1e7).toFixed(2)} USDC`;
 
-type SectionKey = "overview" | "use" | "ledger" | "proven" | "views" | "circuits" | "agent";
+type SectionKey = "overview" | "agent" | "ledger" | "proven" | "views" | "circuits";
 const SECTIONS: { key: SectionKey; label: string; icon: LucideIcon }[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "use", label: "Connect & pay", icon: Wallet },
+  { key: "agent", label: "Agent fabric", icon: Users },
   { key: "ledger", label: "Pool ledger", icon: ListTree },
   { key: "proven", label: "Proven flow", icon: GitBranch },
   { key: "views", label: "Chain vs private", icon: Eye },
-  { key: "agent", label: "Agent fabric", icon: Users },
   { key: "circuits", label: "The ZK", icon: Cpu },
 ];
+
+type AgentStatus = {
+  live: boolean;
+  session?: string;
+  agentKey?: string;
+  cap?: string | null;
+  spent?: string | null;
+  remaining?: string | null;
+  expiry?: number | null;
+  poolLeafCount?: number;
+  deposits?: { leafIndex: number; commitment: string; amount: string }[];
+};
 
 // Double-bezel: an outer "tray" with a recessed inner core for machined depth.
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -107,26 +116,13 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
 export function VeilDashboard(): ReactNode {
   const [data, setData] = useState<VeilData | null>(null);
   const [live, setLive] = useState<Live | null>(null);
+  const [agent, setAgent] = useState<AgentStatus | null>(null);
   const [active, setActive] = useState<SectionKey>("overview");
-  const [address, setAddress] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
-
-  const connectWallet = async () => {
-    try {
-      setConnecting(true);
-      const acc = await requestAccess();
-      const addr = typeof acc === "string" ? acc : acc?.address || (await getAddress()).address;
-      if (addr) setAddress(addr);
-    } catch {
-      /* user declined or no wallet */
-    } finally {
-      setConnecting(false);
-    }
-  };
 
   useEffect(() => {
     fetch("/veil.json").then((r) => r.json()).then(setData).catch(() => {});
     fetch("/api/veil").then((r) => r.json()).then(setLive).catch(() => setLive({ live: false }));
+    fetch("/api/agent/status").then((r) => r.json()).then(setAgent).catch(() => setAgent({ live: false }));
   }, []);
 
   if (!data) {
@@ -214,31 +210,9 @@ export function VeilDashboard(): ReactNode {
             >
               {short(data.contractId, 7, 5)} <ExternalLink className="h-3 w-3" strokeWidth={1.7} />
             </a>
-            <button
-              type="button"
-              onClick={connectWallet}
-              disabled={connecting}
-              className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition active:scale-[0.98] disabled:opacity-60 ${
-                address
-                  ? "border border-accent/30 bg-accent/10 text-accent"
-                  : "bg-accent text-black hover:brightness-105"
-              }`}
-            >
-              {address ? (
-                <>
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                  <span className="font-mono">{short(address, 5, 4)}</span>
-                </>
-              ) : connecting ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Connecting
-                </>
-              ) : (
-                <>
-                  <Wallet className="h-3.5 w-3.5" /> Connect wallet
-                </>
-              )}
-            </button>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-xs font-semibold text-accent">
+              <Eye className="h-3.5 w-3.5" /> read-only monitor
+            </span>
           </div>
         </div>
 
@@ -253,11 +227,10 @@ export function VeilDashboard(): ReactNode {
               className="space-y-5"
             >
               {active === "overview" && <Overview data={data} onchain={onchain} liveOn={liveOn} />}
-              {active === "use" && <VeilActions address={address} onConnect={setAddress} />}
+              {active === "agent" && <AgentFabric agent={agent} />}
               {active === "ledger" && <Ledger data={data} onchain={onchain} />}
               {active === "proven" && <ProvenFlow data={data} />}
               {active === "views" && <Views data={data} />}
-              {active === "agent" && <AgentFabric />}
               {active === "circuits" && <Circuits data={data} />}
             </motion.div>
           </AnimatePresence>
@@ -458,27 +431,82 @@ function Views({ data }: { data: VeilData }) {
   );
 }
 
-function AgentFabric() {
+function AgentFabric({ agent }: { agent: AgentStatus | null }) {
+  const liveOn = Boolean(agent?.live);
+  const cap = agent?.cap ? Number(agent.cap) : null;
+  const spent = agent?.spent ? Number(agent.spent) : null;
+  const remaining = agent?.remaining ? Number(agent.remaining) : null;
+  const pct = cap && remaining != null ? Math.max(0, Math.min(100, (remaining / cap) * 100)) : null;
+  const expiryDate = agent?.expiry ? new Date(agent.expiry * 1000) : null;
+  const deposits = agent?.deposits ?? [];
+
   return (
-    <Card>
-      <div className="flex items-center gap-2">
-        <Users className="h-5 w-5 text-accent" />
-        <p className="text-lg font-semibold">Autonomy without custody, made private</p>
-      </div>
-      <p className="mt-2 text-sm text-neutral-500">
-        The owner delegates a single scoped session key to an agent under an on-chain policy: it may call <span className="font-mono text-neutral-400">Veil.deposit</span> only, move USDC only into the pool, up to a cap, before an expiry. The agent acts on its own key — never the owner&apos;s — so it can never drain or redirect funds, and its one allowed action settles through the ZK pool, hiding who it paid and how much.
-      </p>
-      <div className="mt-5 rounded-xl bg-black/90 p-4 font-mono text-xs text-neutral-200">
-        <p className="text-neutral-400"># deploy a scoped session, delegate an agent key, fund it</p>
-        <p>bun run agent:fabric</p>
-        <p className="mt-2 text-neutral-400"># the agent then signs a Veil.deposit auth entry with its session key</p>
-        <p>__check_auth gates it → any off-policy call reverts (BadPayout / CapExceeded / Expired)</p>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        <Field label="Scope (can't drain)" value={<span className="text-sm">only Veil.deposit · USDC → pool · cap · expiry</span>} />
-        <Field label="Privacy (ZK settled)" value={<span className="text-sm">agent→payee link + amount hidden in the pool</span>} />
-      </div>
-    </Card>
+    <div className="space-y-5">
+      <Card>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-accent" />
+            <p className="text-lg font-semibold">Autonomy without custody — live</p>
+          </div>
+          {liveOn && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-1 text-[11px] font-medium text-accent">
+              <Radio className="h-3 w-3 animate-pulse" /> reading session on-chain
+            </span>
+          )}
+        </div>
+        <p className="mt-2 text-sm text-neutral-500">
+          The owner delegates one scoped session key to the agent. It may call <span className="font-mono text-neutral-400">Veil.deposit</span> only, move USDC only into the pool, up to a cap, before an expiry — signing with its own key, never the owner&apos;s. Every allowed action settles through the ZK pool, hiding who it paid and how much. Below is the live policy state.
+        </p>
+
+        {/* live budget gauge */}
+        <div className="mt-6 rounded-xl border border-black/[0.06] bg-black/[0.02] p-5 dark:border-white/[0.07] dark:bg-white/[0.02]">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-sm font-medium"><Gauge className="h-4 w-4 text-accent" /> Scoped budget</span>
+            <span className="font-mono text-xs text-neutral-500">{agent?.session ? short(agent.session, 6, 5) : "—"}</span>
+          </div>
+          <div className="mt-3 flex items-end justify-between">
+            <span className="text-3xl font-semibold tracking-tight">{remaining != null ? usdc(String(remaining)) : "—"}</span>
+            <span className="text-xs text-neutral-500">of {cap != null ? usdc(String(cap)) : "—"} cap · spent {spent != null ? usdc(String(spent)) : "—"}</span>
+          </div>
+          {pct != null && (
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+              <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Field label="Agent key" value={<Mono>{agent?.agentKey ? short(agent.agentKey, 6, 4) : "—"}</Mono>} />
+          <Field label="Pool notes" value={<span className="text-sm font-semibold">{agent?.poolLeafCount ?? "—"}</span>} />
+          <Field label="Session valid until" value={<span className="text-sm">{expiryDate ? expiryDate.toLocaleDateString() : "—"}</span>} />
+          <Field label="Custody" value={<span className="inline-flex items-center gap-1 text-sm font-medium text-accent"><Lock className="h-3.5 w-3.5" /> none</span>} />
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-sm font-semibold"><ListTree className="h-4 w-4 text-accent" /> Agent payments into the pool</p>
+          <span className="text-xs text-neutral-500">{deposits.length} on-chain</span>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
+          <div className="divide-y divide-black/5 dark:divide-white/5">
+            {deposits.length === 0 && <div className="px-4 py-6 text-center text-xs text-neutral-400">reading deposit events…</div>}
+            {deposits.map((d) => (
+              <div key={d.leafIndex} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                <span className="flex items-center gap-2 text-xs text-neutral-500">
+                  <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] dark:bg-white/10">leaf {d.leafIndex}</span>
+                  <Mono>{short(d.commitment, 10, 8)}</Mono>
+                </span>
+                <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">ZK-private</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="mt-4 text-xs text-neutral-500">
+          Each row is a real deposit the agent (or owner) made through the SessionAccount. The chain shows a commitment — never the payee, the amount, or a link back to the agent.
+        </p>
+      </Card>
+    </div>
   );
 }
 
