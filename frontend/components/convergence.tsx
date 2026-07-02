@@ -32,7 +32,7 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    title: "How Veil hides it",
+    title: "How Kage hides it",
     icon: EyeOff,
     nodes: [
       { icon: KeySquare, label: "Stealth notes" },
@@ -171,7 +171,7 @@ export function Convergence(): ReactNode {
               <VeilMark className="h-9 w-9 text-accent" />
             </div>
           </div>
-          <span className="mt-3 text-sm font-medium text-neutral-400">The Veil shielded pool</span>
+          <span className="mt-3 text-sm font-medium text-neutral-400">The Kage shielded pool</span>
         </motion.div>
 
         <motion.p

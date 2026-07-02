@@ -76,7 +76,7 @@ export default function AgentPage(): ReactNode {
   return (
     <main className="min-h-screen bg-[#080808] px-6 py-16 text-white" style={{ colorScheme: "dark" }}>
       <div className="mx-auto max-w-3xl">
-        <Link href="/" className="text-xs text-neutral-500 hover:text-neutral-300">← Veil</Link>
+        <Link href="/" className="text-xs text-neutral-500 hover:text-neutral-300">← Kage</Link>
 
         <div className="mt-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15">
@@ -85,7 +85,7 @@ export default function AgentPage(): ReactNode {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Watch an agent pay — privately</h1>
             <p className="text-sm text-neutral-400">
-              An AI agent discovers Veil&apos;s tools over MCP, is metered per call via x402, and pays through a scoped
+              An AI agent discovers Kage&apos;s tools over MCP, is metered per call via x402, and pays through a scoped
               key it can&apos;t drain — settled in zero-knowledge.
             </p>
           </div>

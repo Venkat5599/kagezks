@@ -170,7 +170,7 @@ export function Header(): ReactNode {
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground text-background">
             <VeilMark className="h-4 w-4" />
           </span>
-          <span className="text-lg font-semibold text-foreground leading-0 max-[1200px]:hidden max-[850px]:inline">Veil</span>
+          <span className="text-lg font-semibold text-foreground leading-0 max-[1200px]:hidden max-[850px]:inline">Kage</span>
         </a>
 
         <nav className="flex items-center gap-1 max-[1200px]:gap-0 max-[850px]:hidden">
