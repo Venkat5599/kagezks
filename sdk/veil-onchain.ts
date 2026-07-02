@@ -168,15 +168,18 @@ function signSessionEntry(
   if (creds.switch().name !== "sorobanCredentialsAddress") return entry;
   const addr = creds.address();
   addr.signatureExpirationLedger(validUntil);
+  // Read the values BACK off the entry so the signed preimage matches byte-for-byte
+  // what the host reconstructs from the submitted entry (a mismatch => __check_auth
+  // ed25519_verify halts => invokeHostFunctionTrapped).
   const preimage = xdr.HashIdPreimage.envelopeTypeSorobanAuthorization(
     new xdr.HashIdPreimageSorobanAuthorization({
       networkId: hash(Buffer.from(PASSPHRASE)),
       nonce: addr.nonce(),
-      signatureExpirationLedger: validUntil,
+      signatureExpirationLedger: addr.signatureExpirationLedger(),
       invocation: entry.rootInvocation(),
     }),
   );
-  const sig = agent.sign(hash(preimage.toXDR())); // raw 64-byte ed25519
+  const sig = agent.sign(hash(preimage.toXDR())); // raw 64-byte ed25519 over the payload
   addr.signature(xdr.ScVal.scvBytes(sig));
   return entry;
 }
@@ -270,14 +273,24 @@ export async function payThroughSession(args: {
   const validUntil = latest.sequence + 1000;
   const entries = (sim.result?.auth ?? []).map((e) => signSessionEntry(e, agent, validUntil));
 
-  // Build the FINAL tx directly from an op carrying our agent-signed auth, plus the
-  // Soroban resources the simulation computed. We must NOT route the signed op back
-  // through assembleTransaction — it re-applies the simulation's UNSIGNED auth,
-  // wiping the agent signature (the deposit then traps in __check_auth). Use a fresh
-  // account so the submitted tx has the correct next sequence.
+  // Re-simulate WITH the signed auth so the footprint includes everything
+  // __check_auth reads (the SessionAccount's own contract instance/policy). A
+  // footprint from the unsigned first simulation omits those keys and the deposit
+  // traps at execution with scecExceededLimit ("outside of the footprint").
   const hostFn = depositOp.body().invokeHostFunctionOp().hostFunction();
   const signedOp = Operation.invokeHostFunction({ func: hostFn, auth: entries });
-  const prepared = rpc.assembleTransaction(tx, sim).build();
+  const srcSim = await s.getAccount(feeSource.publicKey());
+  const txAuthed = new TransactionBuilder(srcSim, { fee: "2000000", networkPassphrase: PASSPHRASE })
+    .addOperation(signedOp)
+    .setTimeout(120)
+    .build();
+  const sim2 = await s.simulateTransaction(txAuthed);
+  if (!rpc.Api.isSimulationSuccess(sim2)) throw new Error(`sim2 failed: ${JSON.stringify((sim2 as any).error ?? sim2)}`);
+
+  // Build the FINAL tx from the signed op + the (complete) footprint from sim2. Don't
+  // route it through assembleTransaction — that re-applies unsigned auth. Fresh account
+  // so the submitted tx has the correct next sequence.
+  const prepared = rpc.assembleTransaction(txAuthed, sim2).build();
   const sorobanData = prepared.toEnvelope().v1().tx().ext().sorobanData();
   const src2 = await s.getAccount(feeSource.publicKey());
   const finalTx = new TransactionBuilder(src2, { fee: prepared.fee, networkPassphrase: PASSPHRASE })
