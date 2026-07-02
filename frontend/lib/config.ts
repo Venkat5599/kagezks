@@ -69,7 +69,7 @@ export const faqConfig = {
     },
     secondary: {
       text: "View the contract",
-      href: "https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD",
+      href: "https://stellar.expert/explorer/testnet/contract/CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B",
     },
   },
 };

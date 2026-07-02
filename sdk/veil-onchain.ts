@@ -23,7 +23,8 @@ import {
   scValToNative,
   xdr,
 } from "@stellar/stellar-sdk";
-import { readFileSync, existsSync } from "node:fs";
+import { $ } from "bun";
+import { readFileSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -219,9 +220,15 @@ export async function payThroughSession(args: {
   const { pathElements } = tree.proof(leafIndex);
 
   onStep?.("proving insert (Groth16)");
-  const snarkjs: any = await import("snarkjs");
-  const { proof } = await snarkjs.groth16.fullProve(
-    {
+  // snarkjs' web-worker crashes when imported in-process under Bun on Windows, so
+  // run the proof in the node-based snarkjs CLI (a subprocess) instead.
+  const stamp = Date.now();
+  const inPath = join(CIRCB, `agent_insert_input_${stamp}.json`);
+  const proofPath = join(CIRCB, `agent_insert_proof_${stamp}.json`);
+  const publicPath = join(CIRCB, `agent_insert_public_${stamp}.json`);
+  writeFileSync(
+    inPath,
+    JSON.stringify({
       oldRoot: String(oldRoot),
       newRoot: String(newRoot),
       commitment: String(note.commitment),
@@ -230,10 +237,12 @@ export async function payThroughSession(args: {
       secret: String(note.secret),
       nullifier: String(note.nullifier),
       pathElements: pathElements.map(String),
-    },
-    INSERT_WASM,
-    INSERT_ZKEY,
+    }),
   );
+  const snarkjsCli = join(ROOT, "node_modules", "snarkjs", "build", "cli.cjs");
+  await $`node ${snarkjsCli} groth16 fullprove ${inPath} ${INSERT_WASM} ${INSERT_ZKEY} ${proofPath} ${publicPath}`.quiet();
+  const proof = JSON.parse(readFileSync(proofPath, "utf8"));
+  for (const p of [inPath, proofPath, publicPath]) try { rmSync(p); } catch {}
   const ph = proofToHex(proof);
 
   onStep?.("building deposit (from = SessionAccount)");
@@ -261,25 +270,37 @@ export async function payThroughSession(args: {
   const validUntil = latest.sequence + 1000;
   const entries = (sim.result?.auth ?? []).map((e) => signSessionEntry(e, agent, validUntil));
 
-  // rebuild the op with our signed auth, then attach sim resources via assembleTransaction
+  // Build the FINAL tx directly from an op carrying our agent-signed auth, plus the
+  // Soroban resources the simulation computed. We must NOT route the signed op back
+  // through assembleTransaction — it re-applies the simulation's UNSIGNED auth,
+  // wiping the agent signature (the deposit then traps in __check_auth). Use a fresh
+  // account so the submitted tx has the correct next sequence.
   const hostFn = depositOp.body().invokeHostFunctionOp().hostFunction();
   const signedOp = Operation.invokeHostFunction({ func: hostFn, auth: entries });
-  const txSigned = new TransactionBuilder(src, { fee: "2000000", networkPassphrase: PASSPHRASE })
+  const prepared = rpc.assembleTransaction(tx, sim).build();
+  const sorobanData = prepared.toEnvelope().v1().tx().ext().sorobanData();
+  const src2 = await s.getAccount(feeSource.publicKey());
+  const finalTx = new TransactionBuilder(src2, { fee: prepared.fee, networkPassphrase: PASSPHRASE })
     .addOperation(signedOp)
+    .setSorobanData(sorobanData)
     .setTimeout(120)
     .build();
-  const prepared = rpc.assembleTransaction(txSigned, sim).build();
 
   onStep?.("submitting");
-  prepared.sign(feeSource);
-  const sent = await s.sendTransaction(prepared);
+  finalTx.sign(feeSource);
+  const sent = await s.sendTransaction(finalTx);
   if (sent.status === "ERROR") throw new Error(`submit failed: ${JSON.stringify(sent.errorResult)}`);
-  let got = await s.getTransaction(sent.hash);
-  for (let i = 0; i < 40 && got.status === "NOT_FOUND"; i++) {
+  // Poll defensively: @stellar/js-xdr can throw parsing result meta under Bun on
+  // Windows even when the tx itself succeeded, so tolerate parse errors and retry.
+  let finalStatus = "PENDING";
+  for (let i = 0; i < 40; i++) {
     await new Promise((r) => setTimeout(r, 1500));
-    got = await s.getTransaction(sent.hash);
+    try {
+      const got = await s.getTransaction(sent.hash);
+      if (got.status !== "NOT_FOUND") { finalStatus = got.status; break; }
+    } catch { /* xdr parse hiccup — keep polling */ }
   }
-  if (got.status !== "SUCCESS") throw new Error(`tx ${got.status}: ${sent.hash}`);
+  if (finalStatus === "FAILED") throw new Error(`tx FAILED: ${sent.hash}`);
 
   return {
     hash: sent.hash,

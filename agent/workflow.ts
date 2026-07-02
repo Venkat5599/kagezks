@@ -1,8 +1,8 @@
 // Declarative, reusable, agent-readable workflows over the Veil engine.
 //
 // A workflow is an ordered list of steps — each a `condition`, an `onchain`
-// action, or a `read`. The flagship `pay-if-budget` mirrors agent_fabric's
-// compositions, but the on-chain step is the **ZK-private deposit** through the
+// action, or a `read`. The flagship `pay-if-budget` composes a budget check with
+// the on-chain step — the **ZK-private deposit** through the
 // scoped SessionAccount. Workflows are exposed as MCP tools (workflow_list /
 // workflow_run) so an LLM agent can run a whole flow with one call.
 import { poolStatus, remainingBudget, payThroughSession } from "../sdk/veil-onchain.ts";

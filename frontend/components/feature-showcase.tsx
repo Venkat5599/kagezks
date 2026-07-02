@@ -18,12 +18,12 @@ const ease = [0.23, 1, 0.32, 1] as const;
 
 // Real on-chain values from the proven e2e deposit/withdraw (illustrative UI).
 const NOTE = {
-  scanPub: "cd2e7738…4181f16c",
-  ephemeral: "ad9a0a3a…f9f88d16",
-  commitment: "1d21a2d1…b9f56d52",
-  nullifier: "23c1eae0…e98ead67",
-  root: "158f14f7…1114d6e9",
-  stealth: "GAR3JTLV…FEDONMI2Y",
+  scanPub: "b4800dda…95b12762",
+  ephemeral: "0bbeaae7…e3446f53",
+  commitment: "057206e8…2b8466a7",
+  nullifier: "29ac5fdb…06567b77",
+  root: "02c0566a…5810ad36",
+  stealth: "GABNZK3P…TIN5M72F",
 };
 
 function Row({ label, value, tag }: { label: string; value: string; tag?: string }) {

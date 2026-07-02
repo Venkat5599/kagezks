@@ -19,7 +19,6 @@
 // payment proof it proceeds (see agent/x402.ts; settlement verify is a documented stub).
 import express from "express";
 import { z } from "zod";
-import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { poolStatus, remainingBudget, config } from "../sdk/veil-onchain.ts";
@@ -148,15 +147,15 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, contract: cfg?.VEIL ?? null, session: cfg?.session ?? null });
 });
 
-// Stateless Streamable HTTP: a fresh server + transport per request.
+// One persistent server + transport for the process. Streamable HTTP in stateless
+// mode (sessionIdGenerator: undefined); a single long-lived transport correctly
+// carries the client's initialize -> initialized -> tool-call handshake, which a
+// fresh-per-request transport cannot.
+const server = buildServer();
+const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+await server.connect(transport);
+
 app.post("/mcp", async (req, res) => {
-  const server = buildServer();
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() });
-  res.on("close", () => {
-    transport.close();
-    server.close();
-  });
-  await server.connect(transport);
   await transport.handleRequest(req, res, req.body);
 });
 

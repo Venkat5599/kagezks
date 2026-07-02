@@ -1,8 +1,7 @@
 # Veil — Soroban contracts
 
 Two Soroban contracts behind [Veil](../../README.md): private payments for
-autonomous agents on Stellar (agent_fabric's "autonomy without custody", ported
-to Stellar and made ZK-private).
+autonomous agents on Stellar ("autonomy without custody", made ZK-private).
 
 ```text
 contracts/

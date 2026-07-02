@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
-const CONTRACT = "CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD";
+const CONTRACT = "CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
 const DEMO_CAP = 50_000_000n; // 5 USDC scoped cap (matches scripts/agent-fabric.ts)
 const CALL_PRICE = "100000"; // 0.01 USDC per veil_pay (x402)
@@ -84,9 +84,9 @@ export async function POST(req: Request) {
       status: "ok",
       detail: "insert proof verified (BN254) · USDC pulled · agent→payee link sealed",
       data: {
-        commitment: "1d21a2d1a8a2898f5caa255f5d879bdf310a8a415e57495cf411e429b9f56d52",
-        stealthAddress: "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y",
-        tx: "5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231",
+        commitment: "057206e8b530c5dae19f754d6072f1ef375df2501bfd9144e294e7262b8466a7",
+        stealthAddress: "GABNZK3PEA5BMU6LME6PAJH54WUX6ITT6F35SQSWXEBYJQDWTIN5M72F",
+        tx: "308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597",
       },
     });
     steps.push({ phase: "confirm", tool: "veil_pool_status", label: "Pool advanced", status: "ok", detail: `payee recognises its note and withdraws to a fresh stealth address; chain shows no link` });
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     instruction: `pay ${scanKey.slice(0, 10)}… ${(Number(amount) / 1e7).toFixed(2)} USDC privately`,
     steps,
     result: covers
-      ? { status: "paid", commitment: "1d21a2d1…b9f56d52", tx: "5aa164a0…f97c231", txUrl: "https://stellar.expert/explorer/testnet/tx/5aa164a06f73e3e943824edcaedaf768ac773f52a9029f92656a5a8d7f97c231" }
+      ? { status: "paid", commitment: "057206e8…2b8466a7", tx: "308cab4c…36674597", txUrl: "https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597" }
       : { status: "rejected", reason: "over scoped cap — SessionAccount would revert (CapExceeded)" },
     note: "Read steps are live testnet; the x402 nonce is real. The ZK deposit shows the proven e2e note/tx — a live deposit needs the redeployed pool + a provisioned session.",
   });

@@ -80,7 +80,7 @@ export function HowItWorks(): ReactNode {
             {" "}— it&apos;s broken by a zero-knowledge proof, not by a promise.
           </p>
           <motion.a
-            href="https://stellar.expert/explorer/testnet/contract/CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD"
+            href="https://stellar.expert/explorer/testnet/contract/CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B"
             target="_blank"
             rel="noopener noreferrer"
             whileHover={{ scale: 1.02 }}

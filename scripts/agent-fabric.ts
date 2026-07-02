@@ -2,8 +2,7 @@
 //
 //   bun run scripts/agent-fabric.ts
 //
-// The agent_fabric idea ("autonomy without custody"), ported to Stellar and made
-// private with Veil's ZK pool:
+// The "autonomy without custody" idea, on Stellar and made private with Veil's ZK pool:
 //
 //   1. The OWNER deploys a SessionAccount custom-account contract and delegates a
 //      single AGENT session key under a strict policy (only Veil.deposit, only
@@ -56,8 +55,9 @@ console.log(`session acct = ${session}`);
 // 2. Owner delegates the scoped policy: only this pool, only USDC, cap 5 USDC, ~1h.
 const CAP = 50_000_000; // 5.0 USDC (7 decimals)
 const EXPIRY = Math.floor(Date.now() / 1000) + 3600;
-await $`stellar contract invoke --id ${session} --source ${OWNER} --network ${NET} -- init \
-  --owner ${owner} --agent ${agentHex} --pool ${VEIL} --token ${USDC} --amount ${CAP} --expiry ${EXPIRY}`.nothrow();
+const initRes = await $`stellar contract invoke --id ${session} --source ${OWNER} --network ${NET} -- init \
+  --owner ${owner} --agent ${agentHex} --pool ${VEIL} --token ${USDC} --cap ${CAP} --expiry ${EXPIRY}`.nothrow();
+if (initRes.exitCode !== 0) throw new Error(`session init failed:\n${initRes.stderr}`);
 console.log("policy set (only Veil.deposit, USDC -> pool, cap 5 USDC) OK");
 
 // 3. Owner funds the session account with USDC so the agent has a budget to move.

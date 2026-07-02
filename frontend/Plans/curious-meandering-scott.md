@@ -7,10 +7,10 @@ on Stellar: a Soroban `SessionAccount` custom account (scoped agent key, `__chec
 policy), a Groth16/BN254 ZK shielded pool, stealth notes, and a proven testnet e2e
 (deposit → withdraw → double-spend reject).
 
-What it is **missing** is the **agent-facing surface** that the reference project
-`nschwermann/agent_fabric` has (theirs is Cronos EVM, public swaps; ours is Stellar, ZK-private):
+What it is **missing** is the **agent-facing surface** (the typical EVM agent stack
+is Cronos with public swaps; ours is Stellar, ZK-private):
 
-| Layer | agent_fabric | Veil today |
+| Layer | typical EVM agent stack | Veil today |
 |---|---|---|
 | MCP server (tools an LLM agent calls) | ✅ | ❌ |
 | x402 usage-based metering (pay-per-call) | ✅ | ❌ |
@@ -95,8 +95,7 @@ HTTP 402 challenge → payment proof in header → verify → execute, giving pa
 ### 4. Workflow composition — `agent/workflow.ts` (NEW)
 Declarative, reusable, agent-readable steps = `{ tool | onchain | condition }`.
 - Ship one flagship workflow `pay-if-budget`: `veil_budget` → (if remaining ≥ amount) →
-  `veil_pay` → `veil_pool_status` confirm. Mirrors agent_fabric's compositions but the
-  on-chain step is the **ZK deposit**.
+  `veil_pay` → `veil_pool_status` confirm. The on-chain step is the **ZK deposit**.
 - Expose workflows themselves as MCP tools (`workflow_run`, `workflow_list`).
 
 ### 5. Demo agent — `agent/demo-agent.ts` (NEW)

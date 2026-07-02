@@ -16,11 +16,11 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
-const CONTRACT = "CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD";
+const CONTRACT = "CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B";
 const USDC_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
 const SPENT_NULLIFIER =
-  "23c1eae0d9b4fc3a865378654a9d3679f3591b9220a90216e62fdcdfe98ead67";
+  "29ac5fdb4f26ad08cba65991236bb87a88813ebba7d6288101e3635906567b77";
 
 const toHex = (b: unknown): string =>
   b instanceof Uint8Array ? Buffer.from(b).toString("hex") : Buffer.isBuffer(b) ? b.toString("hex") : "";

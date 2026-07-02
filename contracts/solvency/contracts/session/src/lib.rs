@@ -1,7 +1,7 @@
 #![no_std]
 //! Veil Agent Fabric — scoped session account.
 //!
-//! The Stellar/Soroban answer to agent_fabric's "autonomy without custody". An
+//! The Stellar/Soroban approach to "autonomy without custody". An
 //! owner funds this custom-account contract and delegates a single **agent
 //! session key** to it under a strict policy. The agent can act on-chain WITHOUT
 //! ever holding the owner's key, and can only do exactly what the policy allows:

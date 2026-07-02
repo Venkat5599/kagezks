@@ -4,12 +4,10 @@
 under a **scoped key it can't drain**, with the **amount, the recipient, and the
 agent→payee link hidden in zero-knowledge.**
 
-> Stellar Hacks · Real-World ZK. Inspired by
-> [`nschwermann/agent_fabric`](https://github.com/nschwermann/agent_fabric)'s
-> thesis — let an AI agent execute on-chain *without holding your key* — ported
-> to Stellar and made **private**. Their version is Cronos EVM with public swaps;
-> Veil is Stellar with **ZK-private settlement**. ZK is load-bearing: remove it
-> and every agent payment — who, how much, the whole treasury map — is public.
+> Stellar Hacks · Real-World ZK. The thesis: let an AI agent execute on-chain
+> *without holding your key* — a scoped, revocable session key — and make its
+> settlement **ZK-private** so nothing leaks. ZK is load-bearing: remove it and
+> every agent payment — who, how much, the whole treasury map — is public.
 
 ### The problem
 
@@ -35,9 +33,8 @@ payment privacy.
 
 ## Agent Fabric — autonomy without custody
 
-Inspired by [agent_fabric](https://github.com/nschwermann/agent_fabric)'s thesis
-(let AI agents execute on-chain *without* holding your key), ported to Stellar
-and made **private** with the ZK pool.
+The thesis: let an AI agent execute on-chain *without* holding your key, and make
+its settlement **private** with the ZK pool.
 
 EVM does this with ERC-7702 session keys. Stellar's equivalent is a **custom
 account contract** (`contracts/.../session/`). An owner funds it and delegates one

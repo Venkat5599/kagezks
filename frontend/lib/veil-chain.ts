@@ -25,11 +25,11 @@ import {
 } from "./veil-browser";
 
 export const RPC_URL = "https://soroban-testnet.stellar.org";
-export const CONTRACT = "CCM4HXQHSV36S74B2B6WOZ2HNPBYEC47EAWABQRBNRQZSRD6BUWU23YD";
+export const CONTRACT = "CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B";
 export const USDC_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 // Known genesis leaf (the proven e2e deposit) — used to seed the tree if the
 // original deposit events have aged out of RPC's retention window.
-const GENESIS_LEAF = "1d21a2d1a8a2898f5caa255f5d879bdf310a8a415e57495cf411e429b9f56d52";
+const GENESIS_LEAF = "057206e8b530c5dae19f754d6072f1ef375df2501bfd9144e294e7262b8466a7";
 
 const server = () => new rpc.Server(RPC_URL);
 const bytes32 = (hex: string) => xdr.ScVal.scvBytes(Buffer.from(hex.padStart(64, "0"), "hex"));
