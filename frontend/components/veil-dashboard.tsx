@@ -36,7 +36,7 @@ export function VeilDashboard(): ReactNode {
               <VeilMark className="h-5 w-5 text-black" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold leading-tight tracking-tight">Veil <span className="text-accent">Fabric</span></p>
+              <p className="text-sm font-semibold leading-tight tracking-tight">Kage <span className="text-accent">Fabric</span></p>
               <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-accent">
                 <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" /></span>
                 live · testnet

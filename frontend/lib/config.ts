@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * SITE CONFIGURATION — Veil
+ * SITE CONFIGURATION — Kage
  * ============================================================================
  *
  * Private payments for autonomous agents on Stellar. All marketing copy is centralized here.
@@ -8,14 +8,14 @@
 
 export const siteConfig = {
   // Brand
-  name: "Veil",
+  name: "Kage",
   tagline: "Agent payments, proven in zero-knowledge.",
   description:
     "Zero-knowledge payments for autonomous agents on Stellar. Every payment is a Groth16 proof (Poseidon commitments, Merkle membership, nullifiers, BN254 verifier) — who was paid, how much, and the agent→payee link never touch the chain. The agent pays under a scoped key it can't drain.",
 
   // URLs
-  url: "https://veil-pay.vercel.app",
-  twitter: "@veilpay",
+  url: "https://kageai.me",
+  twitter: "@kageai",
 
   // Navigation
   nav: {
@@ -46,7 +46,7 @@ export const heroConfig = {
 };
 
 export const blurHeadlineConfig = {
-  text: "Let an AI agent pay on a transparent chain and you publish its every counterparty, every amount, and a map of everything your treasury touches. Veil seals all of it — and bounds the agent so it can never drain you — enforced by math and the chain, not by trusting a custodian.",
+  text: "Let an AI agent pay on a transparent chain and you publish its every counterparty, every amount, and a map of everything your treasury touches. Kage seals all of it — and bounds the agent so it can never drain you — enforced by math and the chain, not by trusting a custodian.",
 };
 
 export const howItWorksConfig = {
@@ -80,7 +80,7 @@ export const footerConfig = {
     placeholder: "you@company.com",
     button: "Get early access",
   },
-  copyright: `© ${new Date().getFullYear()} Veil. Stellar Hacks · Real-World ZK.`,
+  copyright: `© ${new Date().getFullYear()} Kage. Stellar Hacks · Real-World ZK.`,
 };
 
 /**

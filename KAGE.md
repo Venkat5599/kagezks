@@ -1,9 +1,9 @@
-# Veil — private payments for autonomous agents on Stellar (scoped session key + ZK shielded pool)
+# Kage — private payments for autonomous agents on Stellar (scoped session key + ZK shielded pool)
 
 > Real-world problem: **give an AI agent a key on a public ledger and its every
 > payment is a leak** — every counterparty, every amount, a map of everything
 > your treasury touches — and a raw key means the agent (or an attacker) can
-> **drain you**. Veil gives the agent "autonomy without custody" on Stellar and
+> **drain you**. Kage gives the agent "autonomy without custody" on Stellar and
 > makes settlement **ZK-private**: the agent pays under a scoped key it can't
 > drain, and no observer learns who it paid or how much. ZK is load-bearing:
 > remove it and the agent→payee link is public, killing the privacy.
@@ -44,7 +44,7 @@ drain or redirect funds (see §7). On top of that scope, two privacy layers stac
   │
   ▼ deposit(C, R, amount)                   scan announcements:
   ┌──────────────────────────────┐         for each R: recompute C', is C' in tree?
-  │  SOROBAN VEIL POOL           │         └─ match ⇒ this payment is mine
+  │  SOROBAN KAGE POOL           │         └─ match ⇒ this payment is mine
   │  - pulls USDC (SAC)          │
   │  - inserts C into Merkle tree │         withdraw:
   │  - stores root, emits {C,R}   │         ├─ Groth16 proof: leaf∈tree ∧ nullifierHash

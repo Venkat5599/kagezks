@@ -10,7 +10,7 @@ const steps = [
     icon: KeyRound,
     title: "Owner delegates a scoped key",
     description:
-      "The owner deploys a session account and hands the agent one capped, expiring key that may only pay into the Veil pool. Never the owner's key, never a way to drain or redirect funds — anything off-policy reverts on-chain.",
+      "The owner deploys a session account and hands the agent one capped, expiring key that may only pay into the Kage pool. Never the owner's key, never a way to drain or redirect funds — anything off-policy reverts on-chain.",
   },
   {
     icon: Landmark,

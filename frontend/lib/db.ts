@@ -1,4 +1,4 @@
-// Neon Postgres access for the Veil Agent-Fabric app (APIs / MCP servers / workflows).
+// Neon Postgres access for the Kage Agent-Fabric app (APIs / MCP servers / workflows).
 // One serverless client, reused across API routes. DATABASE_URL lives in .env.local.
 import { neon } from "@neondatabase/serverless";
 

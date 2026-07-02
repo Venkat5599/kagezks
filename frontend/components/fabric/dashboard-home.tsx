@@ -47,7 +47,7 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
         <Stat icon={DollarSign} label="Total Earnings" value={t ? `$${t.earnings.toFixed(2)}` : "—"} sub="USDC earned" />
       </div>
 
-      {/* Scoped session key — Veil's answer to EIP-7702 smart accounts */}
+      {/* Scoped session key — Kage's answer to EIP-7702 smart accounts */}
       <Panel>
         <div className="flex items-center gap-2">
           <KeyRound className="h-5 w-5 text-accent" />

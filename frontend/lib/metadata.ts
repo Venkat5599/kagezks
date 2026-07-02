@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 
 export const siteConfig = {
-  name: "Veil — Private payments for autonomous agents on Stellar",
+  name: "Kage — Private payments for autonomous agents on Stellar",
   description:
     "Give an AI agent a scoped session key and it pays on-chain by itself — bounded so it can never drain or redirect funds, and every payment sealed in zero-knowledge so no one sees who it paid or how much. Built on Stellar with Groth16 + a Soroban BN254 verifier.",
-  url: "https://veil-pay.vercel.app",
+  url: "https://kageai.me",
   ogImage: "/og-image.png",
-  creator: "@veilpay",
+  creator: "@kageai",
   authors: [
     {
-      name: "Veil",
-      url: "https://veil-pay.vercel.app",
+      name: "Kage",
+      url: "https://kageai.me",
     },
   ],
   keywords: [

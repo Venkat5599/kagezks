@@ -4,9 +4,9 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = createMetadata({
-  title: "Veil — Live pool dashboard",
+  title: "Kage — Live pool dashboard",
   description:
-    "Live on-chain state of the Veil shielded pool for agent payments on Stellar testnet: Merkle root, note count, spent nullifiers, and the proven deposit / withdraw / double-spend-reject flow.",
+    "Live on-chain state of the Kage shielded pool for agent payments on Stellar testnet: Merkle root, note count, spent nullifiers, and the proven deposit / withdraw / double-spend-reject flow.",
   path: "/dashboard",
 });
 

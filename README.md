@@ -1,4 +1,4 @@
-# Veil
+# Kage
 
 **Private payments for autonomous agents on Stellar.** An AI agent pays in USDC
 under a **scoped key it can't drain**, with the **amount, the recipient, and the
@@ -14,11 +14,11 @@ agent→payee link hidden in zero-knowledge.**
 Give an autonomous agent a key and let it pay on a transparent chain, and you
 publish **every counterparty, every amount, and a map of everything your treasury
 touches.** "Just give it a hot wallet" also means the agent (or whoever
-compromises it) can **drain you**. Veil fixes both: the agent is *scoped* so it
+compromises it) can **drain you**. Kage fixes both: the agent is *scoped* so it
 can never drain or redirect funds, and each payment is *sealed* so no observer
 learns who it paid or how much.
 
-| Hand an agent a raw key on a transparent chain… | Veil fixes it with… |
+| Hand an agent a raw key on a transparent chain… | Kage fixes it with… |
 |---|---|
 | The agent (or an attacker) can move **all** your funds | A scoped session key: only `Veil.deposit`, only USDC → pool, up to a cap, before an expiry |
 | Every payment publishes **counterparty + amount** | Amounts and the agent→payee link are hidden in a ZK pool |
@@ -47,7 +47,7 @@ account contract** (`contracts/.../session/`). An owner funds it and delegates o
 Any other contract, method, over-cap amount, or wrong payout reverts
 (`BadPayout` / `CapExceeded` / `Expired` / `ContextNotAllowed`). So the agent
 acts autonomously, can never drain or redirect funds (no custody), and — because
-its one allowed action routes through Veil — its payment graph is **ZK-private**:
+its one allowed action routes through Kage — its payment graph is **ZK-private**:
 the chain never sees who the agent paid or how much.
 
 ```bash
@@ -168,4 +168,4 @@ bun run agent:fabric
 - Trusted setup reuses the real Hermez Perpetual Powers of Tau.
 - The ZK and every transaction are real; only the parties are ours.
 
-See `VEIL.md` for the full architecture.
+See `KAGE.md` for the full architecture.

@@ -58,7 +58,7 @@ function LivePoolPreview(): ReactNode {
       <div className="flex items-center justify-between gap-4 border-b border-neutral-100 px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <div className="h-6 w-6 rounded-full bg-black" />
-          <span className="text-sm font-semibold text-black">Veil pool</span>
+          <span className="text-sm font-semibold text-black">Kage pool</span>
           <span className="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 font-mono text-[11px] text-neutral-500">
             {mid(pool?.contract, 6, 5)}
           </span>

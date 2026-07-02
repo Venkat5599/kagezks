@@ -8,7 +8,7 @@ const faqs = [
   {
     question: "Why not just encrypt the payments?",
     answer:
-      "Encryption hides data but trusts whoever holds the key — a server, a custodian, you. Veil makes the agent→payee link unprovable to anyone, enforced by the zk-SNARK and the chain itself. No party holds a secret that could reconstruct who paid whom.",
+      "Encryption hides data but trusts whoever holds the key — a server, a custodian, you. Kage makes the agent→payee link unprovable to anyone, enforced by the zk-SNARK and the chain itself. No party holds a secret that could reconstruct who paid whom.",
   },
   {
     question: "What exactly does the chain see?",
