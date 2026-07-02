@@ -7,7 +7,9 @@ if (!process.env.DATABASE_URL) {
   console.warn("DATABASE_URL is not set — the Agent-Fabric app can't reach Neon.");
 }
 
-export const sql = neon(process.env.DATABASE_URL ?? "");
+// A well-formed placeholder keeps `neon()` (and `next build`) happy when DATABASE_URL
+// isn't present at build time; it's never queried — routes use the real env at runtime.
+export const sql = neon(process.env.DATABASE_URL || "postgresql://user:pass@localhost/db");
 
 // ---- row shapes -------------------------------------------------------------
 export type ApiRow = {
