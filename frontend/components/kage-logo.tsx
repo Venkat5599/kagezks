@@ -1,29 +1,16 @@
 import type { ReactNode } from "react";
 
-// Kage mark: a "V" whose two arms converge to a single node (the shielded pool).
-// Reads as the brand initial and the convergence motif at once. Uses
-// currentColor so it inherits whatever color the tile/text sets.
+// Kage mark: the brand initial "K" — a stem with two arms meeting mid-stem, the
+// convergence motif. Uses currentColor so it inherits the tile/text color.
 export function KageMark({ className = "h-5 w-5" }: { className?: string }): ReactNode {
   return (
     <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden="true">
-      {/* converging arms */}
-      <path
-        d="M8.5 9.5 L16 21.5 L23.5 9.5"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* faint veil bar across the top of the arms */}
-      <path
-        d="M11 7.25 H21"
-        stroke="currentColor"
-        strokeOpacity="0.45"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      {/* the pool node at the convergence point */}
-      <circle cx="16" cy="24.5" r="2.1" fill="currentColor" />
+      {/* stem */}
+      <path d="M11 7 V25" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      {/* upper arm */}
+      <path d="M11 16.5 L21.5 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      {/* lower arm */}
+      <path d="M11 16.5 L21.5 25" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
