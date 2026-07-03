@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Store, Server, Workflow, Clock, Wallet } from "lucide-react";
+import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Store, Server, Workflow, Clock, Wallet, Eye, EyeOff } from "lucide-react";
 import { Panel, usdc, CopyBtn } from "./ui";
 import { useWallet } from "@/lib/wallet";
 
@@ -80,6 +80,7 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
   }, [address]);
   const TOGGLE = [{ k: "all", label: "All Time" }, { k: "30d", label: "Last 30 Days" }, { k: "7d", label: "Last 7 Days" }];
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+  const [showSec, setShowSec] = useState(false);
   const [wstat, setWstat] = useState<{ funded: boolean; xlm: string } | null>(null);
   useEffect(() => {
     if (!address) { setWstat(null); return; }
@@ -164,10 +165,11 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
           <div className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] p-4">
             <p className="text-xs font-semibold text-amber-300">Save your secret key — shown once. Import it into Freighter to control this wallet.</p>
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-black/40 px-3 py-2">
-              <span className="flex-1 truncate font-mono text-[11px] text-neutral-200">{secret}</span>
+              <span className="flex-1 truncate font-mono text-[11px] text-neutral-200">{showSec ? secret : "•".repeat(56)}</span>
+              <button onClick={() => setShowSec((v) => !v)} className="text-neutral-400 hover:text-white" title={showSec ? "Hide" : "Reveal"}>{showSec ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               <CopyBtn text={secret} />
             </div>
-            <p className="mt-2 text-[11px] text-neutral-500">Funding via friendbot… refresh balance in a moment.</p>
+            <p className="mt-2 text-[11px] text-neutral-500">Hidden by default (safe to screen-share). Reveal to view, or copy directly. Funding via friendbot…</p>
           </div>
         )}
 
