@@ -230,6 +230,12 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
                 <CopyBtn text={prov.token} />
               </div>
               <div className="mt-2"><CopyBtn text={`claude mcp add kage --transport http https://kageai.me/mcp/kage --header "Authorization: Bearer ${prov.token}"`} /></div>
+              <button
+                onClick={() => { setProv(null); localStorage.removeItem("kage_session_token"); localStorage.removeItem("kage_session_id"); }}
+                className="mt-3 text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-300"
+              >
+                Provision a new session (different limits)
+              </button>
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
