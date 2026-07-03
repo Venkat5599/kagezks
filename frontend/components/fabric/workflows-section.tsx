@@ -1,18 +1,32 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ArrowLeft, Loader2, Search, Trash2, Globe, Link2, Play } from "lucide-react";
+import { Plus, ArrowLeft, Loader2, Search, Trash2, Globe, Link2, Play, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, CopyBtn, short } from "./ui";
 
+// Shapes match the fabric engine (agent/fabric/*): steps carry `id` + `kind`, output
+// mapping is { name, from }, and templates use {{input.x}} / {{steps.id.output...}}.
+type WfStep =
+  | { id: string; kind: "http"; url?: string; method?: string; body?: string; api?: string }
+  | { id: string; kind: "onchain"; recipientScanKey: string; amount: string }
+  | { id: string; kind: "condition"; left: string; op: string; right: string };
 type Wf = {
   id: string; name: string; slug: string | null; description: string | null; is_public: boolean;
-  input_variables: { name: string; type: string }[]; steps: { name: string; type: string }[];
-  output_mapping?: { key: string; expr: string }[]; allowed_contracts?: string[];
+  input_variables: { name: string; type?: string }[]; steps: WfStep[];
+  output_mapping?: { name: string; from: string }[]; allowed_contracts?: string[];
   tags: string[];
 };
-type Step = { name: string; type: "http" | "onchain" | "condition"; outputKey: string; method: string; url: string; body: string };
 type Variable = { name: string; type: string };
-type Output = { key: string; expr: string };
+type Output = { name: string; from: string };
+// Builder step keeps every kind's fields flat; `submit` narrows to the engine shape.
+type BStep = {
+  id: string; kind: "http" | "onchain" | "condition";
+  url: string; method: string; body: string;
+  recipientScanKey: string; amount: string;
+  left: string; op: string; right: string;
+};
+
+const OPS = [">=", ">", "<=", "<", "==", "!="];
 
 export function WorkflowsSection() {
   const [creating, setCreating] = useState(false);
@@ -74,11 +88,16 @@ export function WorkflowsSection() {
 
 function WorkflowDetail({ wf, onBack }: { wf: Wf; onBack: () => void }) {
   const inputs = wf.input_variables ?? [];
+  // Agents call the workflow as its own MCP tool `wf__<slug>` on the fabric server.
   const runExample = JSON.stringify(
-    { tool: "workflow_run", arguments: { name: wf.slug ?? wf.name, ...Object.fromEntries(inputs.map((v) => [v.name, `<${v.type}>`])) } },
+    { tool: `wf__${wf.slug ?? wf.name}`, arguments: Object.fromEntries(inputs.map((v) => [v.name, `<${v.name}>`])) },
     null, 2,
   );
-  const stepColor = (t: string) => (t === "onchain" ? "text-accent" : t === "condition" ? "text-amber-400" : "text-sky-400");
+  const stepColor = (k: string) => (k === "onchain" ? "text-accent" : k === "condition" ? "text-amber-400" : "text-sky-400");
+  const stepLabel = (s: WfStep) =>
+    s.kind === "onchain" ? `ZK settle → ${s.amount}`
+    : s.kind === "condition" ? `${s.left} ${s.op} ${s.right}`
+    : `${s.method ?? "GET"} ${s.url ?? s.api ?? ""}`;
   return (
     <div className="space-y-6">
       <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to Workflows</button>
@@ -93,14 +112,17 @@ function WorkflowDetail({ wf, onBack }: { wf: Wf; onBack: () => void }) {
 
       <Panel><p className="text-sm text-neutral-300">{wf.description}</p></Panel>
 
+      <RunWorkflow wf={wf} />
+
       <Panel>
         <p className="font-semibold text-white">Steps</p>
         <ol className="mt-4 space-y-2">
           {(wf.steps ?? []).map((s, i) => (
             <li key={i} className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-2.5">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-xs text-neutral-400">{i + 1}</span>
-              <span className="flex-1 text-sm text-white">{s.name || `step ${i + 1}`}</span>
-              <span className={`font-mono text-[11px] ${stepColor(s.type)}`}>{s.type}</span>
+              <span className="font-mono text-xs text-neutral-400">{s.id}</span>
+              <span className="flex-1 truncate text-sm text-white">{stepLabel(s)}</span>
+              <span className={`font-mono text-[11px] ${stepColor(s.kind)}`}>{s.kind}</span>
             </li>
           ))}
           {(wf.steps ?? []).length === 0 && <li className="text-sm text-neutral-500">no steps</li>}
@@ -113,7 +135,7 @@ function WorkflowDetail({ wf, onBack }: { wf: Wf; onBack: () => void }) {
           <div className="mt-3 space-y-2">
             {inputs.map((v, i) => (
               <div key={i} className="flex items-center justify-between rounded-xl border border-white/[0.08] px-4 py-2 text-sm">
-                <span className="font-mono text-white">{v.name}</span><span className="text-neutral-500">{v.type}</span>
+                <span className="font-mono text-white">{v.name}</span><span className="text-neutral-500">{v.type ?? "string"}</span>
               </div>
             ))}
           </div>
@@ -123,7 +145,7 @@ function WorkflowDetail({ wf, onBack }: { wf: Wf; onBack: () => void }) {
       {(wf.allowed_contracts ?? []).length > 0 && (
         <Panel>
           <div className="flex items-center gap-2"><Link2 className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Scope (allowed contracts)</p></div>
-          <p className="mt-1 text-sm text-neutral-500">Baked into the SessionAccount policy — the agent&apos;s scoped key may call only these.</p>
+          <p className="mt-1 text-sm text-neutral-500">The on-chain step may settle only through these — checked before any proof is built.</p>
           <div className="mt-3 space-y-2">
             {(wf.allowed_contracts ?? []).map((c, i) => (
               <div key={i} className="flex items-center gap-2 rounded-xl border border-white/[0.08] px-4 py-2"><span className="flex-1 truncate font-mono text-xs text-white">{c}</span><span className="font-mono text-[11px] text-neutral-500">{short(c, 6, 5)}</span></div>
@@ -134,7 +156,7 @@ function WorkflowDetail({ wf, onBack }: { wf: Wf; onBack: () => void }) {
 
       <Panel>
         <div className="flex items-center gap-2"><Play className="h-4 w-4 text-accent" /><p className="font-semibold text-white">How to run</p></div>
-        <p className="mt-1 text-sm text-neutral-500">An agent runs the whole flow with one MCP call:</p>
+        <p className="mt-1 text-sm text-neutral-500">An agent runs the whole flow with one MCP call on the fabric server:</p>
         <div className="relative mt-4">
           <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{runExample}</pre>
           <div className="absolute right-3 top-3"><CopyBtn text={runExample} /></div>
@@ -144,14 +166,103 @@ function WorkflowDetail({ wf, onBack }: { wf: Wf; onBack: () => void }) {
   );
 }
 
+// Live run — hits the fabric engine through /api/fabric/run. Real execution: the
+// on-chain step builds a Groth16 proof and settles through the SessionAccount.
+type RunStep = { id: string; kind: string; status: "ok" | "skipped" | "error"; detail?: string; output?: unknown };
+type RunResp = { ok: boolean; error?: string; run?: { workflow: string; completed: boolean; steps: RunStep[]; output?: Record<string, unknown> } };
+
+function RunWorkflow({ wf }: { wf: Wf }) {
+  const inputs = wf.input_variables ?? [];
+  const [vals, setVals] = useState<Record<string, string>>({});
+  const [token, setToken] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<RunResp | null>(null);
+
+  const run = async () => {
+    setBusy(true); setRes(null);
+    try {
+      const r = await fetch("/api/fabric/run", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "workflow", slug: wf.slug ?? wf.name, input: vals, token: token || undefined }),
+      });
+      setRes(await r.json());
+    } catch (e) { setRes({ ok: false, error: String((e as Error).message) }); } finally { setBusy(false); }
+  };
+
+  const icon = (s: string) => s === "ok" ? <CheckCircle2 className="h-4 w-4 text-accent" /> : s === "error" ? <XCircle className="h-4 w-4 text-red-400" /> : <MinusCircle className="h-4 w-4 text-amber-400" />;
+  const txHash = res?.run?.output?.tx as string | undefined;
+
+  return (
+    <Panel>
+      <div className="flex items-center gap-2"><Play className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Run it</p><Chip accent>live</Chip></div>
+      <p className="mt-1 text-sm text-neutral-500">Executes on the fabric engine. On-chain steps build a real ZK proof and settle through the SessionAccount.</p>
+
+      <div className="mt-4 space-y-3">
+        {inputs.map((v) => (
+          <Field key={v.name} label={v.name}>
+            <Input placeholder={v.name} value={vals[v.name] ?? ""} onChange={(e) => setVals((s) => ({ ...s, [v.name]: e.target.value }))} className="font-mono" />
+          </Field>
+        ))}
+        <Field label="Agent token" hint="(optional) routes to your scoped session; blank = default"><Input placeholder="kage_sk_…" value={token} onChange={(e) => setToken(e.target.value)} className="font-mono" /></Field>
+      </div>
+
+      <div className="mt-4"><Button onClick={run} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} Run workflow</Button></div>
+
+      {res && (
+        <div className="mt-5">
+          {!res.ok && <p className="text-sm text-red-400">{res.error}</p>}
+          {res.run && (
+            <>
+              <div className="flex items-center gap-2 text-sm">
+                <span className={res.run.completed ? "text-accent" : "text-amber-400"}>{res.run.completed ? "completed" : "halted"}</span>
+                <span className="text-neutral-600">·</span><span className="font-mono text-xs text-neutral-500">{res.run.workflow}</span>
+              </div>
+              <ol className="mt-3 space-y-1.5">
+                {res.run.steps.map((s, i) => (
+                  <li key={i} className="flex items-center gap-2.5 rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2 text-sm">
+                    {icon(s.status)}
+                    <span className="font-mono text-xs text-neutral-400">{s.id}</span>
+                    <span className="flex-1 truncate text-neutral-300">{s.detail}</span>
+                    <span className="font-mono text-[11px] text-neutral-600">{s.kind}</span>
+                  </li>
+                ))}
+              </ol>
+              {txHash && (
+                <a href={`https://stellar.expert/explorer/testnet/tx/${txHash}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-sm text-accent hover:underline">
+                  View settlement tx ↗ <span className="font-mono text-xs">{short(txHash, 8, 6)}</span>
+                </a>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const [meta, setMeta] = useState({ name: "", slug: "", description: "", is_public: false });
   const [vars, setVars] = useState<Variable[]>([]);
-  const [steps, setSteps] = useState<Step[]>([]);
+  const [steps, setSteps] = useState<BStep[]>([]);
   const [outputs, setOutputs] = useState<Output[]>([]);
   const [contracts, setContracts] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const newStep = (): BStep => ({
+    id: `step_${steps.length + 1}`, kind: "condition",
+    url: "", method: "GET", body: "",
+    recipientScanKey: "{{input.recipientScanKey}}", amount: "{{input.amount}}",
+    left: "{{input.amount}}", op: "<=", right: "50000000",
+  });
+  const patchStep = (i: number, p: Partial<BStep>) => setSteps((a) => a.map((x, j) => (j === i ? { ...x, ...p } : x)));
+
+  // Narrow each builder step to the engine's WfStep shape.
+  const toEngine = (s: BStep): WfStep => {
+    if (s.kind === "http") return { id: s.id, kind: "http", url: s.url, method: s.method, ...(s.body ? { body: s.body } : {}) };
+    if (s.kind === "onchain") return { id: s.id, kind: "onchain", recipientScanKey: s.recipientScanKey, amount: s.amount };
+    return { id: s.id, kind: "condition", left: s.left, op: s.op, right: s.right };
+  };
 
   const submit = async () => {
     setBusy(true); setErr(null);
@@ -159,9 +270,12 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
       const res = await fetch("/api/workflows", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...meta, input_variables: vars, steps,
-          output_mapping: outputs, allowed_contracts: contracts.filter(Boolean),
-          tags: steps.some((s) => s.type === "onchain") ? ["http", "onchain", "zk"] : ["http"],
+          ...meta,
+          input_variables: vars.map((v) => ({ name: v.name, type: v.type, required: true })),
+          steps: steps.map(toEngine),
+          output_mapping: outputs.filter((o) => o.name && o.from),
+          allowed_contracts: contracts.filter(Boolean),
+          tags: steps.some((s) => s.kind === "onchain") ? ["http", "onchain", "zk"] : ["http"],
         }),
       });
       const d = await res.json();
@@ -175,14 +289,14 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
       <button onClick={onCancel} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to Workflows</button>
       <div>
         <h1 className="text-4xl font-semibold tracking-tight text-white">Create Workflow</h1>
-        <p className="mt-1 text-neutral-400">Combine HTTP calls and on-chain ZK operations into a reusable flow.</p>
+        <p className="mt-1 text-neutral-400">Combine HTTP calls, budget conditions, and the on-chain ZK settlement into a reusable flow.</p>
       </div>
 
       <Panel className="space-y-5">
         <Field label="Workflow Name"><Input placeholder="My Private Payment" value={meta.name} onChange={(e) => setMeta((s) => ({ ...s, name: e.target.value }))} /></Field>
-        <Field label="URL Slug" hint="lowercase, hyphens"><Input placeholder="my-private-payment" value={meta.slug} onChange={(e) => setMeta((s) => ({ ...s, slug: e.target.value }))} /></Field>
+        <Field label="URL Slug" hint="lowercase, hyphens — becomes the wf__slug MCP tool"><Input placeholder="my-private-payment" value={meta.slug} onChange={(e) => setMeta((s) => ({ ...s, slug: e.target.value }))} /></Field>
         <Field label="Description" hint="(optional)"><Textarea rows={2} placeholder="Describe what this workflow does…" value={meta.description} onChange={(e) => setMeta((s) => ({ ...s, description: e.target.value }))} /></Field>
-        <Toggle on={meta.is_public} onChange={(v) => setMeta((s) => ({ ...s, is_public: v }))} label="Make Workflow Public" desc="Allow other MCP servers to use this workflow" />
+        <Toggle on={meta.is_public} onChange={(v) => setMeta((s) => ({ ...s, is_public: v }))} label="Make Workflow Public" desc="List it as a wf__ tool other agents can discover" />
       </Panel>
 
       {/* Input variables */}
@@ -191,7 +305,7 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
           <div><p className="font-semibold text-white">Input Variables</p><p className="text-sm text-neutral-500">Inputs agents provide when calling this workflow.</p></div>
           <Button variant="outline" onClick={() => setVars((v) => [...v, { name: "", type: "string" }])}><Plus className="h-4 w-4" /> Add Variable</Button>
         </div>
-        {vars.length === 0 ? <Empty>No variables. Reference them in steps via <span className="font-mono text-neutral-400">$.input.name</span></Empty> : (
+        {vars.length === 0 ? <Empty>No variables. Reference them in steps via <span className="font-mono text-neutral-400">{"{{input.name}}"}</span></Empty> : (
           <div className="space-y-2">
             {vars.map((v, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -209,8 +323,8 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
       {/* Steps */}
       <Panel className="space-y-4">
         <div className="flex items-center justify-between">
-          <div><p className="font-semibold text-white">Workflow Steps</p><p className="text-sm text-neutral-500">Sequence of HTTP calls and on-chain operations.</p></div>
-          <Button variant="outline" onClick={() => setSteps((s) => [...s, { name: "", type: "http", outputKey: `step_${s.length + 1}`, method: "GET", url: "", body: "" }])}><Plus className="h-4 w-4" /> Add Step</Button>
+          <div><p className="font-semibold text-white">Workflow Steps</p><p className="text-sm text-neutral-500">Run in order. A failed condition halts the flow; the on-chain step settles ZK-private.</p></div>
+          <Button variant="outline" onClick={() => setSteps((s) => [...s, newStep()])}><Plus className="h-4 w-4" /> Add Step</Button>
         </div>
         {steps.length === 0 ? <Empty>No steps yet.</Empty> : (
           <div className="space-y-4">
@@ -218,23 +332,47 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
               <div key={i} className="rounded-xl border border-white/[0.08] p-4">
                 <div className="flex items-center gap-3">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.06] text-xs text-neutral-400">{i + 1}</span>
-                  <Input placeholder="Step name" value={st.name} onChange={(e) => setSteps((a) => a.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+                  <Input placeholder="step id (e.g. gate)" value={st.id} onChange={(e) => patchStep(i, { id: e.target.value })} className="font-mono" />
                   <button onClick={() => setSteps((a) => a.filter((_, j) => j !== i))} className="text-neutral-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                 </div>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="mt-4">
                   <Field label="Step Type">
-                    <select value={st.type} onChange={(e) => setSteps((a) => a.map((x, j) => j === i ? { ...x, type: e.target.value as Step["type"] } : x))} className="w-full rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2.5 text-sm text-white">
+                    <select value={st.kind} onChange={(e) => patchStep(i, { kind: e.target.value as BStep["kind"] })} className="w-full rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2.5 text-sm text-white">
+                      <option value="condition" className="bg-[#0b0b0b]">Condition (budget gate)</option>
                       <option value="http" className="bg-[#0b0b0b]">HTTP Request</option>
-                      <option value="onchain" className="bg-[#0b0b0b]">On-chain (ZK deposit)</option>
-                      <option value="condition" className="bg-[#0b0b0b]">Condition</option>
+                      <option value="onchain" className="bg-[#0b0b0b]">On-chain (ZK settle)</option>
                     </select>
                   </Field>
-                  <Field label="Output Key" hint="stored under $.steps.*"><Input value={st.outputKey} onChange={(e) => setSteps((a) => a.map((x, j) => j === i ? { ...x, outputKey: e.target.value } : x))} /></Field>
                 </div>
-                {st.type === "http" && (
+
+                {st.kind === "condition" && (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+                    <Field label="Left"><Input placeholder="{{input.amount}}" value={st.left} onChange={(e) => patchStep(i, { left: e.target.value })} className="font-mono" /></Field>
+                    <select value={st.op} onChange={(e) => patchStep(i, { op: e.target.value })} className="rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 text-sm text-white">
+                      {OPS.map((o) => <option key={o} className="bg-[#0b0b0b]">{o}</option>)}
+                    </select>
+                    <Field label="Right"><Input placeholder="50000000" value={st.right} onChange={(e) => patchStep(i, { right: e.target.value })} className="font-mono" /></Field>
+                  </div>
+                )}
+
+                {st.kind === "http" && (
                   <div className="mt-4 space-y-4">
-                    <Field label="URL"><Input placeholder="https://api.example.com/endpoint" value={st.url} onChange={(e) => setSteps((a) => a.map((x, j) => j === i ? { ...x, url: e.target.value } : x))} /></Field>
-                    <Field label="Body Mapping (JSON)" hint="use $.input.varName"><Textarea rows={3} placeholder='{ "amount": "$.input.amount" }' value={st.body} onChange={(e) => setSteps((a) => a.map((x, j) => j === i ? { ...x, body: e.target.value } : x))} /></Field>
+                    <div className="grid gap-3 sm:grid-cols-[120px_1fr]">
+                      <Field label="Method">
+                        <select value={st.method} onChange={(e) => patchStep(i, { method: e.target.value })} className="w-full rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 text-sm text-white">
+                          {["GET", "POST", "PUT", "DELETE"].map((m) => <option key={m} className="bg-[#0b0b0b]">{m}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="URL"><Input placeholder="https://api.example.com/price?sym={{input.sym}}" value={st.url} onChange={(e) => patchStep(i, { url: e.target.value })} className="font-mono" /></Field>
+                    </div>
+                    <Field label="Body (JSON)" hint="templates: {{input.x}} / {{steps.id.output.y}}"><Textarea rows={3} placeholder='{ "amount": "{{input.amount}}" }' value={st.body} onChange={(e) => patchStep(i, { body: e.target.value })} className="font-mono" /></Field>
+                  </div>
+                )}
+
+                {st.kind === "onchain" && (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <Field label="Recipient scan key" hint="hex x25519 payee key"><Input placeholder="{{input.recipientScanKey}}" value={st.recipientScanKey} onChange={(e) => patchStep(i, { recipientScanKey: e.target.value })} className="font-mono" /></Field>
+                    <Field label="Amount" hint="USDC, 7 decimals"><Input placeholder="{{input.amount}}" value={st.amount} onChange={(e) => patchStep(i, { amount: e.target.value })} className="font-mono" /></Field>
                   </div>
                 )}
               </div>
@@ -247,15 +385,15 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
       <Panel className="space-y-4">
         <div className="flex items-center justify-between">
           <div><p className="font-semibold text-white">Output Mapping</p><p className="text-sm text-neutral-500">What the workflow returns on completion.</p></div>
-          <Button variant="outline" onClick={() => setOutputs((o) => [...o, { key: "", expr: "" }])}><Plus className="h-4 w-4" /> Add</Button>
+          <Button variant="outline" onClick={() => setOutputs((o) => [...o, { name: "", from: "" }])}><Plus className="h-4 w-4" /> Add</Button>
         </div>
-        {outputs.length === 0 ? <Empty>No outputs. e.g. <span className="font-mono text-neutral-400">txHash = $.steps.deposit.hash</span></Empty> : (
+        {outputs.length === 0 ? <Empty>No outputs. e.g. <span className="font-mono text-neutral-400">{"tx = {{steps.settle.output.hash}}"}</span></Empty> : (
           <div className="space-y-2">
             {outputs.map((o, i) => (
               <div key={i} className="flex items-center gap-2">
-                <Input placeholder="key (e.g. txHash)" value={o.key} onChange={(e) => setOutputs((a) => a.map((x, j) => j === i ? { ...x, key: e.target.value } : x))} />
+                <Input placeholder="name (e.g. tx)" value={o.name} onChange={(e) => setOutputs((a) => a.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
                 <span className="text-neutral-500">=</span>
-                <Input placeholder="$.steps.deposit.hash" value={o.expr} onChange={(e) => setOutputs((a) => a.map((x, j) => j === i ? { ...x, expr: e.target.value } : x))} className="font-mono" />
+                <Input placeholder="{{steps.settle.output.hash}}" value={o.from} onChange={(e) => setOutputs((a) => a.map((x, j) => j === i ? { ...x, from: e.target.value } : x))} className="font-mono" />
                 <button onClick={() => setOutputs((a) => a.filter((_, j) => j !== i))} className="text-neutral-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
               </div>
             ))}
@@ -267,11 +405,11 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
       <Panel className="space-y-4">
         <div>
           <p className="font-semibold text-white">Scope Configuration</p>
-          <p className="text-sm text-neutral-500">Soroban contracts this workflow&apos;s session key is allowed to call.</p>
+          <p className="text-sm text-neutral-500">Soroban contracts the on-chain step is allowed to settle through.</p>
         </div>
         <div className="flex items-start gap-2 rounded-xl border border-accent/25 bg-accent/[0.06] p-4">
           <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-          <p className="text-sm text-accent/90">Allowed contract addresses are baked into the SessionAccount policy — the agent&apos;s scoped key can call only these, so it can never drain or redirect funds.</p>
+          <p className="text-sm text-accent/90">The engine refuses to run the on-chain step if the pool isn&apos;t in this list — and the SessionAccount policy still caps spend on-chain, so the agent can never drain or redirect funds.</p>
         </div>
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-white">Allowed Contract Addresses</p>

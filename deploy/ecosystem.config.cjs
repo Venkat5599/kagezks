@@ -2,9 +2,10 @@
 //   pm2 start deploy/ecosystem.config.cjs
 //   pm2 save && pm2 startup   # survive reboots
 //
-// Two long-lived processes:
-//   veil-web  — the Next app (landing + /agent + /dashboard), port 3000
-//   veil-mcp  — the MCP server agents connect to (Streamable HTTP), port 8402
+// Three long-lived processes:
+//   veil-web     — the Next app (landing + /agent + /dashboard), port 3000
+//   veil-mcp     — single-agent demo MCP server (Streamable HTTP), port 8402
+//   kage-fabric  — multi-tenant fabric MCP (DB-driven api__*/wf__* tools), port 8403
 //
 // Secrets come from the environment / .env files, NEVER hardcoded here:
 //   frontend/.env.local  -> DATABASE_URL   (Neon)
@@ -21,7 +22,9 @@ module.exports = {
       // Build once (npm run build) before starting; this runs the production server.
       script: "npm",
       args: "start",
-      env: { NODE_ENV: "production", PORT: "3000" },
+      // KAGE_FABRIC_URL lets the dashboard's /api/fabric/run proxy reach the Bun
+      // fabric server (which does the real ZK execution) on the loopback.
+      env: { NODE_ENV: "production", PORT: "3000", KAGE_FABRIC_URL: process.env.KAGE_FABRIC_URL || "http://localhost:8403" },
       autorestart: true,
       max_restarts: 10,
       time: true,
@@ -37,6 +40,27 @@ module.exports = {
         VEIL_FEE_SECRET: process.env.VEIL_FEE_SECRET || "",
         VEIL_OPERATOR: process.env.VEIL_OPERATOR || "",
         VEIL_RPC_URL: process.env.VEIL_RPC_URL || "https://soroban-testnet.stellar.org",
+      },
+      autorestart: true,
+      max_restarts: 10,
+      time: true,
+    },
+    {
+      name: "kage-fabric",
+      cwd: ROOT,
+      // Bun runs the multi-tenant fabric MCP. Needs snarkjs subprocess for ZK proofs,
+      // so it MUST run under bun on the VPS — the Next /mcp/[slug] route can't.
+      script: "bun",
+      args: "run agent/fabric-server.ts",
+      env: {
+        VEIL_MCP_PORT: process.env.KAGE_FABRIC_PORT || "8403",
+        // Catalog source: the local web app (so published APIs/workflows appear as tools).
+        KAGE_ORIGIN: process.env.KAGE_ORIGIN || "http://localhost:3000",
+        VEIL_FEE_SECRET: process.env.VEIL_FEE_SECRET || "",
+        VEIL_OPERATOR: process.env.VEIL_OPERATOR || "",
+        VEIL_RPC_URL: process.env.VEIL_RPC_URL || "https://soroban-testnet.stellar.org",
+        // Optional inline token->session map; otherwise sdk/build/agent_keys.json is read.
+        KAGE_AGENT_KEYS: process.env.KAGE_AGENT_KEYS || "",
       },
       autorestart: true,
       max_restarts: 10,

@@ -10,6 +10,7 @@
     "flow": "bun run scripts/veil-flow.ts",
     "agent:fabric": "bun run scripts/agent-fabric.ts",
     "agent:serve": "bun run agent/mcp-server.ts",
+    "fabric:serve": "bun run agent/fabric-server.ts",
     "agent:demo": "bun run agent/demo-agent.ts",
     "gen:insert": "bun run scripts/veil-gen-insert.ts",
     "convert": "bun run sdk/veil-convert.ts"

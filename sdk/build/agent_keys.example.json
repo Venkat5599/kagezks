@@ -1,0 +1,9 @@
+{
+  "_comment": "Template. Copy to agent_keys.json and add one entry per agent. Provision a new session first: `bun run agent:fabric` writes session + agentSecret to sdk/build/agent_fabric.json — copy those here under a fresh token. feeSourceSecret optional (falls back to VEIL_FEE_SECRET env). Alternatively set the whole map inline via env KAGE_AGENT_KEYS='{...}'.",
+  "kage_sk_REPLACE_WITH_RANDOM": {
+    "label": "my-agent",
+    "sessionId": "C...SessionAccount",
+    "agentSecret": "S...delegated-session-key",
+    "feeSourceSecret": "S...optional-per-agent-relayer"
+  }
+}

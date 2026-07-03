@@ -117,6 +117,29 @@ function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
           <div className="absolute right-3 top-3"><CopyBtn text={config} /></div>
         </div>
       </Panel>
+
+      <Panel>
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-white">Run workflows live (ZK settlement)</p>
+          <Chip accent>fabric</Chip>
+        </div>
+        <p className="mt-1 text-sm text-neutral-500">
+          The endpoint above lists tools. To actually <span className="text-neutral-300">execute</span> — proxy x402 APIs and
+          settle payments ZK-private through your SessionAccount — connect to the fabric server with a bearer token that
+          scopes the call to your session.
+        </p>
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
+          <span className="text-xs text-neutral-500">Fabric</span>
+          <span className="flex-1 truncate font-mono text-xs text-white">https://kageai.me/fabric/mcp</span>
+          <CopyBtn text="https://kageai.me/fabric/mcp" />
+        </div>
+        <div className="relative mt-3">
+          <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{`claude mcp add ${mcp.slug ?? "kage"}-fabric --transport http https://kageai.me/fabric/mcp \\
+  --header "Authorization: Bearer <your-agent-token>"`}</pre>
+          <div className="absolute right-3 top-3"><CopyBtn text={`claude mcp add ${mcp.slug ?? "kage"}-fabric --transport http https://kageai.me/fabric/mcp --header "Authorization: Bearer <your-agent-token>"`} /></div>
+        </div>
+        <p className="mt-3 text-xs text-neutral-500">Tools appear as <span className="font-mono text-neutral-400">api__*</span> (metered proxies) and <span className="font-mono text-neutral-400">wf__*</span> (workflows that end in a ZK settle). No token → read-only default session.</p>
+      </Panel>
     </div>
   );
 }
