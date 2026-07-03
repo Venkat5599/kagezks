@@ -239,10 +239,13 @@ function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
         <Field label="API Name"><Input placeholder="My Awesome API" value={f.name} onChange={(e) => set("name")(e.target.value)} /></Field>
         <Field label="Custom URL Slug" hint="(optional)"><Input placeholder="my-awesome-api" value={f.slug} onChange={(e) => set("slug")(e.target.value)} /></Field>
         <Field label="Description" hint="(optional)"><Textarea rows={3} placeholder="Describe what your API does…" value={f.description} onChange={(e) => set("description")(e.target.value)} /></Field>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Category" hint="(optional)"><Input placeholder="Payments, Data, AI…" value={f.category} onChange={(e) => set("category")(e.target.value)} /></Field>
-          <Field label="Tags" hint="(comma-separated)"><Input placeholder="stellar, zk, x402" value={f.tags} onChange={(e) => set("tags")(e.target.value)} /></Field>
-        </div>
+        <Field label="Category" hint="Choose a category to help users discover your API">
+          <select value={f.category} onChange={(e) => set("category")(e.target.value)} className="w-full rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2.5 text-sm text-white outline-none focus:border-accent/60">
+            <option value="" className="bg-[#0b0b0b]">Select a category</option>
+            {["Payments", "Data", "AI", "Finance", "Social", "DeFi", "Other"].map((c) => <option key={c} value={c} className="bg-[#0b0b0b]">{c}</option>)}
+          </select>
+        </Field>
+        <Field label="Tags" hint="Add tags to help users find your API (max 10)"><Input placeholder="stellar, zk, x402" value={f.tags} onChange={(e) => set("tags")(e.target.value)} /></Field>
         <Field label="Payment Address" hint="Stellar address (G…) that receives payments"><Input placeholder="G…" value={f.payment_address} onChange={(e) => set("payment_address")(e.target.value)} className="font-mono" /></Field>
         <Field label="Target API URL" hint="the endpoint called after payment"><Input placeholder="https://api.example.com/v1/endpoint" value={f.target_url} onChange={(e) => set("target_url")(e.target.value)} /></Field>
         <div className="grid gap-5 sm:grid-cols-2">
@@ -298,7 +301,7 @@ function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
         {err && <p className="text-sm text-red-400">{err}</p>}
         <div className="flex items-center justify-between border-t border-white/[0.06] pt-5">
           <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-          <Button onClick={submit} disabled={busy || !f.name || !f.target_url}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Create API</Button>
+          <Button onClick={submit} disabled={busy || !f.name || !f.target_url}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Create Proxy</Button>
         </div>
       </Panel>
     </div>
