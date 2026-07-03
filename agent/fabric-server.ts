@@ -20,6 +20,7 @@ import { resolveScope, withScope } from "./fabric/auth.ts";
 import { findWorkflow, findApi } from "./fabric/catalog.ts";
 import { runWorkflow } from "./fabric/engine.ts";
 import { proxyCall } from "./fabric/proxy-tool.ts";
+import { provisionSession } from "./fabric/provision.ts";
 import { config } from "../sdk/veil-onchain.ts";
 
 // Dedicated port env — must NOT reuse VEIL_MCP_PORT (that's the single-agent demo's
@@ -60,6 +61,19 @@ app.post("/run/workflow", async (req, res) => {
   try {
     const run = await withScope(scope, () => runWorkflow(wf, input ?? {}));
     res.json({ ok: true, run });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message });
+  }
+});
+
+// Provision a per-user scoped SessionAccount for a generated wallet. Deploys + inits +
+// funds a real SessionAccount and returns a personal bearer token to settle through it.
+app.post("/provision", async (req, res) => {
+  const { ownerAddress, ownerSecret, amount } = (req.body ?? {}) as { ownerAddress?: string; ownerSecret?: string; amount?: string };
+  if (!ownerAddress || !ownerSecret) return res.status(400).json({ ok: false, error: "ownerAddress and ownerSecret required" });
+  try {
+    const r = await provisionSession(ownerAddress, ownerSecret, amount);
+    res.json({ ok: true, ...r });
   } catch (e) {
     res.status(500).json({ ok: false, error: (e as Error).message });
   }
