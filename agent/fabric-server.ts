@@ -111,9 +111,9 @@ if (process.argv.includes("--stdio")) {
     console.error(`  tools: ${registered.apis.length} api__*, ${registered.workflows.length} wf__* + builtins`);
     try {
       const c = config();
-      console.error(`  pool ${c.VEIL}  default session ${c.session ?? "(none — run bun run agent:fabric)"}`);
+      console.error(`  pool ${c.VEIL}  default session ${c.session ?? "(none — provision one in the dashboard)"}`);
     } catch {
-      console.error("  no deployment yet — run scripts/veil-deploy.ts + agent:fabric");
+      console.error("  no deployment yet — run scripts/kage-deploy.ts + provision a session");
     }
   });
 }
