@@ -48,6 +48,26 @@ export const PASSPHRASE = Networks.TESTNET;
 // tree when RPC event retention has dropped the original deposit event.
 const GENESIS_LEAF = "057206e8b530c5dae19f754d6072f1ef375df2501bfd9144e294e7262b8466a7";
 
+// Local leaf store — the authoritative record of {pool -> {leafIndex -> commitmentHex}}.
+// Public testnet RPC drops deposit events out of its query window, which makes rebuilding
+// the exact tree from chain unreliable; every deposit we make is recorded here so the
+// NEXT deposit can always reconstruct the prior tree (its oldRoot must match on-chain).
+const LEAVES_FILE = () => join(dirname(fileURLToPath(import.meta.url)), "build", "pool_leaves.json");
+function readLeaves(pool: string): Record<string, string> {
+  try {
+    const all = existsSync(LEAVES_FILE()) ? (JSON.parse(readFileSync(LEAVES_FILE(), "utf8")) as Record<string, Record<string, string>>) : {};
+    return all[pool] ?? {};
+  } catch { return {}; }
+}
+function recordLeaf(pool: string, idx: number, commitmentHex: string): void {
+  try {
+    const all = existsSync(LEAVES_FILE()) ? (JSON.parse(readFileSync(LEAVES_FILE(), "utf8")) as Record<string, Record<string, string>>) : {};
+    all[pool] = all[pool] ?? {};
+    all[pool][String(idx)] = commitmentHex;
+    writeFileSync(LEAVES_FILE(), JSON.stringify(all, null, 2));
+  } catch {}
+}
+
 const INSERT_WASM = join(CIRCB, "veil_insert_js", "veil_insert.wasm");
 const INSERT_ZKEY = join(CIRCB, "insert_final.zkey");
 
@@ -139,6 +159,8 @@ export async function remainingBudget(sessionId?: string): Promise<bigint> {
 async function rebuildTree(veil: string, leafCount: number): Promise<MerkleTree> {
   const tree = await MerkleTree.create();
   const byIdx = new Map<number, bigint>();
+  // 1. Authoritative local store first (survives RPC event retention).
+  for (const [idx, hex] of Object.entries(readLeaves(veil))) byIdx.set(Number(idx), BigInt("0x" + hex));
   const s = server();
   const latest = await s.getLatestLedger();
   let cursor: string | undefined;
@@ -387,6 +409,9 @@ export async function payThroughSession(args: {
     } catch { /* xdr parse hiccup — keep polling */ }
   }
   if (finalStatus === "FAILED") throw new Error(`tx FAILED: ${sent.hash}`);
+
+  // Persist this leaf so the next deposit can rebuild the tree without RPC events.
+  recordLeaf(VEIL, leafIndex, bigToHex(note.commitment));
 
   return {
     hash: sent.hash,
