@@ -69,10 +69,10 @@ app.post("/run/workflow", async (req, res) => {
 // Provision a per-user scoped SessionAccount for a generated wallet. Deploys + inits +
 // funds a real SessionAccount and returns a personal bearer token to settle through it.
 app.post("/provision", async (req, res) => {
-  const { ownerAddress, ownerSecret, amount } = (req.body ?? {}) as { ownerAddress?: string; ownerSecret?: string; amount?: string };
+  const { ownerAddress, ownerSecret, amount, cap } = (req.body ?? {}) as { ownerAddress?: string; ownerSecret?: string; amount?: string; cap?: string };
   if (!ownerAddress || !ownerSecret) return res.status(400).json({ ok: false, error: "ownerAddress and ownerSecret required" });
   try {
-    const r = await provisionSession(ownerAddress, ownerSecret, amount);
+    const r = await provisionSession(ownerAddress, ownerSecret, amount, cap);
     res.json({ ok: true, ...r });
   } catch (e) {
     res.status(500).json({ ok: false, error: (e as Error).message });

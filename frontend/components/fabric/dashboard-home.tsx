@@ -91,6 +91,8 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
   // Per-user session provisioning (only for generated wallets, whose secret we hold).
   const [prov, setProv] = useState<{ sessionId: string; token: string } | null>(null);
   const [provBusy, setProvBusy] = useState(false);
+  const [capUsdc, setCapUsdc] = useState("5");
+  const [fundUsdc, setFundUsdc] = useState("1");
   useEffect(() => {
     const t = localStorage.getItem("kage_session_token"); const sid = localStorage.getItem("kage_session_id");
     if (t && sid) setProv({ token: t, sessionId: sid });
@@ -99,7 +101,8 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
     if (!address || !secret) return;
     setProvBusy(true);
     try {
-      const r = await fetch("/api/fabric/provision", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ownerAddress: address, ownerSecret: secret }) });
+      const toRaw = (v: string) => String(Math.max(0, Math.round(Number(v || "0") * 1e7)));
+      const r = await fetch("/api/fabric/provision", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ownerAddress: address, ownerSecret: secret, cap: toRaw(capUsdc), amount: toRaw(fundUsdc) }) });
       const d = await r.json();
       if (d.ok) { setProv({ sessionId: d.sessionId, token: d.token }); localStorage.setItem("kage_session_token", d.token); localStorage.setItem("kage_session_id", d.sessionId); }
       else alert(`Provision failed: ${d.error}`);
@@ -230,7 +233,15 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-              <p className="text-sm text-neutral-400">Deploy a scoped SessionAccount owned by <span className="font-mono text-neutral-300">{shortAddr(address)}</span> — only Kage.deposit into the ZK pool, up to a 5 USDC cap. Your agent then settles through your own session, not the shared demo.</p>
+              <p className="text-sm text-neutral-400">Deploy a scoped SessionAccount owned by <span className="font-mono text-neutral-300">{shortAddr(address)}</span> — only Kage.deposit into the ZK pool, capped. Your agent settles through your own session, not the shared demo.</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="text-xs text-neutral-500">Spend cap (USDC)
+                  <input type="number" min="0" step="1" value={capUsdc} onChange={(e) => setCapUsdc(e.target.value)} className="mt-1 w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-sm text-white outline-none focus:border-accent/60" />
+                </label>
+                <label className="text-xs text-neutral-500">Fund with (USDC)
+                  <input type="number" min="0" step="0.5" value={fundUsdc} onChange={(e) => setFundUsdc(e.target.value)} className="mt-1 w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-sm text-white outline-none focus:border-accent/60" />
+                </label>
+              </div>
               <button onClick={provision} disabled={provBusy} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
                 <KeyRound className="h-4 w-4" /> {provBusy ? "Provisioning on-chain… (~30s)" : "Provision Session Account"}
               </button>

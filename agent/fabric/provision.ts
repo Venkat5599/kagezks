@@ -112,7 +112,7 @@ async function invokeOwnerAuthed(contractId: string, method: string, args: xdr.S
 
 export type ProvisionResult = { sessionId: string; token: string; agent: string; cap: string; expiry: number; fundTx: string };
 
-export async function provisionSession(ownerAddress: string, ownerSecret: string, amountRaw?: string): Promise<ProvisionResult> {
+export async function provisionSession(ownerAddress: string, ownerSecret: string, amountRaw?: string, capRaw?: string): Promise<ProvisionResult> {
   if (!process.env.VEIL_FEE_SECRET) throw new Error("relayer (VEIL_FEE_SECRET) not configured");
   if (!existsSync(SESSION_WASM)) throw new Error("session_account.wasm not found on host");
   const relayer = Keypair.fromSecret(process.env.VEIL_FEE_SECRET);
@@ -121,9 +121,10 @@ export async function provisionSession(ownerAddress: string, ownerSecret: string
   const { POOL, USDC } = deployment();
   const agent = Keypair.random();
   const agentHex = Buffer.from(StrKey.decodeEd25519PublicKey(agent.publicKey())).toString("hex");
-  const CAP = 50_000_000n; // 5 USDC
+  // cap = scoped spend ceiling (7 decimals); fund = how much USDC to seed the session with.
+  const CAP = BigInt(capRaw ?? "50000000"); // default 5 USDC
   const EXPIRY = Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
-  const fund = BigInt(amountRaw ?? "10000000"); // 1 USDC default
+  const fund = BigInt(amountRaw ?? "10000000"); // default 1 USDC
 
   const s = server();
   const wasm = readFileSync(SESSION_WASM);
