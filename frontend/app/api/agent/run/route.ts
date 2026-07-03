@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
-const CONTRACT = "CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B";
+const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
 const DEMO_CAP = 50_000_000n; // 5 USDC scoped cap (matches scripts/agent-fabric.ts)
 const CALL_PRICE = "100000"; // 0.01 USDC per veil_pay (x402)

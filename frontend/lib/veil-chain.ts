@@ -25,7 +25,7 @@ import {
 } from "./veil-browser";
 
 export const RPC_URL = "https://soroban-testnet.stellar.org";
-export const CONTRACT = "CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B";
+export const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
 export const USDC_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 // Known genesis leaf (the proven e2e deposit) — used to seed the tree if the
 // original deposit events have aged out of RPC's retention window.
