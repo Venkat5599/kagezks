@@ -121,7 +121,11 @@ async function handle(req: Request, slug: string): Promise<Response> {
   const row = await loadServer(slug);
   if (!row) return new Response(JSON.stringify({ error: `no MCP server '${slug}'` }), { status: 404, headers: { "content-type": "application/json" } });
   const workflows = await loadWorkflows();
-  const auth = req.headers.get("authorization");
+  // Auth from the Authorization header (Claude Code --header) OR a ?token= query param
+  // (claude.ai web connector, which has no header field). Both map to the scoped session.
+  const headerAuth = req.headers.get("authorization");
+  const qToken = new URL(req.url).searchParams.get("token");
+  const auth = headerAuth ?? (qToken ? `Bearer ${qToken}` : null);
   const server = buildServer(row, auth, workflows);
   const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true });
   await server.connect(transport);
