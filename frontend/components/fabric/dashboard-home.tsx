@@ -73,12 +73,12 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
   const [s, setS] = useState<Stats | null>(null);
   const [act, setAct] = useState<ActItem[] | null>(null);
   const [period, setPeriod] = useState("all");
-  useEffect(() => {
-    fetch("/api/stats").then((r) => r.json()).then(setS).catch(() => {});
-    fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
-  }, []);
-  const TOGGLE = [{ k: "all", label: "All Time" }, { k: "30d", label: "Last 30 Days" }, { k: "7d", label: "Last 7 Days" }];
   const { address, secret, real, connecting, connect, generate, disconnect } = useWallet();
+  useEffect(() => {
+    fetch(`/api/stats${address ? `?owner=${address}` : ""}`).then((r) => r.json()).then(setS).catch(() => {});
+    fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
+  }, [address]);
+  const TOGGLE = [{ k: "all", label: "All Time" }, { k: "30d", label: "Last 30 Days" }, { k: "7d", label: "Last 7 Days" }];
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
   const [wstat, setWstat] = useState<{ funded: boolean; xlm: string } | null>(null);
   useEffect(() => {

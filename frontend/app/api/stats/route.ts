@@ -18,13 +18,20 @@ const POOL = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
 const SESSION = "CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
 
-export async function GET() {
-  // DB aggregates
+export async function GET(req: Request) {
+  // Per-user aggregates when ?owner is provided (the connected wallet); global otherwise.
+  const owner = new URL(req.url).searchParams.get("owner");
   let totals = { apis: 0, requests: 0, success: 0, earnings: 0, mcpServers: 0, workflows: 0 };
   try {
-    const a = (await sql`SELECT COUNT(*)::int AS apis, COALESCE(SUM(request_count),0)::int AS requests, COALESCE(SUM(success_count),0)::int AS success, COALESCE(SUM(earnings),0)::float AS earnings FROM apis`) as Array<{ apis: number; requests: number; success: number; earnings: number }>;
-    const m = (await sql`SELECT COUNT(*)::int AS c FROM mcp_servers`) as Array<{ c: number }>;
-    const w = (await sql`SELECT COUNT(*)::int AS c FROM workflows`) as Array<{ c: number }>;
+    const a = (owner
+      ? await sql`SELECT COUNT(*)::int AS apis, COALESCE(SUM(request_count),0)::int AS requests, COALESCE(SUM(success_count),0)::int AS success, COALESCE(SUM(earnings),0)::float AS earnings FROM apis WHERE owner_address = ${owner}`
+      : await sql`SELECT COUNT(*)::int AS apis, COALESCE(SUM(request_count),0)::int AS requests, COALESCE(SUM(success_count),0)::int AS success, COALESCE(SUM(earnings),0)::float AS earnings FROM apis`) as Array<{ apis: number; requests: number; success: number; earnings: number }>;
+    const m = (owner
+      ? await sql`SELECT COUNT(*)::int AS c FROM mcp_servers WHERE owner_address = ${owner}`
+      : await sql`SELECT COUNT(*)::int AS c FROM mcp_servers`) as Array<{ c: number }>;
+    const w = (owner
+      ? await sql`SELECT COUNT(*)::int AS c FROM workflows WHERE owner_address = ${owner}`
+      : await sql`SELECT COUNT(*)::int AS c FROM workflows`) as Array<{ c: number }>;
     totals = { apis: a[0]?.apis ?? 0, requests: a[0]?.requests ?? 0, success: a[0]?.success ?? 0, earnings: a[0]?.earnings ?? 0, mcpServers: m[0]?.c ?? 0, workflows: w[0]?.c ?? 0 };
   } catch {}
 
