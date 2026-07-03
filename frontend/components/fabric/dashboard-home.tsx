@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Store, Server, Workflow, Clock } from "lucide-react";
+import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Store, Server, Workflow, Clock, Wallet } from "lucide-react";
 import { Panel, usdc } from "./ui";
+import { useWallet } from "@/lib/wallet";
 
 type Stats = {
   totals: { apis: number; requests: number; success: number; earnings: number; mcpServers: number; workflows: number; successRate: number };
@@ -77,6 +78,8 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
     fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
   }, []);
   const TOGGLE = [{ k: "all", label: "All Time" }, { k: "30d", label: "Last 30 Days" }, { k: "7d", label: "Last 7 Days" }];
+  const { address, real, connecting, connect } = useWallet();
+  const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
   const t = s?.totals;
   const sess = s?.session;
   const cap = sess?.cap ? Number(sess.cap) : null;
@@ -104,32 +107,46 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
         <Stat icon={DollarSign} label="Total Earnings" value={t ? `$${t.earnings.toFixed(2)}` : "—"} sub="USDC earned" />
       </div>
 
-      {/* Scoped session key — Kage's answer to EIP-7702 smart accounts */}
+      {/* x402 Payments — Kage's scoped SessionAccount (the ZK equivalent of a smart account) */}
       <Panel>
         <div className="flex items-center gap-2">
           <KeyRound className="h-5 w-5 text-accent" />
-          <p className="text-lg font-semibold text-white">Scoped session key</p>
+          <p className="text-lg font-semibold text-white">x402 Payments</p>
           {sess?.live && <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">live</span>}
         </div>
-        <p className="mt-1.5 text-sm text-neutral-400">
-          Instead of holding a hot wallet, the agent gets one scoped, revocable SessionAccount key — it can only pay into the ZK pool, up to a cap, before an expiry. <span className="inline-flex items-center gap-1 text-accent"><Lock className="h-3 w-3" /> zero custody</span>.
-        </p>
-        <div className="mt-5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs text-neutral-500">Remaining budget</p>
-              <p className="mt-0.5 text-3xl font-semibold text-white">{remaining != null ? usdc(remaining) : "—"}</p>
-            </div>
-            <p className="text-xs text-neutral-500">
-              of {cap != null ? usdc(cap) : "—"} cap · {sess?.poolLeafCount ?? 0} notes in pool
+        <p className="mt-1 text-sm text-neutral-500">Scoped session account for automated, ZK-private agent payments.</p>
+
+        <div className="mt-5 flex items-start gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+          <Wallet className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+          <div className="min-w-0">
+            <p className="font-semibold text-white">Session Account {real ? "connected" : "provisioned"}</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              Unlike EIP-7702 smart accounts, the agent pays through a scoped, revocable Stellar SessionAccount — only into the ZK pool, up to a cap, before an expiry. <span className="inline-flex items-center gap-1 text-accent"><Lock className="h-3 w-3" /> zero custody</span>, every payment private.
             </p>
+            {address && <p className="mt-2 font-mono text-xs text-neutral-500">owner {shortAddr(address)}{!real && " (demo identity)"}</p>}
           </div>
-          {pct != null && (
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-            </div>
-          )}
         </div>
+
+        {!address ? (
+          <button onClick={connect} disabled={connecting} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
+            <Wallet className="h-4 w-4" /> {connecting ? "Connecting…" : "Connect Wallet"}
+          </button>
+        ) : (
+          <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs text-neutral-500">Remaining budget</p>
+                <p className="mt-0.5 text-3xl font-semibold text-white">{remaining != null ? usdc(remaining) : "—"}</p>
+              </div>
+              <p className="text-xs text-neutral-500">of {cap != null ? usdc(cap) : "—"} cap · {sess?.poolLeafCount ?? 0} notes in pool</p>
+            </div>
+            {pct != null && (
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
+              </div>
+            )}
+          </div>
+        )}
       </Panel>
 
       <div>

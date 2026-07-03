@@ -2,6 +2,7 @@
 
 import { ReducedMotionProvider } from "@/lib/motion";
 import { SmoothScroll } from "@/components/smooth-scroll";
+import { WalletProvider } from "@/lib/wallet";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 
@@ -14,7 +15,9 @@ export function Providers({ children }: { children: ReactNode }): ReactNode {
       disableTransitionOnChange
     >
       <ReducedMotionProvider>
-        <SmoothScroll>{children}</SmoothScroll>
+        <WalletProvider>
+          <SmoothScroll>{children}</SmoothScroll>
+        </WalletProvider>
       </ReducedMotionProvider>
     </ThemeProvider>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, KeyRound, Zap, Play, Trash2 } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, short, CopyBtn } from "./ui";
+import { useWallet } from "@/lib/wallet";
 
 type Api = {
   id: string; name: string; slug: string | null; description: string | null; category: string | null;
@@ -16,9 +17,10 @@ export function ApisSection() {
   const [selected, setSelected] = useState<Api | null>(null);
   const [apis, setApis] = useState<Api[] | null>(null);
   const [q, setQ] = useState("");
+  const { address } = useWallet();
 
-  const load = () => fetch("/api/apis").then((r) => r.json()).then((d) => setApis(d.apis ?? [])).catch(() => setApis([]));
-  useEffect(() => { load(); }, []);
+  const load = () => fetch(`/api/apis${address ? `?owner=${address}` : ""}`).then((r) => r.json()).then((d) => setApis(d.apis ?? [])).catch(() => setApis([]));
+  useEffect(() => { load(); }, [address]);
 
   if (creating) return <CreateApiForm onDone={() => { setCreating(false); load(); }} onCancel={() => setCreating(false)} />;
   if (selected) return <ApiDetail api={selected} onBack={() => setSelected(null)} />;
@@ -197,6 +199,7 @@ function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
   const [headers, setHeaders] = useState<{ name: string; value: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const { address } = useWallet();
   const set = (k: keyof typeof f) => (v: string) => setF((s) => ({ ...s, [k]: v }));
 
   const submit = async () => {
@@ -211,6 +214,7 @@ function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
           tags: f.tags.split(",").map((t) => t.trim()).filter(Boolean),
           variables: vars.filter((v) => v.name),
           auth_headers: headers.filter((h) => h.name),
+          owner_address: address,
         }),
       });
       const d = await res.json();

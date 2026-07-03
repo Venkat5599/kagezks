@@ -4,9 +4,16 @@ import { sql, type McpServerRow } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const owner = url.searchParams.get("owner");
+  const scope = url.searchParams.get("scope");
   try {
-    const rows = (await sql`SELECT * FROM mcp_servers ORDER BY created_at DESC`) as McpServerRow[];
+    const rows = (scope === "public"
+      ? await sql`SELECT * FROM mcp_servers WHERE is_public = true ORDER BY created_at DESC`
+      : owner
+        ? await sql`SELECT * FROM mcp_servers WHERE owner_address = ${owner} ORDER BY created_at DESC`
+        : await sql`SELECT * FROM mcp_servers ORDER BY created_at DESC`) as McpServerRow[];
     return Response.json({ ok: true, servers: rows });
   } catch (e) {
     return Response.json({ ok: false, error: String(e) }, { status: 500 });

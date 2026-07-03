@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, ArrowLeft, Loader2, Search, Trash2, Globe, Link2, Play, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, CopyBtn, short } from "./ui";
+import { useWallet } from "@/lib/wallet";
 
 // Shapes match the fabric engine (agent/fabric/*): steps carry `id` + `kind`, output
 // mapping is { name, from }, and templates use {{input.x}} / {{steps.id.output...}}.
@@ -33,8 +34,9 @@ export function WorkflowsSection() {
   const [selected, setSelected] = useState<Wf | null>(null);
   const [wfs, setWfs] = useState<Wf[] | null>(null);
   const [q, setQ] = useState("");
-  const load = () => fetch("/api/workflows").then((r) => r.json()).then((d) => setWfs(d.workflows ?? [])).catch(() => setWfs([]));
-  useEffect(() => { load(); }, []);
+  const { address } = useWallet();
+  const load = () => fetch(`/api/workflows${address ? `?owner=${address}` : ""}`).then((r) => r.json()).then((d) => setWfs(d.workflows ?? [])).catch(() => setWfs([]));
+  useEffect(() => { load(); }, [address]);
 
   if (creating) return <CreateWorkflowForm onDone={() => { setCreating(false); load(); }} onCancel={() => setCreating(false)} />;
   if (selected) return <WorkflowDetail wf={selected} onBack={() => setSelected(null)} />;
@@ -248,6 +250,7 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
   const [contracts, setContracts] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const { address } = useWallet();
 
   const newStep = (): BStep => ({
     id: `step_${steps.length + 1}`, kind: "condition",
@@ -276,6 +279,7 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
           output_mapping: outputs.filter((o) => o.name && o.from),
           allowed_contracts: contracts.filter(Boolean),
           tags: steps.some((s) => s.kind === "onchain") ? ["http", "onchain", "zk"] : ["http"],
+          owner_address: address,
         }),
       });
       const d = await res.json();
