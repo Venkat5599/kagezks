@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, KeyRound, Zap, Play } from "lucide-react";
+import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, KeyRound, Zap, Play, Trash2 } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, short, CopyBtn } from "./ui";
 
 type Api = {
@@ -190,6 +190,11 @@ function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
     target_url: "", http_method: "GET", content_type: "application/json", query_params: "",
     example_response: '{\n  "data": [ ... ],\n  "success": true\n}', price: "0.01", is_public: false,
   });
+  // Variables (AgentFabric variablesSchema) → Kage `variables`; the `in` field controls
+  // whether the value substitutes into the query, the URL path, or the request body.
+  const [vars, setVars] = useState<{ name: string; type: string; in: string; description: string; required: boolean }[]>([]);
+  // Auth headers (AgentFabric headers) → Kage `auth_headers`; value may be "env:NAME".
+  const [headers, setHeaders] = useState<{ name: string; value: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const set = (k: keyof typeof f) => (v: string) => setF((s) => ({ ...s, [k]: v }));
@@ -200,7 +205,13 @@ function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
       const res = await fetch("/api/apis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, price: Number(f.price), tags: f.tags.split(",").map((t) => t.trim()).filter(Boolean) }),
+        body: JSON.stringify({
+          ...f,
+          price: Number(f.price),
+          tags: f.tags.split(",").map((t) => t.trim()).filter(Boolean),
+          variables: vars.filter((v) => v.name),
+          auth_headers: headers.filter((h) => h.name),
+        }),
       });
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || "failed");
@@ -242,7 +253,44 @@ function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
           </Field>
           <Field label="Content Type"><Input value={f.content_type} onChange={(e) => set("content_type")(e.target.value)} /></Field>
         </div>
-        <Field label="Query Parameters Template" hint="(optional) use {{var}}"><Textarea rows={2} placeholder="param1={{variable1}}&param2={{variable2}}" value={f.query_params} onChange={(e) => set("query_params")(e.target.value)} /></Field>
+        <Field label="Query Parameters Template" hint="(optional) use {name}"><Textarea rows={2} placeholder="param1={name1}&param2={name2}" value={f.query_params} onChange={(e) => set("query_params")(e.target.value)} /></Field>
+
+        {/* Variables — typed inputs an agent supplies; substitute {name} into URL/query/body */}
+        <div className="space-y-3 rounded-xl border border-white/[0.08] p-4">
+          <div className="flex items-center justify-between">
+            <div><p className="text-sm font-semibold text-white">Variables</p><p className="text-xs text-neutral-500">Typed inputs the agent passes; become the tool&apos;s parameters and substitute <span className="font-mono">{"{name}"}</span>.</p></div>
+            <Button variant="outline" onClick={() => setVars((v) => [...v, { name: "", type: "string", in: "query", description: "", required: true }])}><Plus className="h-4 w-4" /> Add</Button>
+          </div>
+          {vars.map((v, i) => (
+            <div key={i} className="grid gap-2 sm:grid-cols-[1fr_110px_100px_1fr_auto] sm:items-center">
+              <Input placeholder="name" value={v.name} onChange={(e) => setVars((a) => a.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} className="font-mono" />
+              <select value={v.type} onChange={(e) => setVars((a) => a.map((x, j) => j === i ? { ...x, type: e.target.value } : x))} className="rounded-xl border border-white/[0.1] bg-white/[0.03] px-2 py-2.5 text-sm text-white">
+                {["string", "number", "boolean"].map((t) => <option key={t} className="bg-[#0b0b0b]">{t}</option>)}
+              </select>
+              <select value={v.in} onChange={(e) => setVars((a) => a.map((x, j) => j === i ? { ...x, in: e.target.value } : x))} className="rounded-xl border border-white/[0.1] bg-white/[0.03] px-2 py-2.5 text-sm text-white">
+                {["query", "path", "body"].map((t) => <option key={t} className="bg-[#0b0b0b]">{t}</option>)}
+              </select>
+              <Input placeholder="description" value={v.description} onChange={(e) => setVars((a) => a.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
+              <button onClick={() => setVars((a) => a.filter((_, j) => j !== i))} className="text-neutral-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+            </div>
+          ))}
+        </div>
+
+        {/* Auth headers — sent to the upstream after payment; value may be env:NAME */}
+        <div className="space-y-3 rounded-xl border border-white/[0.08] p-4">
+          <div className="flex items-center justify-between">
+            <div><p className="text-sm font-semibold text-white">Auth Headers</p><p className="text-xs text-neutral-500">Sent upstream after payment. Use <span className="font-mono">env:NAME</span> to read a server secret.</p></div>
+            <Button variant="outline" onClick={() => setHeaders((h) => [...h, { name: "", value: "" }])}><Plus className="h-4 w-4" /> Add</Button>
+          </div>
+          {headers.map((h, i) => (
+            <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-center">
+              <Input placeholder="Authorization" value={h.name} onChange={(e) => setHeaders((a) => a.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} className="font-mono" />
+              <Input placeholder="Bearer env:OPENAI_KEY" value={h.value} onChange={(e) => setHeaders((a) => a.map((x, j) => j === i ? { ...x, value: e.target.value } : x))} className="font-mono" />
+              <button onClick={() => setHeaders((a) => a.filter((_, j) => j !== i))} className="text-neutral-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+            </div>
+          ))}
+        </div>
+
         <Field label="Example Response" hint="(optional)"><Textarea rows={4} value={f.example_response} onChange={(e) => set("example_response")(e.target.value)} /></Field>
         <Field label="Price per Request (USDC)" hint="charged per API call"><Input type="number" step="0.01" value={f.price} onChange={(e) => set("price")(e.target.value)} /></Field>
         <Toggle on={f.is_public} onChange={(v) => setF((s) => ({ ...s, is_public: v }))} label="Make API Public" desc="List this API in the public marketplace" />
