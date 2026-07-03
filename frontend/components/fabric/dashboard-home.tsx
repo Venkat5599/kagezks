@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Store, Server, Workflow, Clock, Wallet } from "lucide-react";
-import { Panel, usdc } from "./ui";
+import { Panel, usdc, CopyBtn } from "./ui";
 import { useWallet } from "@/lib/wallet";
 
 type Stats = {
@@ -78,8 +78,14 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
     fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
   }, []);
   const TOGGLE = [{ k: "all", label: "All Time" }, { k: "30d", label: "Last 30 Days" }, { k: "7d", label: "Last 7 Days" }];
-  const { address, real, connecting, connect } = useWallet();
+  const { address, secret, real, connecting, connect, generate } = useWallet();
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+  const [wstat, setWstat] = useState<{ funded: boolean; xlm: string } | null>(null);
+  useEffect(() => {
+    if (!address) { setWstat(null); return; }
+    setWstat(null);
+    fetch(`/api/wallet-status?address=${address}`).then((r) => r.json()).then((d) => setWstat(d.ok ? { funded: d.funded, xlm: d.xlm } : null)).catch(() => {});
+  }, [address]);
   const t = s?.totals;
   const sess = s?.session;
   const cap = sess?.cap ? Number(sess.cap) : null;
@@ -119,32 +125,57 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
         <div className="mt-5 flex items-start gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
           <Wallet className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
           <div className="min-w-0">
-            <p className="font-semibold text-white">Session Account {real ? "connected" : "provisioned"}</p>
+            <p className="font-semibold text-white">{address ? "Your wallet" : "Session Account required"}</p>
             <p className="mt-1 text-sm text-neutral-400">
               Unlike EIP-7702 smart accounts, the agent pays through a scoped, revocable Stellar SessionAccount — only into the ZK pool, up to a cap, before an expiry. <span className="inline-flex items-center gap-1 text-accent"><Lock className="h-3 w-3" /> zero custody</span>, every payment private.
             </p>
-            {address && <p className="mt-2 font-mono text-xs text-neutral-500">owner {shortAddr(address)}{!real && " (demo identity)"}</p>}
+            {address && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-mono text-neutral-400">{shortAddr(address)}</span>
+                <span className="text-neutral-600">·</span>
+                <span className="text-neutral-500">{wstat === null ? "…" : wstat.funded ? `${Number(wstat.xlm).toFixed(2)} XLM` : "unfunded"}</span>
+                {real && <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">Freighter</span>}
+              </div>
+            )}
           </div>
         </div>
 
-        {!address ? (
-          <button onClick={connect} disabled={connecting} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
-            <Wallet className="h-4 w-4" /> {connecting ? "Connecting…" : "Connect Wallet"}
-          </button>
-        ) : (
-          <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-xs text-neutral-500">Remaining budget</p>
-                <p className="mt-0.5 text-3xl font-semibold text-white">{remaining != null ? usdc(remaining) : "—"}</p>
-              </div>
-              <p className="text-xs text-neutral-500">of {cap != null ? usdc(cap) : "—"} cap · {sess?.poolLeafCount ?? 0} notes in pool</p>
+        {/* One-time secret reveal for a freshly generated wallet */}
+        {secret && (
+          <div className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] p-4">
+            <p className="text-xs font-semibold text-amber-300">Save your secret key — shown once. Import it into Freighter to control this wallet.</p>
+            <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-black/40 px-3 py-2">
+              <span className="flex-1 truncate font-mono text-[11px] text-neutral-200">{secret}</span>
+              <CopyBtn text={secret} />
             </div>
-            {pct != null && (
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-              </div>
-            )}
+            <p className="mt-2 text-[11px] text-neutral-500">Funding via friendbot… refresh balance in a moment.</p>
+          </div>
+        )}
+
+        {!address ? (
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <button onClick={generate} disabled={connecting} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
+              <Wallet className="h-4 w-4" /> {connecting ? "Generating…" : "Generate Session Account Wallet"}
+            </button>
+            <button onClick={connect} disabled={connecting} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.12] px-4 py-3 text-sm font-semibold text-neutral-300 transition hover:border-accent/40 hover:text-white">
+              Connect Freighter
+            </button>
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+              <p className="text-xs text-neutral-500">Your wallet balance</p>
+              <p className="mt-0.5 text-2xl font-semibold text-white">{wstat === null ? "—" : `${Number(wstat.xlm).toFixed(2)} XLM`}</p>
+              <p className="mt-1 text-[11px] text-neutral-500">{wstat?.funded ? "funded on testnet" : "not funded yet"}</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+              <p className="text-xs text-neutral-500">Demo agent session {sess?.live && <span className="text-accent">· live</span>}</p>
+              <p className="mt-0.5 text-2xl font-semibold text-white">{remaining != null ? usdc(remaining) : "—"}</p>
+              <p className="mt-1 text-[11px] text-neutral-500">of {cap != null ? usdc(cap) : "—"} cap · {sess?.poolLeafCount ?? 0} notes · shared demo</p>
+              {pct != null && (
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} /></div>
+              )}
+            </div>
           </div>
         )}
       </Panel>

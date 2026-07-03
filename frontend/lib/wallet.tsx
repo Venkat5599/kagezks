@@ -7,10 +7,19 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Keypair } from "@stellar/stellar-sdk";
 
-type WalletCtx = { address: string | null; real: boolean; connecting: boolean; connect: () => Promise<void>; disconnect: () => void };
-const Ctx = createContext<WalletCtx>({ address: null, real: false, connecting: false, connect: async () => {}, disconnect: () => {} });
+type WalletCtx = {
+  address: string | null;
+  secret: string | null; // set only for a wallet we generated (shown once to import)
+  real: boolean; // true = Freighter; false = generated/demo
+  connecting: boolean;
+  connect: () => Promise<void>; // Freighter
+  generate: () => Promise<void>; // create a fresh Stellar wallet + friendbot fund
+  disconnect: () => void;
+};
+const Ctx = createContext<WalletCtx>({ address: null, secret: null, real: false, connecting: false, connect: async () => {}, generate: async () => {}, disconnect: () => {} });
 
 const KEY = "kage_owner";
+const SECKEY = "kage_owner_secret";
 const REALKEY = "kage_owner_real";
 
 // Try Freighter's injected API across its version variants.
@@ -38,29 +47,48 @@ async function tryFreighter(): Promise<string | null> {
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
   const [real, setReal] = useState(false);
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(KEY);
-    if (saved) { setAddress(saved); setReal(localStorage.getItem(REALKEY) === "1"); }
+    if (saved) { setAddress(saved); setReal(localStorage.getItem(REALKEY) === "1"); setSecret(localStorage.getItem(SECKEY)); }
   }, []);
 
+  // Connect an existing Freighter wallet (no key material leaves the extension).
   const connect = async () => {
     setConnecting(true);
     try {
       const fa = await tryFreighter();
-      if (fa) { setAddress(fa); setReal(true); localStorage.setItem(KEY, fa); localStorage.setItem(REALKEY, "1"); return; }
-      // demo identity — stable per browser
-      let demo = localStorage.getItem(KEY);
-      if (!demo) demo = Keypair.random().publicKey();
-      setAddress(demo); setReal(false); localStorage.setItem(KEY, demo); localStorage.setItem(REALKEY, "0");
+      if (!fa) { alert("Freighter not detected. Use 'Generate Session Account Wallet' instead."); return; }
+      setAddress(fa); setReal(true); setSecret(null);
+      localStorage.setItem(KEY, fa); localStorage.setItem(REALKEY, "1"); localStorage.removeItem(SECKEY);
     } finally { setConnecting(false); }
   };
 
-  const disconnect = () => { setAddress(null); setReal(false); localStorage.removeItem(KEY); localStorage.removeItem(REALKEY); };
+  // Generate a fresh Stellar wallet in the browser and fund it via friendbot. The secret
+  // is shown once for the user to import into their wallet app (mirrors the smart-account
+  // wallet-generation flow). Each user gets a distinct address = distinct owner identity.
+  const generate = async () => {
+    setConnecting(true);
+    try {
+      const kp = Keypair.random();
+      const pub = kp.publicKey();
+      const sec = kp.secret();
+      setAddress(pub); setSecret(sec); setReal(false);
+      localStorage.setItem(KEY, pub); localStorage.setItem(SECKEY, sec); localStorage.setItem(REALKEY, "0");
+      // fire-and-forget testnet funding
+      fetch(`https://friendbot.stellar.org/?addr=${pub}`).catch(() => {});
+    } finally { setConnecting(false); }
+  };
 
-  return <Ctx.Provider value={{ address, real, connecting, connect, disconnect }}>{children}</Ctx.Provider>;
+  const disconnect = () => {
+    setAddress(null); setSecret(null); setReal(false);
+    localStorage.removeItem(KEY); localStorage.removeItem(SECKEY); localStorage.removeItem(REALKEY);
+  };
+
+  return <Ctx.Provider value={{ address, secret, real, connecting, connect, generate, disconnect }}>{children}</Ctx.Provider>;
 }
 
 export const useWallet = () => useContext(Ctx);
