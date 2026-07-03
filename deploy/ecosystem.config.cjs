@@ -53,7 +53,7 @@ module.exports = {
       script: "bun",
       args: "run agent/fabric-server.ts",
       env: {
-        VEIL_MCP_PORT: process.env.KAGE_FABRIC_PORT || "8403",
+        KAGE_FABRIC_PORT: process.env.KAGE_FABRIC_PORT || "8403",
         // Catalog source: the local web app (so published APIs/workflows appear as tools).
         KAGE_ORIGIN: process.env.KAGE_ORIGIN || "http://localhost:3000",
         VEIL_FEE_SECRET: process.env.VEIL_FEE_SECRET || "",

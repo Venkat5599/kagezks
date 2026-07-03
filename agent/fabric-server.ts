@@ -22,7 +22,9 @@ import { runWorkflow } from "./fabric/engine.ts";
 import { proxyCall } from "./fabric/proxy-tool.ts";
 import { config } from "../sdk/veil-onchain.ts";
 
-const PORT = Number(process.env.VEIL_MCP_PORT ?? 8403);
+// Dedicated port env — must NOT reuse VEIL_MCP_PORT (that's the single-agent demo's
+// port; sharing the name collides with veil-mcp when both read the same .env).
+const PORT = Number(process.env.KAGE_FABRIC_PORT ?? 8403);
 
 // One persistent server + transport for the process (stateless Streamable HTTP).
 const { server, registered } = await buildFabricServer(McpServer);
