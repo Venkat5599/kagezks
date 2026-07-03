@@ -1,0 +1,26 @@
+# Caddy reverse proxy for the Kage VPS.
+#   caddy run --config deploy/Caddyfile     (or: caddy reload)
+#
+# Routes:
+#   /fabric/mcp     -> multi-tenant fabric MCP (kage-fabric, :8403)  ← ZK, DB-driven
+#   everything else -> the Next app            (veil-web,    :3000)
+#
+# The Next app OWNS /mcp/<slug> (the marketplace descriptor endpoints, e.g.
+# https://kageai.me/mcp/kage) — do NOT route /mcp here or it gets clobbered.
+# handle_path strips /fabric, so /fabric/mcp reaches the fabric server as /mcp
+# (its actual route). Agents connect to https://kageai.me/fabric/mcp.
+# The single-agent demo (:8402) is local-only; expose it here only if you need it.
+
+kageai.me {
+	encode gzip
+
+	# Multi-tenant fabric MCP (Streamable HTTP) — the ZK, DB-driven endpoint.
+	handle_path /fabric/* {
+		reverse_proxy localhost:8403
+	}
+
+	# Next app (landing + /agent + /dashboard + /api/* + /mcp/[slug] descriptors).
+	handle {
+		reverse_proxy localhost:3000
+	}
+}

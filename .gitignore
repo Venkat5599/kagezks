@@ -41,3 +41,8 @@ Thumbs.db
 # transient agent prover scratch
 circuits/build/agent_insert_*.json
 sdk/build/veil_contract.txt
+
+# fabric agent token->session map (embeds a session key secret)
+sdk/build/agent_keys.json
+# stray windows reserved-name file from build redirects
+nul

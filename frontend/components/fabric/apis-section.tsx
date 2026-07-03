@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, KeyRound, Zap } from "lucide-react";
+import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, KeyRound, Zap, Play } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, short, CopyBtn } from "./ui";
 
 type Api = {
@@ -127,6 +127,8 @@ function ApiDetail({ api, onBack }: { api: Api; onBack: () => void }) {
         </div>
       </Panel>
 
+      <TestApi api={api} />
+
       {api.example_response && (
         <Panel>
           <p className="font-semibold text-white">Example response</p>
@@ -140,6 +142,45 @@ function ApiDetail({ api, onBack }: { api: Api; onBack: () => void }) {
         <Field label="Earnings"><span className="text-2xl font-semibold text-white">${Number(api.earnings ?? 0).toFixed(2)}</span></Field>
       </div>
     </div>
+  );
+}
+
+// Live proxied call through the fabric (/run/api → real upstream fetch). Not metered
+// here — this is the owner testing their own proxy; agents pay via x402 at the tool.
+function TestApi({ api }: { api: Api }) {
+  const [argsText, setArgsText] = useState("{}");
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<{ ok: boolean; status?: number; body?: unknown; error?: string } | null>(null);
+
+  const run = async () => {
+    setBusy(true); setRes(null);
+    let args: unknown = {};
+    try { args = argsText.trim() ? JSON.parse(argsText) : {}; }
+    catch { setRes({ ok: false, error: "args is not valid JSON" }); setBusy(false); return; }
+    try {
+      const r = await fetch("/api/fabric/run", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "api", slug: api.slug ?? api.id, args }),
+      });
+      setRes(await r.json());
+    } catch (e) { setRes({ ok: false, error: String((e as Error).message) }); } finally { setBusy(false); }
+  };
+
+  return (
+    <Panel>
+      <div className="flex items-center gap-2"><Play className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Test call</p><Chip accent>live</Chip></div>
+      <p className="mt-1 text-sm text-neutral-500">Proxies to <span className="font-mono text-neutral-400">{api.target_url}</span> with your args. Variables substitute <span className="font-mono text-neutral-400">{"{name}"}</span> in the URL / query.</p>
+      <div className="mt-4"><Field label="Args (JSON)"><Textarea rows={3} value={argsText} onChange={(e) => setArgsText(e.target.value)} className="font-mono" /></Field></div>
+      <div className="mt-3"><Button onClick={run} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} Send request</Button></div>
+      {res && (
+        <div className="mt-4">
+          {res.ok
+            ? <p className="text-sm"><span className={res.status && res.status < 400 ? "text-accent" : "text-red-400"}>HTTP {res.status}</span></p>
+            : <p className="text-sm text-red-400">{res.error}</p>}
+          {res.body != null && <pre className="mt-2 max-h-72 overflow-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{typeof res.body === "string" ? res.body : JSON.stringify(res.body, null, 2)}</pre>}
+        </div>
+      )}
+    </Panel>
   );
 }
 
