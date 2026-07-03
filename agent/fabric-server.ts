@@ -1,4 +1,4 @@
-// Kage Agent-Fabric MCP server — the multi-tenant, DB-driven endpoint.
+// Kage Fabric MCP server — the multi-tenant, DB-driven endpoint.
 //
 //   bun run agent/fabric-server.ts         # http://localhost:8403/mcp (Streamable HTTP)
 //

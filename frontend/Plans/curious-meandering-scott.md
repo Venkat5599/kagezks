@@ -65,7 +65,7 @@ MCP server import the same code.
   4. generate insert proof — snarkjs `groth16.fullProve` against `circuits/build` artifacts
      (reuse the wasm/zkey already served at `frontend/public/zk/`).
   5. build `deposit(from = SessionAccount, …)` invocation; sign the **Soroban auth entry**
-     with the **agent session key** (ed25519) — mirrors `scripts/agent-fabric.ts` intent and
+     with the **agent session key** (ed25519) — mirrors `scripts/kage-provision-cli.ts` intent and
      `SessionAccount` signature type `BytesN<64>`.
   6. submit; return `{ commitment, ephemeralPub, tx }`.
 - `poolStatus()` and `remainingBudget(sessionId)` (reads `SessionAccount.remaining`).
@@ -115,7 +115,7 @@ resulting ZK-private payment appearing in the pool ledger (reuse `frontend/app/a
 - `sdk/veil.ts` — all crypto/notes/tree/recipientField.
 - `frontend/lib/kage-chain.ts` — programmatic `deposit`/`withdraw` + `groth16.fullProve` →
   source to extract into `sdk/kage-onchain.ts`.
-- `scripts/agent-fabric.ts` — SessionAccount deploy / delegate / fund (run once to provision).
+- `scripts/kage-provision-cli.ts` — SessionAccount deploy / delegate / fund (run once to provision).
 - `contracts/solvency/contracts/session/src/lib.rs` — SessionAccount; **no change** (already
   gates `deposit` + USDC `transfer`→pool, cap, expiry).
 - `circuits/build/*` + `frontend/public/zk/*` — proving artifacts.
@@ -143,7 +143,7 @@ resulting ZK-private payment appearing in the pool ledger (reuse `frontend/app/a
 
 ## Risks / honest scope
 - Agent-signed Soroban auth entry through SessionAccount is the one **untested hop** today
-  (memory `veil-agent-fabric`); building the engine (#1) is what finally exercises it on testnet.
+  (memory `session-account`); building the engine (#1) is what finally exercises it on testnet.
 - x402 payment **verification** may be stubbed for the demo (handshake real, settlement
   verification documented as stretch) to stay time-boxed.
 - Testnet only; demo tree depth 10; fixed-denomination notes for a clean anonymity set.

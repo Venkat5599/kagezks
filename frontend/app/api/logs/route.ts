@@ -1,6 +1,6 @@
 // Per-request metering log. The fabric POSTs one row per proxied API call (paid or
 // not); the dashboard GETs them with a period filter. Real call history — the
-// AgentFabric RequestLogsTable equivalent.
+// dashboard request-log feed.
 import { sql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";

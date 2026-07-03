@@ -74,7 +74,7 @@ function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
   const url = `https://kageai.me/mcp/${mcp.slug ?? ""}`;
   const config = JSON.stringify({ mcpServers: { [mcp.slug ?? "server"]: { type: "http", url } } }, null, 2);
 
-  // Live-editable tool/workflow attachment (AgentFabric detail-page management).
+  // Live-editable tool/workflow attachment (detail-page management).
   const [tools, setTools] = useState<string[]>((mcp.tools ?? []).map(String));
   const [workflows, setWorkflows] = useState<string[]>((mcp.workflows ?? []).map(String));
   const [apis, setApis] = useState<ApiLite[]>([]);

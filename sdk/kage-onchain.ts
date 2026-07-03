@@ -7,7 +7,7 @@
 // entry with the AGENT session key (never the owner's key). SessionAccount.__check_auth
 // gates it: only Kage.deposit + USDC transfer→pool, within cap, before expiry.
 //
-// This is the previously-untested hop (see memory veil-agent-fabric): a custom-account
+// This is the previously-untested hop (see memory session-account): a custom-account
 // (BytesN<64>) signature, built manually so the signature ScVal matches the contract.
 import {
   rpc,
@@ -73,7 +73,7 @@ const INSERT_ZKEY = join(CIRCB, "insert_final.zkey");
 
 // ---- config (deployment + provisioned session) ------------------------------
 type Deployment = { contract_id: string; usdc_sac: string };
-type AgentFabric = { session: string; agent: string; agentSecret: string; pool: string; cap: number; expiry: number };
+type SessionCfg = { session: string; agent: string; agentSecret: string; pool: string; cap: number; expiry: number };
 
 function readJson<T>(p: string): T | null {
   return existsSync(p) ? (JSON.parse(readFileSync(p, "utf8")) as T) : null;
@@ -81,7 +81,7 @@ function readJson<T>(p: string): T | null {
 
 export function config() {
   const dep = readJson<Deployment>(join(SDKB, "veil_deployment.json"));
-  const af = readJson<AgentFabric>(join(SDKB, "agent_fabric.json"));
+  const af = readJson<SessionCfg>(join(SDKB, "agent_fabric.json"));
   const VEIL = process.env.VEIL_CONTRACT ?? dep?.contract_id;
   const USDC = process.env.VEIL_USDC ?? dep?.usdc_sac;
   if (!VEIL || !USDC) throw new Error("missing Kage deployment (sdk/build/veil_deployment.json)");

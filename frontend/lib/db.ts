@@ -1,10 +1,10 @@
-// Neon Postgres access for the Kage Agent-Fabric app (APIs / MCP servers / workflows).
+// Neon Postgres access for the Kage Fabric app (APIs / MCP servers / workflows).
 // One serverless client, reused across API routes. DATABASE_URL lives in .env.local.
 import { neon } from "@neondatabase/serverless";
 
 if (!process.env.DATABASE_URL) {
   // Surfaced at request time in the route, not at import, so the build doesn't fail.
-  console.warn("DATABASE_URL is not set — the Agent-Fabric app can't reach Neon.");
+  console.warn("DATABASE_URL is not set — the Fabric app can't reach Neon.");
 }
 
 // A well-formed placeholder keeps `neon()` (and `next build`) happy when DATABASE_URL
