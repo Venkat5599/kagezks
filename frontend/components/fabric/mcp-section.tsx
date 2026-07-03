@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, ArrowLeft, Server, Loader2, Search, Wrench, Workflow, Check, X } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Empty, short, Chip, CopyBtn } from "./ui";
+import { useWallet } from "@/lib/wallet";
 
 type Mcp = {
   id: string; slug: string | null; display_name: string; description: string | null;
@@ -14,8 +15,9 @@ export function McpSection() {
   const [selected, setSelected] = useState<Mcp | null>(null);
   const [servers, setServers] = useState<Mcp[] | null>(null);
   const [q, setQ] = useState("");
-  const load = () => fetch("/api/mcp-servers").then((r) => r.json()).then((d) => setServers(d.servers ?? [])).catch(() => setServers([]));
-  useEffect(() => { load(); }, []);
+  const { address } = useWallet();
+  const load = () => fetch(`/api/mcp-servers${address ? `?owner=${address}` : ""}`).then((r) => r.json()).then((d) => setServers(d.servers ?? [])).catch(() => setServers([]));
+  useEffect(() => { load(); }, [address]);
 
   if (creating) return <CreateMcpForm onDone={() => { setCreating(false); load(); }} onCancel={() => setCreating(false)} />;
   if (selected) return <McpDetail mcp={selected} onBack={() => setSelected(null)} />;
@@ -234,6 +236,7 @@ function CreateMcpForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
   const [wfOptions, setWfOptions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const { address } = useWallet();
 
   // Offer the published APIs (as api__<slug> proxy tools) + workflows to attach.
   useEffect(() => {
@@ -249,7 +252,7 @@ function CreateMcpForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
     try {
       const res = await fetch("/api/mcp-servers", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, tools, workflows }),
+        body: JSON.stringify({ ...f, tools, workflows, owner_address: address }),
       });
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || "failed");

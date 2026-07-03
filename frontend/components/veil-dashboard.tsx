@@ -2,19 +2,22 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, Store, Server, Workflow, Eye, ExternalLink, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Store, Server, Workflow, Eye, ExternalLink, ShoppingBag, Wallet, type LucideIcon } from "lucide-react";
 import { KageMark } from "@/components/veil-logo";
 import { DashboardHome } from "@/components/fabric/dashboard-home";
 import { ApisSection } from "@/components/fabric/apis-section";
 import { McpSection } from "@/components/fabric/mcp-section";
 import { WorkflowsSection } from "@/components/fabric/workflows-section";
+import { MarketplaceSection } from "@/components/fabric/marketplace-section";
+import { useWallet } from "@/lib/wallet";
 
-type SectionKey = "dashboard" | "apis" | "mcp" | "workflows";
+type SectionKey = "dashboard" | "apis" | "mcp" | "workflows" | "marketplace";
 const SECTIONS: { key: SectionKey; label: string; icon: LucideIcon }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "apis", label: "APIs", icon: Store },
   { key: "mcp", label: "MCP Servers", icon: Server },
   { key: "workflows", label: "Workflows", icon: Workflow },
+  { key: "marketplace", label: "Marketplace", icon: ShoppingBag },
 ];
 
 const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
@@ -25,6 +28,7 @@ export function KageDashboard(): ReactNode {
   const [active, setActive] = useState<SectionKey>("dashboard");
   const cur = SECTIONS.find((s) => s.key === active) ?? SECTIONS[0]!;
   const CurIcon = cur.icon;
+  const { address, connecting, connect } = useWallet();
 
   return (
     <div className="min-h-[100dvh] bg-[#080808] text-white [&_svg]:[stroke-width:1.6] lg:flex" style={{ colorScheme: "dark" }}>
@@ -78,9 +82,18 @@ export function KageDashboard(): ReactNode {
             <CurIcon className="h-[18px] w-[18px] text-accent" strokeWidth={1.7} />
             <span className="text-sm font-semibold tracking-tight">{cur.label}</span>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-xs font-semibold text-accent">
-            <Eye className="h-3.5 w-3.5" /> Stellar testnet
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={connect}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-3.5 py-1.5 text-xs font-semibold text-neutral-300 transition hover:border-accent/40 hover:text-white"
+            >
+              <Wallet className="h-3.5 w-3.5" />
+              {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : connecting ? "Connecting…" : "Connect Wallet"}
+            </button>
+            <span className="hidden items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-xs font-semibold text-accent sm:inline-flex">
+              <Eye className="h-3.5 w-3.5" /> Stellar testnet
+            </span>
+          </div>
         </div>
 
         <div className="mx-auto max-w-5xl px-6 py-8">
@@ -96,6 +109,7 @@ export function KageDashboard(): ReactNode {
               {active === "apis" && <ApisSection />}
               {active === "mcp" && <McpSection />}
               {active === "workflows" && <WorkflowsSection />}
+              {active === "marketplace" && <MarketplaceSection />}
             </motion.div>
           </AnimatePresence>
         </div>

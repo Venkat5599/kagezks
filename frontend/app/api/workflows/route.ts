@@ -4,9 +4,16 @@ import { sql, type WorkflowRow } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const owner = url.searchParams.get("owner");
+  const scope = url.searchParams.get("scope");
   try {
-    const rows = (await sql`SELECT * FROM workflows ORDER BY created_at DESC`) as WorkflowRow[];
+    const rows = (scope === "public"
+      ? await sql`SELECT * FROM workflows WHERE is_public = true ORDER BY created_at DESC`
+      : owner
+        ? await sql`SELECT * FROM workflows WHERE owner_address = ${owner} ORDER BY created_at DESC`
+        : await sql`SELECT * FROM workflows ORDER BY created_at DESC`) as WorkflowRow[];
     return Response.json({ ok: true, workflows: rows });
   } catch (e) {
     return Response.json({ ok: false, error: String(e) }, { status: 500 });
@@ -19,11 +26,11 @@ export async function POST(req: Request) {
     if (!b?.name) return Response.json({ ok: false, error: "name is required" }, { status: 400 });
     const slug = String(b.slug || b.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const rows = (await sql`
-      INSERT INTO workflows (name, slug, description, is_public, input_variables, steps, output_mapping, allowed_contracts, tags)
+      INSERT INTO workflows (name, slug, description, is_public, input_variables, steps, output_mapping, allowed_contracts, tags, owner_address)
       VALUES (${b.name}, ${slug}, ${b.description ?? null}, ${Boolean(b.is_public)},
         ${JSON.stringify(b.input_variables ?? [])}::jsonb, ${JSON.stringify(b.steps ?? [])}::jsonb,
         ${JSON.stringify(b.output_mapping ?? [])}::jsonb, ${JSON.stringify(b.allowed_contracts ?? [])}::jsonb,
-        ${JSON.stringify(b.tags ?? [])}::jsonb)
+        ${JSON.stringify(b.tags ?? [])}::jsonb, ${b.owner_address ?? null})
       RETURNING *
     `) as WorkflowRow[];
     return Response.json({ ok: true, workflow: rows[0] });
