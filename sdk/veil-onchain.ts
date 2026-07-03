@@ -44,6 +44,10 @@ const CIRCB = join(ROOT, "circuits", "build");
 export const RPC_URL = process.env.VEIL_RPC_URL ?? "https://soroban-testnet.stellar.org";
 export const PASSPHRASE = Networks.TESTNET;
 
+// Manifest genesis commitment (leaf 0 of a freshly-deployed pool). Used to seed the
+// tree when RPC event retention has dropped the original deposit event.
+const GENESIS_LEAF = "057206e8b530c5dae19f754d6072f1ef375df2501bfd9144e294e7262b8466a7";
+
 const INSERT_WASM = join(CIRCB, "veil_insert_js", "veil_insert.wasm");
 const INSERT_ZKEY = join(CIRCB, "insert_final.zkey");
 
@@ -165,6 +169,15 @@ async function rebuildTree(veil: string, leafCount: number): Promise<MerkleTree>
     startLedger = undefined;
     if (!res.events || res.events.length === 0) break;
   }
+  // The freshly-deployed pool's leaf 0 is the manifest genesis commitment (the e2e
+  // deposit veil-deploy.ts makes). Public testnet RPC event retention can drop that
+  // event out of the query window, so seed leaf 0 from the known constant when the
+  // scan missed it — this reconstructs the REAL tree (its root equals the pool's
+  // current_root), it does not fabricate state. Matches frontend/lib/veil-chain.ts.
+  if (byIdx.get(0) === undefined && leafCount >= 1) {
+    byIdx.set(0, BigInt("0x" + GENESIS_LEAF));
+  }
+
   // Insert leaves in index order (0..leafCount-1).
   for (let i = 0; i < leafCount; i++) {
     const c = byIdx.get(i);
