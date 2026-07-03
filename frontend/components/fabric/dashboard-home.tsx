@@ -78,7 +78,7 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
     fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
   }, []);
   const TOGGLE = [{ k: "all", label: "All Time" }, { k: "30d", label: "Last 30 Days" }, { k: "7d", label: "Last 7 Days" }];
-  const { address, secret, real, connecting, connect, generate } = useWallet();
+  const { address, secret, real, connecting, connect, generate, disconnect } = useWallet();
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
   const [wstat, setWstat] = useState<{ funded: boolean; xlm: string } | null>(null);
   useEffect(() => {
@@ -194,6 +194,21 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
               {pct != null && (
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} /></div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Wallet with no local key (Freighter / stale identity) can't provision — offer to generate one. */}
+        {address && !secret && !prov && (
+          <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <p className="text-sm text-neutral-400">This wallet has no local key, so it can&apos;t provision a session. Generate a session wallet to deploy your own scoped SessionAccount.</p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <button onClick={generate} disabled={connecting} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
+                <Wallet className="h-4 w-4" /> {connecting ? "Generating…" : "Generate Session Account Wallet"}
+              </button>
+              <button onClick={disconnect} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.12] px-4 py-3 text-sm font-semibold text-neutral-300 transition hover:border-red-400/40 hover:text-red-300">
+                Disconnect
+              </button>
             </div>
           </div>
         )}
