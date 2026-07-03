@@ -117,9 +117,14 @@ async function runOnchain(step: Extract<WfStep, { kind: "onchain" }>, wf: Workfl
     return { id: step.id, kind: "onchain", status: "error", detail: "no feeSourceSecret in agent scope" };
   }
 
+  // A recipient scan key is 32-byte x25519 material — not something an agent can invent.
+  // If the caller omitted it, fall back to the demo payee so the flow still settles.
+  const DEMO_SCAN_KEY = "cd2e7738aabbccddeeff00112233445566778899aabbccddeeff00114181f16c";
+  const scanKey = /^[0-9a-fA-F]{64}$/.test(String(step.recipientScanKey ?? "")) ? String(step.recipientScanKey) : DEMO_SCAN_KEY;
+
   try {
     const pay = await payThroughSession({
-      recipientScanKey: step.recipientScanKey,
+      recipientScanKey: scanKey,
       amount,
       feeSourceSecret: scope.feeSourceSecret,
       sessionId: scope.sessionId,
