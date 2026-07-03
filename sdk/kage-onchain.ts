@@ -145,7 +145,7 @@ export async function poolStatus(): Promise<{ contract: string; root: string; le
 export async function remainingBudget(sessionId?: string): Promise<bigint> {
   const { session } = config();
   const sid = sessionId ?? session;
-  if (!sid) throw new Error("no SessionAccount provisioned (run `bun run agent:fabric`)");
+  if (!sid) throw new Error("no session for this token — provision a Session Account in the dashboard, or pass a valid Bearer token");
   const r = await simRead(sid, "remaining");
   return BigInt(r ?? 0);
 }
@@ -296,7 +296,7 @@ export async function payThroughSession(args: {
   const { VEIL, session: cfgSession, agentSecret: cfgAgent } = config();
   const sessionId = args.sessionId ?? cfgSession;
   const agentSecret = args.agentSecret ?? cfgAgent;
-  if (!sessionId || !agentSecret) throw new Error("no SessionAccount provisioned (run `bun run agent:fabric`)");
+  if (!sessionId || !agentSecret) throw new Error("no session for this token — provision a Session Account in the dashboard, or pass a valid Bearer token");
   const { onStep } = args;
   const s = server();
   const agent = Keypair.fromSecret(agentSecret);

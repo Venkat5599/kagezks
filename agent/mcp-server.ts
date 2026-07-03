@@ -177,9 +177,9 @@ if (process.argv.includes("--stdio")) {
     console.error(`Kage MCP server on http://localhost:${PORT}/mcp  (health: /health)`);
     try {
       const c = config();
-      console.error(`  pool ${c.VEIL}  session ${c.session ?? "(none — run bun run agent:fabric)"}`);
+      console.error(`  pool ${c.VEIL}  session ${c.session ?? "(none — provision one in the dashboard)"}`);
     } catch {
-      console.error("  no deployment yet — run scripts/veil-deploy.ts + agent:fabric");
+      console.error("  no deployment yet — run scripts/kage-deploy.ts + provision a session");
     }
   });
 }
