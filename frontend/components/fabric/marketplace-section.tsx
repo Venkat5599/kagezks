@@ -17,8 +17,10 @@ export function MarketplaceSection() {
   const [apis, setApis] = useState<Api[] | null>(null);
   const [wfs, setWfs] = useState<Wf[] | null>(null);
   const [q, setQ] = useState("");
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+    setToken(localStorage.getItem("kage_session_token"));
     fetch("/api/mcp-servers?scope=public").then((r) => r.json()).then((d) => setMcps(d.servers ?? [])).catch(() => setMcps([]));
     fetch("/api/apis?scope=public").then((r) => r.json()).then((d) => setApis(d.apis ?? [])).catch(() => setApis([]));
     fetch("/api/workflows?scope=public").then((r) => r.json()).then((d) => setWfs(d.workflows ?? [])).catch(() => setWfs([]));
@@ -47,7 +49,9 @@ export function MarketplaceSection() {
         {mcps === null ? <Empty><Loader2 className="mx-auto h-5 w-5 animate-spin" /></Empty> : fMcps.length === 0 ? <Empty>No public MCP servers yet.</Empty> : (
           <div className="grid gap-4 sm:grid-cols-2">
             {fMcps.map((m) => {
-              const url = `https://kageai.me/mcp/${m.slug}`;
+              // Append the user's provisioned token so the URL/command is connect-ready.
+              const url = `https://kageai.me/mcp/${m.slug}${token ? `?token=${token}` : ""}`;
+              const cmd = `claude mcp add ${m.slug} --transport http https://kageai.me/mcp/${m.slug}${token ? ` --header "Authorization: Bearer ${token}"` : ""}`;
               return (
                 <Panel key={m.id}>
                   <div className="flex items-center gap-2"><Server className="h-4 w-4 text-accent" /><p className="font-semibold text-white">{m.display_name}</p><Globe className="h-3 w-3 text-neutral-600" /></div>
@@ -59,8 +63,9 @@ export function MarketplaceSection() {
                   </div>
                   <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2">
                     <span className="flex-1 truncate font-mono text-[11px] text-neutral-300">{url}</span>
-                    <CopyBtn text={`claude mcp add ${m.slug} --transport http ${url}`} />
+                    <CopyBtn text={cmd} />
                   </div>
+                  {!token && <p className="mt-1.5 text-[10px] text-neutral-600">Provision a Session Account (Dashboard) to get a connect-ready link with your token.</p>}
                 </Panel>
               );
             })}
