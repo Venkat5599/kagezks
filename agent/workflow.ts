@@ -1,4 +1,4 @@
-// Declarative, reusable, agent-readable workflows over the Veil engine.
+// Declarative, reusable, agent-readable workflows over the Kage engine.
 //
 // A workflow is an ordered list of steps — each a `condition`, an `onchain`
 // action, or a `read`. The flagship `pay-if-budget` composes a budget check with
@@ -51,9 +51,9 @@ export async function payIfBudget(input: PayIfBudgetInput): Promise<WorkflowRun>
   let budget: bigint;
   try {
     budget = await remainingBudget(input.sessionId);
-    steps.push({ step: "veil_budget", status: "ok", detail: `${budget} remaining`, data: budget.toString() });
+    steps.push({ step: "kage_budget", status: "ok", detail: `${budget} remaining`, data: budget.toString() });
   } catch (e) {
-    steps.push({ step: "veil_budget", status: "error", detail: String((e as Error).message) });
+    steps.push({ step: "kage_budget", status: "error", detail: String((e as Error).message) });
     return { workflow: "pay-if-budget", completed: false, steps };
   }
 
@@ -77,20 +77,20 @@ export async function payIfBudget(input: PayIfBudgetInput): Promise<WorkflowRun>
       feeSourceSecret: input.feeSourceSecret,
       sessionId: input.sessionId,
       agentSecret: input.agentSecret,
-      onStep: (s) => steps.push({ step: `veil_pay:${s}`, status: "ok" }),
+      onStep: (s) => steps.push({ step: `kage_pay:${s}`, status: "ok" }),
     });
-    steps.push({ step: "veil_pay", status: "ok", detail: `tx ${pay.hash}`, data: { hash: pay.hash, commitment: pay.commitment, leafIndex: pay.leafIndex } });
+    steps.push({ step: "kage_pay", status: "ok", detail: `tx ${pay.hash}`, data: { hash: pay.hash, commitment: pay.commitment, leafIndex: pay.leafIndex } });
   } catch (e) {
-    steps.push({ step: "veil_pay", status: "error", detail: String((e as Error).message) });
+    steps.push({ step: "kage_pay", status: "error", detail: String((e as Error).message) });
     return { workflow: "pay-if-budget", completed: false, steps };
   }
 
   // 4. confirm
   try {
     const status = await poolStatus();
-    steps.push({ step: "veil_pool_status", status: "ok", detail: `leafCount ${status.leafCount}`, data: status });
+    steps.push({ step: "kage_pool_status", status: "ok", detail: `leafCount ${status.leafCount}`, data: status });
   } catch (e) {
-    steps.push({ step: "veil_pool_status", status: "error", detail: String((e as Error).message) });
+    steps.push({ step: "kage_pool_status", status: "error", detail: String((e as Error).message) });
   }
 
   return {

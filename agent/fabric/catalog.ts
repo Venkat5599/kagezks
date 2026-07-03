@@ -36,7 +36,7 @@ export type WfStep =
   // http: call a published API by slug (`api`) OR an inline URL (`url`). Both x402-aware
   // when they point at a Kage-metered endpoint; inline URLs hit the upstream directly.
   | { id: string; kind: "http"; api?: string; url?: string; method?: string; body?: unknown; with?: Record<string, unknown> }
-  | { id: string; kind: "onchain"; action?: "veil_pay"; recipientScanKey: string; amount: string }
+  | { id: string; kind: "onchain"; action?: "kage_pay"; recipientScanKey: string; amount: string }
   | { id: string; kind: "condition"; left: string; op: CmpOp; right: string };
 
 export type CmpOp = ">=" | ">" | "<=" | "<" | "==" | "!=";

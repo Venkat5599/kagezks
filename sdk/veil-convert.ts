@@ -1,4 +1,4 @@
-// Converts the Veil snarkjs Groth16 artifacts (both circuits) into the raw
+// Converts the Kage snarkjs Groth16 artifacts (both circuits) into the raw
 // BN254 byte layout the Soroban verifier expects, emitting JSON arg files for
 // `stellar contract invoke --<arg>-file-path`.
 //

@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, type ReactNode } from "react";
 import { LayoutDashboard, Store, Server, Workflow, Eye, ExternalLink, type LucideIcon } from "lucide-react";
-import { VeilMark } from "@/components/veil-logo";
+import { KageMark } from "@/components/veil-logo";
 import { DashboardHome } from "@/components/fabric/dashboard-home";
 import { ApisSection } from "@/components/fabric/apis-section";
 import { McpSection } from "@/components/fabric/mcp-section";
@@ -21,7 +21,7 @@ const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
 const EXPLORER = `https://stellar.expert/explorer/testnet/contract/${CONTRACT}`;
 const short = (s: string, head = 7, tail = 5) => (s.length > head + tail ? `${s.slice(0, head)}…${s.slice(-tail)}` : s);
 
-export function VeilDashboard(): ReactNode {
+export function KageDashboard(): ReactNode {
   const [active, setActive] = useState<SectionKey>("dashboard");
   const cur = SECTIONS.find((s) => s.key === active) ?? SECTIONS[0]!;
   const CurIcon = cur.icon;
@@ -33,7 +33,7 @@ export function VeilDashboard(): ReactNode {
         <div className="flex h-full flex-col gap-3 p-4">
           <div className="flex items-center gap-3 rounded-2xl bg-accent/10 px-3 py-3 ring-1 ring-inset ring-accent/15">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent">
-              <VeilMark className="h-5 w-5 text-black" />
+              <KageMark className="h-5 w-5 text-black" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold leading-tight tracking-tight">Kage <span className="text-accent">Fabric</span></p>

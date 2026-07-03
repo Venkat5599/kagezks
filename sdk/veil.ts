@@ -1,4 +1,4 @@
-// Veil SDK — stealth notes (X25519 ECDH) + Poseidon Merkle tree.
+// Kage SDK — stealth notes (X25519 ECDH) + Poseidon Merkle tree.
 //
 // A sender derives a note's secrets from an ECDH shared secret with the
 // recipient's scan key, so only the recipient (holding the scan private key)

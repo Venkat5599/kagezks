@@ -1,6 +1,6 @@
 // Assemble the MCP tool surface from the live catalog + built-ins.
 //
-//   built-ins            veil_pool_status, veil_budget, fabric_reload
+//   built-ins            kage_pool_status, kage_budget, fabric_reload
 //   per published API     api__<slug>      (x402-metered proxy tool)
 //   per published flow    wf__<slug>       (runs the workflow engine → ZK settle)
 //
@@ -19,13 +19,13 @@ const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON
 
 function registerBuiltins(server: McpServer) {
   server.registerTool(
-    "veil_pool_status",
-    { title: "Veil pool status", description: "Live shielded-pool state: contract, root, leaf count, USDC pooled.", inputSchema: {} },
+    "kage_pool_status",
+    { title: "Kage pool status", description: "Live shielded-pool state: contract, root, leaf count, USDC pooled.", inputSchema: {} },
     async () => json(await poolStatus()),
   );
 
   server.registerTool(
-    "veil_budget",
+    "kage_budget",
     {
       title: "Agent budget",
       description: "Remaining scoped spend cap on the calling agent's SessionAccount (cap - spent).",

@@ -1,21 +1,21 @@
-// Veil MCP server — the tools an LLM agent calls to pay privately on Stellar.
+// Kage MCP server — the tools an LLM agent calls to pay privately on Stellar.
 //
 //   bun run agent/mcp-server.ts        # http://localhost:8402/mcp (Streamable HTTP)
 //
-// Exposes Veil as Model Context Protocol tools so any MCP-capable agent (the demo
+// Exposes Kage as Model Context Protocol tools so any MCP-capable agent (the demo
 // agent in agent/demo-agent.ts drives Claude) can discover and use them:
 //
-//   veil_pool_status  — live pool root, leaf count, USDC pooled           (read)
-//   veil_budget       — remaining scoped cap on the agent's SessionAccount (read)
-//   veil_quote        — x402 price for a veil_pay call + pool readiness    (read)
-//   veil_pay          — ZK-private payment through the SessionAccount      (x402-metered)
+//   kage_pool_status  — live pool root, leaf count, USDC pooled           (read)
+//   kage_budget       — remaining scoped cap on the agent's SessionAccount (read)
+//   kage_quote        — x402 price for a kage_pay call + pool readiness    (read)
+//   kage_pay          — ZK-private payment through the SessionAccount      (x402-metered)
 //   workflow_list     — available workflows                               (read)
 //   workflow_run      — run a workflow (flagship: pay-if-budget)           (x402 inside)
 //
 // The server enforces NOTHING about spend itself — the chain
 // (SessionAccount.__check_auth) is the trust anchor. MCP + x402 + workflows are
 // discovery / economic / composition layers on top. x402 is applied at the tool
-// boundary: veil_pay without a `payment` returns a 402-style quote; with a valid
+// boundary: kage_pay without a `payment` returns a 402-style quote; with a valid
 // payment proof it proceeds (see agent/x402.ts; settlement verify is a documented stub).
 import express from "express";
 import { z } from "zod";
@@ -30,17 +30,17 @@ const PORT = Number(process.env.VEIL_MCP_PORT ?? 8402);
 const FEE_SECRET = process.env.VEIL_FEE_SECRET ?? "";
 // Where x402 per-call fees are paid (operator, a real testnet account by default).
 const OPERATOR = process.env.VEIL_OPERATOR ?? "GC3KDBUQ53VQ377LUDUNSV3RQL3MFRYWYYLXD76TXRVR5O7AEO7Y4CAA";
-const CALL_PRICE = process.env.VEIL_CALL_PRICE ?? "100000"; // 0.01 XLM per veil_pay
+const CALL_PRICE = process.env.VEIL_CALL_PRICE ?? "100000"; // 0.01 XLM per kage_pay
 
 const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] });
 
 function buildServer(): McpServer {
-  const server = new McpServer({ name: "veil", version: "0.1.0" });
+  const server = new McpServer({ name: "kage", version: "0.1.0" });
 
   server.registerTool(
-    "veil_pool_status",
+    "kage_pool_status",
     {
-      title: "Veil pool status",
+      title: "Kage pool status",
       description: "Live shielded-pool state: contract id, current Merkle root, leaf count, USDC pooled.",
       inputSchema: {},
     },
@@ -48,7 +48,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    "veil_budget",
+    "kage_budget",
     {
       title: "Agent budget",
       description: "Remaining scoped spend cap on the agent's SessionAccount (cap - spent).",
@@ -61,10 +61,10 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    "veil_quote",
+    "kage_quote",
     {
       title: "Quote a private payment",
-      description: "Returns the x402 price to call veil_pay plus whether the pool + budget can cover `amount`.",
+      description: "Returns the x402 price to call kage_pay plus whether the pool + budget can cover `amount`.",
       inputSchema: { amount: z.string().describe("USDC amount, 7 decimals, as a string") },
     },
     async ({ amount }) => {
@@ -75,13 +75,13 @@ function buildServer(): McpServer {
         payAmount: amount,
         poolReady: status.leafCount >= 0,
         budgetCovers: BigInt(remaining) >= BigInt(amount || "0"),
-        note: "call veil_pay with { payment: { nonce, txHash } } echoing this nonce",
+        note: "call kage_pay with { payment: { nonce, txHash } } echoing this nonce",
       });
     },
   );
 
   server.registerTool(
-    "veil_pay",
+    "kage_pay",
     {
       title: "Pay privately through the agent's scoped key",
       description:
@@ -92,14 +92,14 @@ function buildServer(): McpServer {
         payment: z
           .object({ nonce: z.string(), txHash: z.string().optional(), payer: z.string().optional() })
           .optional()
-          .describe("x402 payment proof echoing a veil_quote nonce"),
+          .describe("x402 payment proof echoing a kage_quote nonce"),
       },
     },
     async ({ recipientScanKey, amount, payment }) => {
       // x402 gate at the tool boundary.
       if (!payment) {
         const quote = quoteFor(CALL_PRICE, OPERATOR);
-        return json({ status: "402 payment required", quote, hint: "retry veil_pay with { payment: { nonce, txHash } }" });
+        return json({ status: "402 payment required", quote, hint: "retry kage_pay with { payment: { nonce, txHash } }" });
       }
       const v = await verifyPayment(payment);
       if (!v.ok) return json({ status: "402 payment invalid", reason: v.reason });
@@ -112,7 +112,7 @@ function buildServer(): McpServer {
 
   server.registerTool(
     "workflow_list",
-    { title: "List workflows", description: "Reusable agent workflows Veil ships.", inputSchema: {} },
+    { title: "List workflows", description: "Reusable agent workflows Kage ships.", inputSchema: {} },
     async () => json(listWorkflows()),
   );
 
@@ -157,9 +157,9 @@ if (process.argv.includes("--stdio")) {
   await server.connect(new StdioServerTransport());
   try {
     const c = config();
-    console.error(`Veil MCP (stdio) ready · pool ${c.VEIL} · session ${c.session ?? "(none)"}`);
+    console.error(`Kage MCP (stdio) ready · pool ${c.VEIL} · session ${c.session ?? "(none)"}`);
   } catch {
-    console.error("Veil MCP (stdio) ready · no deployment yet");
+    console.error("Kage MCP (stdio) ready · no deployment yet");
   }
 } else {
   // One persistent server + transport for the process. Streamable HTTP in stateless
@@ -174,7 +174,7 @@ if (process.argv.includes("--stdio")) {
   });
 
   app.listen(PORT, () => {
-    console.error(`Veil MCP server on http://localhost:${PORT}/mcp  (health: /health)`);
+    console.error(`Kage MCP server on http://localhost:${PORT}/mcp  (health: /health)`);
     try {
       const c = config();
       console.error(`  pool ${c.VEIL}  session ${c.session ?? "(none — run bun run agent:fabric)"}`);

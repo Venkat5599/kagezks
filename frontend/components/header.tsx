@@ -4,7 +4,7 @@ import { ArrowDownRight, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { VeilMark } from "@/components/veil-logo";
+import { KageMark } from "@/components/veil-logo";
 
 const menus = {
   products: [
@@ -168,7 +168,7 @@ export function Header(): ReactNode {
       <div className="h-20 max-[850px]:h-18 flex items-center justify-between px-4 max-[850px]:px-6">
         <a href="#" className="flex items-center gap-2 ml-4 max-[850px]:ml-0">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground text-background">
-            <VeilMark className="h-4 w-4" />
+            <KageMark className="h-4 w-4" />
           </span>
           <span className="text-lg font-semibold text-foreground leading-0 max-[1200px]:hidden max-[850px]:inline">Kage</span>
         </a>

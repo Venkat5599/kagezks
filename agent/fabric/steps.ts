@@ -133,7 +133,7 @@ async function runOnchain(step: Extract<WfStep, { kind: "onchain" }>, wf: Workfl
       output: { hash: pay.hash, commitment: pay.commitment, ephemeralPub: pay.ephemeralPub, leafIndex: pay.leafIndex, newRoot: pay.newRoot },
     };
   } catch (e) {
-    return { id: step.id, kind: "onchain", status: "error", detail: `veil_pay failed: ${(e as Error).message}` };
+    return { id: step.id, kind: "onchain", status: "error", detail: `kage_pay failed: ${(e as Error).message}` };
   }
 }
 

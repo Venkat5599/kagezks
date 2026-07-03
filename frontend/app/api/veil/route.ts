@@ -1,4 +1,4 @@
-// Live on-chain read of the deployed Veil pool contract — no static data.
+// Live on-chain read of the deployed Kage pool contract — no static data.
 // Reads current_root(), leaf_count(), is_spent(), the contract's real USDC (SAC)
 // balance, and the actual deposit/withdraw events, all from Stellar testnet RPC.
 import {

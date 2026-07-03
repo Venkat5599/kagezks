@@ -1,11 +1,11 @@
-// Veil on-chain engine (node/bun) — the shared keystone the MCP server, workflow
+// Kage on-chain engine (node/bun) — the shared keystone the MCP server, workflow
 // engine and demo agent all call. No browser / Freighter dependency.
 //
 // payThroughSession() is the agent's one action: derive a stealth note, prove the
-// Merkle insert (Groth16), and deposit it into the Veil ZK pool with `from` set to
+// Merkle insert (Groth16), and deposit it into the Kage ZK pool with `from` set to
 // the agent's SessionAccount — authorising the deposit by signing the Soroban auth
 // entry with the AGENT session key (never the owner's key). SessionAccount.__check_auth
-// gates it: only Veil.deposit + USDC transfer→pool, within cap, before expiry.
+// gates it: only Kage.deposit + USDC transfer→pool, within cap, before expiry.
 //
 // This is the previously-untested hop (see memory veil-agent-fabric): a custom-account
 // (BytesN<64>) signature, built manually so the signature ScVal matches the contract.
@@ -64,7 +64,7 @@ export function config() {
   const af = readJson<AgentFabric>(join(SDKB, "agent_fabric.json"));
   const VEIL = process.env.VEIL_CONTRACT ?? dep?.contract_id;
   const USDC = process.env.VEIL_USDC ?? dep?.usdc_sac;
-  if (!VEIL || !USDC) throw new Error("missing Veil deployment (sdk/build/veil_deployment.json)");
+  if (!VEIL || !USDC) throw new Error("missing Kage deployment (sdk/build/veil_deployment.json)");
   return { VEIL, USDC, session: af?.session, agentSecret: af?.agentSecret, cap: af?.cap, expiry: af?.expiry };
 }
 

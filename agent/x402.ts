@@ -1,4 +1,4 @@
-// x402 usage-based metering for Veil agent tools.
+// x402 usage-based metering for Kage agent tools.
 //
 // x402 is "HTTP 402 Payment Required, done properly": a paid endpoint answers an
 // unpaid request with a 402 + a machine-readable quote; the caller retries with a
