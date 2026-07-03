@@ -36,7 +36,7 @@ Decisions locked with the user:
   reads (reuse `app/api/agent/status/route.ts` logic: pool notes, session cap/spent).
 - Validate input with `zod` (already a dep in root; add to frontend or hand-roll).
 
-### 3. Frontend — rebuild `components/veil-dashboard.tsx` into an app shell
+### 3. Frontend — rebuild `components/kage-dashboard.tsx` into an app shell
 Keep the left dock (from current file) but change sections to
 `Dashboard · APIs · MCP Servers · Workflows`. Split views into a new
 `components/fabric/` dir (keeps files small):
@@ -59,7 +59,7 @@ Keep the left dock (from current file) but change sections to
   to the SessionAccount policy — the ZK/scoped-key twist on the reference's EVM scope).
 
 Branding & adaptation (design taste — match reference's clean dark cards + OUR green
-`--accent`, reuse `Card`/`Field`/`Mono` helpers already in `veil-dashboard.tsx`, and
+`--accent`, reuse `Card`/`Field`/`Mono` helpers already in `kage-dashboard.tsx`, and
 `VeilMark` logo):
 - Wordmark "Veil" (green accent on second word style already in hero), not "Agent Fabric".
 - Chain = Stellar testnet; amounts in USDC; "EIP-7702 smart account" → "scoped
@@ -78,9 +78,9 @@ Branding & adaptation (design taste — match reference's clean dark cards + OUR
 - Keep landing + `/agent` page unchanged (still the ZK story + live agent demo).
 
 ## Reuse (don't rebuild)
-- `components/veil-dashboard.tsx` — `Card`, `Field`, `Mono`, `short`, `usdc`, left-dock markup.
+- `components/kage-dashboard.tsx` — `Card`, `Field`, `Mono`, `short`, `usdc`, left-dock markup.
 - `app/api/agent/status/route.ts` — on-chain session/pool reads for the Dashboard stats + session panel.
-- `components/veil-logo.tsx` (`VeilMark`), `app/globals.css` accent tokens, `motion` helpers.
+- `components/kage-logo.tsx` (`VeilMark`), `app/globals.css` accent tokens, `motion` helpers.
 
 ## Verification
 1. `DATABASE_URL` in `frontend/.env.local`; `npm run dev`.

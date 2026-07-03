@@ -2,7 +2,7 @@
 // (what the MCP veil_pay tool calls). Prints each step live so slow hops are visible.
 //
 //   VEIL_FEE_SECRET=$(stellar keys secret issuer) bun run scripts/agent-pay.ts <scanKeyHex> <amount7dp>
-import { payThroughSession, poolStatus, remainingBudget } from "../sdk/veil-onchain.ts";
+import { payThroughSession, poolStatus, remainingBudget } from "../sdk/kage-onchain.ts";
 
 const [scanKey, amount] = process.argv.slice(2);
 if (!scanKey || !amount) throw new Error("usage: bun run scripts/agent-pay.ts <scanKeyHex> <amount7dp>");

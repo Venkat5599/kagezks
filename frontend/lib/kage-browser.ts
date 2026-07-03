@@ -134,7 +134,7 @@ export class MerkleTree {
   }
 }
 
-// ---- snarkjs Groth16 → Soroban BN254 byte layout (port of sdk/veil-convert) --
+// ---- snarkjs Groth16 → Soroban BN254 byte layout (port of sdk/kage-convert) --
 const toBE32 = (dec: string): string => {
   const h = BigInt(dec).toString(16);
   if (h.length > 64) throw new Error(`field element too large: ${dec}`);

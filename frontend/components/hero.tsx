@@ -31,7 +31,7 @@ function LivePoolPreview(): ReactNode {
   const [note, setNote] = useState<KageNote["onchainNote"] | null>(null);
 
   useEffect(() => {
-    fetch("/api/veil").then((r) => r.json()).then(setPool).catch(() => setPool({ live: false }));
+    fetch("/api/kage").then((r) => r.json()).then(setPool).catch(() => setPool({ live: false }));
     fetch("/veil.json").then((r) => r.json()).then((d: KageNote) => setNote(d.onchainNote)).catch(() => {});
   }, []);
 

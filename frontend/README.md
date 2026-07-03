@@ -17,13 +17,13 @@ app/
   api/veil/route.ts  # read-only pool state proxy (RPC)
 components/
   hero, how-it-works, feature-showcase, features-bento, convergence, faq, footer
-  veil-dashboard.tsx # the dashboard shell (Overview · Connect & pay · Pool ledger ·
+  kage-dashboard.tsx # the dashboard shell (Overview · Connect & pay · Pool ledger ·
                      #   Proven flow · Chain vs private · Agent fabric · The ZK)
   veil-actions.tsx   # connect wallet, deposit, withdraw
 lib/
   config.ts          # ⭐ all marketing copy (single source of truth)
-  veil-chain.ts      # browser chain layer: pool reads, tree rebuild, prove, submit
-  veil-browser.ts    # browser stealth notes + Poseidon Merkle tree (mirrors sdk/veil.ts)
+  kage-chain.ts      # browser chain layer: pool reads, tree rebuild, prove, submit
+  kage-browser.ts    # browser stealth notes + Poseidon Merkle tree (mirrors sdk/veil.ts)
 public/
   zk/                # veil_insert.wasm, veil_withdraw.wasm, *_final.zkey, *_vk.json
   veil.json          # deployed contract id + USDC SAC + explorer links

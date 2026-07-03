@@ -21,7 +21,7 @@ import express from "express";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { poolStatus, remainingBudget, config } from "../sdk/veil-onchain.ts";
+import { poolStatus, remainingBudget, config } from "../sdk/kage-onchain.ts";
 import { runWorkflow, listWorkflows } from "./workflow.ts";
 import { quoteFor, verifyPayment } from "./x402.ts";
 

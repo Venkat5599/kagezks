@@ -7,7 +7,7 @@ import type { WfStep, WorkflowRow, CmpOp } from "./catalog.ts";
 import { findApi } from "./catalog.ts";
 import { proxyCall } from "./proxy-tool.ts";
 import { currentScope } from "./auth.ts";
-import { payThroughSession, poolStatus, remainingBudget, config } from "../../sdk/veil-onchain.ts";
+import { payThroughSession, poolStatus, remainingBudget, config } from "../../sdk/kage-onchain.ts";
 
 export type StepResult = {
   id: string;

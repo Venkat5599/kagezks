@@ -56,7 +56,7 @@ bun run agent:fabric   # deploy session account, delegate agent key, set policy 
 
 `session_account.wasm` builds clean (~7.2 KB); the policy is enforced on-chain in
 `__check_auth`. The agent signs the Soroban auth entry with its session key — the
-shared engine (`sdk/veil-onchain.ts::payThroughSession`) drives the whole hop.
+shared engine (`sdk/kage-onchain.ts::payThroughSession`) drives the whole hop.
 
 ## The two privacy layers
 
@@ -101,8 +101,8 @@ circuits/
   veil_insert.circom     old_root -> new_root append proof + amount binding (per deposit)
 sdk/
   veil.ts                X25519 ECDH stealth notes, Poseidon Merkle tree, stealth Stellar addr
-  veil-onchain.ts        payThroughSession: the agent's scoped, ZK-private deposit (no browser dep)
-  veil-convert.ts        snarkjs -> Soroban BN254 byte layout
+  kage-onchain.ts        payThroughSession: the agent's scoped, ZK-private deposit (no browser dep)
+  kage-convert.ts        snarkjs -> Soroban BN254 byte layout
 contracts/.../veil/      Soroban pool: deposit (insert-verify), withdraw (membership-verify + nullifier)
 contracts/.../session/   scoped session account (__check_auth policy): agent autonomy without custody
 scripts/

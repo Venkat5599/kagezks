@@ -26,7 +26,7 @@ const cid = (
   await $`stellar contract deploy --wasm ${WASM} --source ${SRC} --network ${NET}`.text()
 ).trim();
 writeFileSync(join(SDKB, "veil_contract.txt"), cid);
-// Downstream (agent-fabric, sdk/veil-onchain config, frontend) reads this.
+// Downstream (agent-fabric, sdk/kage-onchain config, frontend) reads this.
 writeFileSync(
   join(SDKB, "veil_deployment.json"),
   JSON.stringify({ network: NET, contract_id: cid, usdc_sac: NATIVE_SAC }, null, 2),

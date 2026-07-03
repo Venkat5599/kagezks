@@ -60,7 +60,7 @@ function buildServer(row: McpServerRow, auth: string | null, workflows: WfRow[])
   const KNOWN: Record<string, () => void> = {
     kage_pool_status: () =>
       server.registerTool("kage_pool_status", { title: "Pool status", description: "Live Kage shielded-pool state (root, leaf count, USDC pooled).", inputSchema: {} },
-        async () => json(await (await fetch(`${ORIGIN}/api/veil`, { cache: "no-store" })).json())),
+        async () => json(await (await fetch(`${ORIGIN}/api/kage`, { cache: "no-store" })).json())),
     kage_budget: () =>
       server.registerTool("kage_budget", { title: "Agent budget", description: "Remaining scoped spend cap on the agent's SessionAccount.", inputSchema: {} },
         async () => { const s = await (await fetch(`${ORIGIN}/api/agent/status`, { cache: "no-store" })).json(); return json({ remaining: s.remaining, cap: s.cap, spent: s.spent, expiry: s.expiry }); }),

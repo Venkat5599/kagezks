@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, type ReactNode } from "react";
 import { LayoutDashboard, Store, Server, Workflow, Eye, ExternalLink, ShoppingBag, Wallet, type LucideIcon } from "lucide-react";
-import { KageMark } from "@/components/veil-logo";
+import { KageMark } from "@/components/kage-logo";
 import { DashboardHome } from "@/components/fabric/dashboard-home";
 import { ApisSection } from "@/components/fabric/apis-section";
 import { McpSection } from "@/components/fabric/mcp-section";
