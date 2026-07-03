@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 
-// Veil mark: a "V" whose two arms converge to a single node (the shielded pool).
+// Kage mark: a "V" whose two arms converge to a single node (the shielded pool).
 // Reads as the brand initial and the convergence motif at once. Uses
 // currentColor so it inherits whatever color the tile/text sets.
-export function VeilMark({ className = "h-5 w-5" }: { className?: string }): ReactNode {
+export function KageMark({ className = "h-5 w-5" }: { className?: string }): ReactNode {
   return (
     <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden="true">
       {/* converging arms */}
@@ -29,7 +29,7 @@ export function VeilMark({ className = "h-5 w-5" }: { className?: string }): Rea
 }
 
 // Full lockup: mark in a rounded tile + the wordmark.
-export function VeilLogo({
+export function KageLogo({
   className = "",
   tile = "bg-foreground text-background",
   word = true,
@@ -41,9 +41,9 @@ export function VeilLogo({
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${tile}`}>
-        <VeilMark className="h-4 w-4" />
+        <KageMark className="h-4 w-4" />
       </span>
-      {word && <span className="text-lg font-semibold leading-none tracking-tight">Veil</span>}
+      {word && <span className="text-lg font-semibold leading-none tracking-tight">Kage</span>}
     </span>
   );
 }

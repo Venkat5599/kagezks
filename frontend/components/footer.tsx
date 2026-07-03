@@ -2,7 +2,7 @@
 
 import { ArrowRight, Mail } from "lucide-react";
 import type { ReactNode } from "react";
-import { VeilMark } from "@/components/veil-logo";
+import { KageMark } from "@/components/veil-logo";
 
 const CONTRACT_URL =
   "https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
@@ -67,7 +67,7 @@ export function Footer(): ReactNode {
           <div className="flex items-start justify-between gap-12 max-[850px]:flex-col max-[850px]:gap-10">
             <a href="#" className="flex items-center gap-2" aria-label="Kage home">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-accent">
-                <VeilMark className="h-5 w-5" />
+                <KageMark className="h-5 w-5" />
               </span>
               <span className="text-xl font-semibold text-neutral-900 leading-0">Kage</span>
             </a>

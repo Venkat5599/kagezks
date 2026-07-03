@@ -3,7 +3,7 @@
 // `{{steps.<id>.output...}}` / `{{input.<var>}}`. A `condition` that fails halts
 // the run cleanly (completed:false); any step error stops with completed:false too.
 //
-// The flagship shape: [condition budget>=amount] → [onchain veil_pay] → done, but
+// The flagship shape: [condition budget>=amount] → [onchain kage_pay] → done, but
 // the engine is fully general — chain a paid `http` API call, feed its body into the
 // amount, then settle privately on-chain, all declaratively.
 import type { WorkflowRow, WfStep } from "./catalog.ts";

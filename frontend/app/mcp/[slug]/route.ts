@@ -34,30 +34,30 @@ function buildServer(row: McpServerRow): McpServer {
   const tools = (row.tools ?? []).map(String);
 
   const KNOWN: Record<string, () => void> = {
-    veil_pool_status: () =>
+    kage_pool_status: () =>
       server.registerTool(
-        "veil_pool_status",
+        "kage_pool_status",
         { title: "Pool status", description: "Live Kage shielded-pool state (root, leaf count, USDC pooled).", inputSchema: {} },
         async () => json(await (await fetch(`${ORIGIN}/api/veil`, { cache: "no-store" })).json()),
       ),
-    veil_budget: () =>
+    kage_budget: () =>
       server.registerTool(
-        "veil_budget",
+        "kage_budget",
         { title: "Agent budget", description: "Remaining scoped spend cap on the agent's SessionAccount.", inputSchema: {} },
         async () => {
           const s = await (await fetch(`${ORIGIN}/api/agent/status`, { cache: "no-store" })).json();
           return json({ remaining: s.remaining, cap: s.cap, spent: s.spent, expiry: s.expiry });
         },
       ),
-    veil_quote: () =>
+    kage_quote: () =>
       server.registerTool(
-        "veil_quote",
-        { title: "Quote a private payment", description: "x402 price + readiness for a veil_pay call.", inputSchema: { amount: z.string() } },
-        async ({ amount }) => json({ callPrice: { amount: "100000", scheme: "stellar-native" }, payAmount: amount, note: "pay the x402 fee, then call veil_pay" }),
+        "kage_quote",
+        { title: "Quote a private payment", description: "x402 price + readiness for a kage_pay call.", inputSchema: { amount: z.string() } },
+        async ({ amount }) => json({ callPrice: { amount: "100000", scheme: "stellar-native" }, payAmount: amount, note: "pay the x402 fee, then call kage_pay" }),
       ),
-    veil_pay: () =>
+    kage_pay: () =>
       server.registerTool(
-        "veil_pay",
+        "kage_pay",
         {
           title: "Pay privately (ZK, scoped key)",
           description: "Make a ZK-private USDC payment through the SessionAccount. Runs the pay-if-budget flow.",

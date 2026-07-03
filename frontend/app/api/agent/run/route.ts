@@ -20,9 +20,9 @@ const RPC_URL = "https://soroban-testnet.stellar.org";
 const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
 const DEMO_CAP = 50_000_000n; // 5 USDC scoped cap (matches scripts/agent-fabric.ts)
-const CALL_PRICE = "100000"; // 0.01 USDC per veil_pay (x402)
+const CALL_PRICE = "100000"; // 0.01 USDC per kage_pay (x402)
 
-const TOOLS = ["veil_pool_status", "veil_budget", "veil_quote", "veil_pay", "workflow_run"];
+const TOOLS = ["kage_pool_status", "kage_budget", "kage_quote", "kage_pay", "workflow_run"];
 const toHex = (b: unknown) => (b instanceof Uint8Array ? Buffer.from(b).toString("hex") : "");
 
 type Step = { phase: string; tool?: string; label: string; status: "ok" | "info" | "skipped"; detail: string; data?: unknown };
@@ -52,16 +52,16 @@ export async function POST(req: Request) {
     const [r, lc] = await Promise.all([call("current_root"), call("leaf_count")]);
     root = toHex(r);
     leafCount = Number(lc ?? 0);
-    steps.push({ phase: "discover", tool: "veil_pool_status", label: "Pool status (live testnet)", status: "ok", detail: `root ${root.slice(0, 12)}… · ${leafCount} notes`, data: { root, leafCount } });
+    steps.push({ phase: "discover", tool: "kage_pool_status", label: "Pool status (live testnet)", status: "ok", detail: `root ${root.slice(0, 12)}… · ${leafCount} notes`, data: { root, leafCount } });
   } catch (e) {
-    steps.push({ phase: "discover", tool: "veil_pool_status", label: "Pool status", status: "info", detail: `RPC unavailable: ${String(e).slice(0, 80)}` });
+    steps.push({ phase: "discover", tool: "kage_pool_status", label: "Pool status", status: "info", detail: `RPC unavailable: ${String(e).slice(0, 80)}` });
   }
 
   // 2. budget (scoped cap on the SessionAccount)
   const covers = DEMO_CAP >= amount;
   steps.push({
     phase: "scope",
-    tool: "veil_budget",
+    tool: "kage_budget",
     label: "Scoped budget",
     status: covers ? "ok" : "skipped",
     detail: `${(Number(DEMO_CAP) / 1e7).toFixed(2)} USDC cap · request ${(Number(amount) / 1e7).toFixed(2)} USDC → ${covers ? "within cap" : "OVER CAP, would revert"}`,
@@ -70,16 +70,16 @@ export async function POST(req: Request) {
 
   // 3. x402: 402 -> quote -> paid (real handshake, one-shot nonce)
   const nonce = randomUUID();
-  steps.push({ phase: "meter", tool: "veil_quote", label: "x402 payment required", status: "info", detail: `402 → quote ${(Number(CALL_PRICE) / 1e7).toFixed(2)} USDC · nonce ${nonce.slice(0, 8)}…`, data: { price: CALL_PRICE, nonce } });
-  steps.push({ phase: "meter", tool: "veil_quote", label: "x402 settled", status: "ok", detail: `retry with payment proof (nonce ${nonce.slice(0, 8)}…) → allowed` });
+  steps.push({ phase: "meter", tool: "kage_quote", label: "x402 payment required", status: "info", detail: `402 → quote ${(Number(CALL_PRICE) / 1e7).toFixed(2)} USDC · nonce ${nonce.slice(0, 8)}…`, data: { price: CALL_PRICE, nonce } });
+  steps.push({ phase: "meter", tool: "kage_quote", label: "x402 settled", status: "ok", detail: `retry with payment proof (nonce ${nonce.slice(0, 8)}…) → allowed` });
 
   // 4. workflow pay-if-budget → ZK deposit (proven reference note)
   if (!covers) {
-    steps.push({ phase: "pay", tool: "veil_pay", label: "veil_pay", status: "skipped", detail: "budget gate failed — no payment made" });
+    steps.push({ phase: "pay", tool: "kage_pay", label: "kage_pay", status: "skipped", detail: "budget gate failed — no payment made" });
   } else {
     steps.push({
       phase: "pay",
-      tool: "veil_pay",
+      tool: "kage_pay",
       label: "ZK-private deposit through SessionAccount",
       status: "ok",
       detail: "insert proof verified (BN254) · USDC pulled · agent→payee link sealed",
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
         tx: "308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597",
       },
     });
-    steps.push({ phase: "confirm", tool: "veil_pool_status", label: "Pool advanced", status: "ok", detail: `payee recognises its note and withdraws to a fresh stealth address; chain shows no link` });
+    steps.push({ phase: "confirm", tool: "kage_pool_status", label: "Pool advanced", status: "ok", detail: `payee recognises its note and withdraws to a fresh stealth address; chain shows no link` });
   }
 
   return Response.json({

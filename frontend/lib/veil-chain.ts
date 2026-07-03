@@ -1,4 +1,4 @@
-// Veil chain layer (browser): read pool state, rebuild the Merkle tree from
+// Kage chain layer (browser): read pool state, rebuild the Merkle tree from
 // deposit events, generate Groth16 proofs with snarkjs, and build + submit
 // signed deposit / withdraw transactions through a connected wallet.
 import {

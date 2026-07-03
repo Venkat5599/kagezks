@@ -11,7 +11,7 @@ type LivePool = {
   leafCount?: number;
   provenNullifierSpent?: boolean;
 };
-type VeilNote = {
+type KageNote = {
   onchainNote: {
     amount: string;
     commitment: string;
@@ -28,11 +28,11 @@ const NAV = ["Pool", "Deposits", "Withdrawals", "Nullifiers", "Circuits"];
 
 function LivePoolPreview(): ReactNode {
   const [pool, setPool] = useState<LivePool | null>(null);
-  const [note, setNote] = useState<VeilNote["onchainNote"] | null>(null);
+  const [note, setNote] = useState<KageNote["onchainNote"] | null>(null);
 
   useEffect(() => {
     fetch("/api/veil").then((r) => r.json()).then(setPool).catch(() => setPool({ live: false }));
-    fetch("/veil.json").then((r) => r.json()).then((d: VeilNote) => setNote(d.onchainNote)).catch(() => {});
+    fetch("/veil.json").then((r) => r.json()).then((d: KageNote) => setNote(d.onchainNote)).catch(() => {});
   }, []);
 
   const live = Boolean(pool?.live);

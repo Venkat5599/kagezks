@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ArrowLeft, Server, Loader2, Search, Wrench, Workflow } from "lucide-react";
+import { Plus, ArrowLeft, Server, Loader2, Search, Wrench, Workflow, Check, X } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Empty, short, Chip, CopyBtn } from "./ui";
 
 type Mcp = {
@@ -65,9 +65,46 @@ export function McpSection() {
   );
 }
 
+type ApiLite = { id: string; slug: string | null; name: string; description: string | null; price: string; category: string | null; tags?: string[] };
+type WfLite = { id: string; slug: string | null; name: string; description: string | null };
+
 function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
   const url = `https://kageai.me/mcp/${mcp.slug ?? ""}`;
   const config = JSON.stringify({ mcpServers: { [mcp.slug ?? "server"]: { type: "http", url } } }, null, 2);
+
+  // Live-editable tool/workflow attachment (AgentFabric detail-page management).
+  const [tools, setTools] = useState<string[]>((mcp.tools ?? []).map(String));
+  const [workflows, setWorkflows] = useState<string[]>((mcp.workflows ?? []).map(String));
+  const [apis, setApis] = useState<ApiLite[]>([]);
+  const [wfs, setWfs] = useState<WfLite[]>([]);
+  const [q, setQ] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/apis").then((r) => r.json()).then((d) => setApis(d.apis ?? [])).catch(() => {});
+    fetch("/api/workflows").then((r) => r.json()).then((d) => setWfs(d.workflows ?? [])).catch(() => {});
+  }, []);
+
+  const persist = async (nextTools: string[], nextWf: string[]) => {
+    setSaving(true);
+    try {
+      await fetch(`/api/mcp-servers/${mcp.slug}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tools: nextTools, workflows: nextWf }),
+      });
+    } finally { setSaving(false); }
+  };
+  const toggleTool = (name: string) => {
+    const next = tools.includes(name) ? tools.filter((t) => t !== name) : [...tools, name];
+    setTools(next); persist(next, workflows);
+  };
+  const toggleWf = (slug: string) => {
+    const next = workflows.includes(slug) ? workflows.filter((w) => w !== slug) : [...workflows, slug];
+    setWorkflows(next); persist(tools, next);
+  };
+
+  const filteredApis = apis.filter((a) => !q || (a.name + a.description + (a.tags ?? []).join(" ")).toLowerCase().includes(q.toLowerCase()));
+
   return (
     <div className="space-y-6">
       <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to MCP Servers</button>
@@ -75,24 +112,66 @@ function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10"><Server className="h-6 w-6 text-accent" /></div>
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-white">{mcp.display_name}</h1>
-          <p className="mt-1 font-mono text-xs text-neutral-500">/mcp/{mcp.slug} · {mcp.is_public ? "public" : "private"} · owner {short(mcp.owner_address, 6, 4)}</p>
+          <p className="mt-1 font-mono text-xs text-neutral-500">/mcp/{mcp.slug} · {mcp.is_public ? "public" : "private"} · owner {short(mcp.owner_address, 6, 4)} {saving && <span className="text-accent">· saving…</span>}</p>
         </div>
       </div>
 
       <Panel><p className="text-sm text-neutral-300">{mcp.description}</p></Panel>
 
+      {/* Available Tools — attach published APIs as api__ proxy tools */}
       <Panel>
-        <div className="flex items-center gap-2"><Wrench className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Tools</p><span className="text-xs text-neutral-500">{(mcp.tools ?? []).length}</span></div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {(mcp.tools ?? []).map((t) => <Chip key={String(t)} accent>{String(t)}</Chip>)}
-          {(mcp.tools ?? []).length === 0 && <span className="text-sm text-neutral-500">no tools listed</span>}
+        <div className="flex items-center gap-2"><Wrench className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Available Tools</p><span className="text-xs text-neutral-500">({tools.length})</span></div>
+        <p className="mt-1 text-sm text-neutral-500">Select which APIs to expose as tools in this MCP server.</p>
+        <div className="relative mt-4">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+          <Input placeholder="Search APIs…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-10" />
         </div>
-        {(mcp.workflows ?? []).length > 0 && (
-          <>
-            <div className="mt-5 flex items-center gap-2"><Workflow className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Workflows</p></div>
-            <div className="mt-3 flex flex-wrap gap-2">{(mcp.workflows ?? []).map((w) => <Chip key={String(w)}>{String(w)}</Chip>)}</div>
-          </>
-        )}
+        <div className="mt-3 space-y-2">
+          {filteredApis.length === 0 ? <Empty>No APIs published yet.</Empty> : filteredApis.map((a) => {
+            const name = `api__${a.slug}`;
+            const on = tools.includes(name);
+            return (
+              <div key={a.id} className="flex items-center gap-3 rounded-xl border border-white/[0.08] px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">{a.name}</p>
+                  <p className="truncate text-xs text-neutral-500">{a.description}</p>
+                  <div className="mt-1 flex items-center gap-2 text-[11px] text-neutral-500"><span className="text-accent">${Number(a.price).toFixed(4)} / call</span>{a.category && <Chip>{a.category}</Chip>}</div>
+                </div>
+                <Button variant={on ? "ghost" : "outline"} onClick={() => toggleTool(name)}>
+                  {on ? <><X className="h-4 w-4" /> Remove</> : <><Plus className="h-4 w-4" /> Add</>}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+        {/* Built-in ZK tools */}
+        <p className="mt-5 text-xs font-medium text-neutral-400">Built-in ZK tools</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {BUILTIN_TOOLS.map((t) => {
+            const on = tools.includes(t);
+            return <button key={t} onClick={() => toggleTool(t)} className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 font-mono text-xs transition ${on ? "border-accent/50 bg-accent/15 text-accent" : "border-white/[0.12] text-neutral-400 hover:border-white/25"}`}>{on ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}{t}</button>;
+          })}
+        </div>
+      </Panel>
+
+      {/* Workflow Tools — enable published workflows */}
+      <Panel>
+        <div className="flex items-center gap-2"><Workflow className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Workflow Tools</p></div>
+        <p className="mt-1 text-sm text-neutral-500">Workflows that AI agents can execute through this MCP server.</p>
+        <p className="mt-4 text-xs font-medium text-neutral-400">Enabled Workflows ({workflows.length})</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {workflows.length === 0 ? <span className="text-sm text-neutral-500">None enabled yet.</span> : workflows.map((w) => <button key={w} onClick={() => toggleWf(w)} className="inline-flex items-center gap-1 rounded-full border border-accent/50 bg-accent/15 px-3 py-1 font-mono text-xs text-accent">{w} <X className="h-3 w-3" /></button>)}
+        </div>
+        <p className="mt-5 text-xs font-medium text-neutral-400">Available Workflows</p>
+        <div className="mt-2 space-y-2">
+          {wfs.filter((w) => !workflows.includes(w.slug ?? "")).length === 0 ? <Empty>No more workflows to add.</Empty> :
+            wfs.filter((w) => !workflows.includes(w.slug ?? "")).map((w) => (
+              <div key={w.id} className="flex items-center gap-3 rounded-xl border border-white/[0.08] px-4 py-2.5">
+                <div className="min-w-0 flex-1"><p className="truncate text-sm text-white">{w.name}</p><p className="truncate text-xs text-neutral-500">{w.description}</p></div>
+                <Button variant="outline" onClick={() => toggleWf(w.slug ?? "")}><Plus className="h-4 w-4" /> Add</Button>
+              </div>
+            ))}
+        </div>
       </Panel>
 
       <Panel>
@@ -145,7 +224,7 @@ function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
 }
 
 // Built-in Kage tools the /mcp/<slug> endpoint knows how to serve live.
-const BUILTIN_TOOLS = ["veil_pool_status", "veil_budget", "veil_quote", "veil_pay", "workflow_list", "workflow_run"];
+const BUILTIN_TOOLS = ["kage_pool_status", "kage_budget", "kage_quote", "kage_pay", "workflow_list", "workflow_run"];
 
 function CreateMcpForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const [f, setF] = useState({ slug: "", display_name: "", description: "", is_public: false });

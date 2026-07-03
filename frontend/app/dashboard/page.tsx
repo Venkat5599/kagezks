@@ -1,4 +1,4 @@
-import { VeilDashboard } from "@/components/veil-dashboard";
+import { KageDashboard } from "@/components/veil-dashboard";
 import { createMetadata } from "@/lib/metadata";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -31,7 +31,7 @@ export default function DashboardPage(): ReactNode {
           backgroundSize: "44px 44px",
         }}
       />
-      <VeilDashboard />
+      <KageDashboard />
     </main>
   );
 }

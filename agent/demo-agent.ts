@@ -1,14 +1,14 @@
-// Veil demo agent — an MCP client that drives an autonomous private payment.
+// Kage demo agent — an MCP client that drives an autonomous private payment.
 //
 //   bun run agent/demo-agent.ts "pay <scanKeyHex> 5 USDC privately"
 //   bun run agent/demo-agent.ts --scripted "<scanKeyHex>" 5000000
 //
-// Connects to the Veil MCP server (agent/mcp-server.ts), discovers the tools, and
+// Connects to the Kage MCP server (agent/mcp-server.ts), discovers the tools, and
 // completes the task autonomously. Two modes:
 //
 //   • LLM mode (default, needs ANTHROPIC_API_KEY): Claude reads the natural-language
 //     instruction, picks tools, and runs the x402 → pay-if-budget flow itself.
-//   • --scripted (no key, offline): deterministically walks veil_quote → veil_pay,
+//   • --scripted (no key, offline): deterministically walks kage_quote → kage_pay,
 //     so the demo runs without an API key or token spend.
 //
 // Prints: discovered tools, the steps taken, and the resulting commitment + testnet tx.
@@ -40,11 +40,11 @@ async function scripted(scanKey: string, amount: string) {
   const tools = await client.listTools();
   console.log("discovered tools:", tools.tools.map((t) => t.name).join(", "));
 
-  console.log("\n1. veil_pool_status");
-  console.log(textOf(await client.callTool({ name: "veil_pool_status", arguments: {} })));
+  console.log("\n1. kage_pool_status");
+  console.log(textOf(await client.callTool({ name: "kage_pool_status", arguments: {} })));
 
-  console.log("\n2. veil_quote (get x402 price + nonce)");
-  const quoteRes = textOf(await client.callTool({ name: "veil_quote", arguments: { amount } }));
+  console.log("\n2. kage_quote (get x402 price + nonce)");
+  const quoteRes = textOf(await client.callTool({ name: "kage_quote", arguments: { amount } }));
   console.log(quoteRes);
   const cp = JSON.parse(quoteRes)?.callPrice as { nonce: string; payTo: string; amount: string } | undefined;
 
@@ -55,11 +55,11 @@ async function scripted(scanKey: string, amount: string) {
   const x402Tx = await payX402(feeSecret, cp);
   console.log(`   x402 settled: ${x402Tx}`);
 
-  console.log("\n4. veil_pay (retry with verified x402 payment proof)");
+  console.log("\n4. kage_pay (retry with verified x402 payment proof)");
   // The on-chain ZK deposit takes ~90s (proof + submit + poll); raise the MCP
   // request timeout above the default 60s so the client waits for the result.
   const pay = await client.callTool(
-    { name: "veil_pay", arguments: { recipientScanKey: scanKey, amount, payment: { nonce: cp.nonce, txHash: x402Tx } } },
+    { name: "kage_pay", arguments: { recipientScanKey: scanKey, amount, payment: { nonce: cp.nonce, txHash: x402Tx } } },
     undefined,
     { timeout: 240_000 },
   );
@@ -93,8 +93,8 @@ async function llmDriven(instruction: string) {
     {
       role: "user",
       content:
-        `${instruction}\n\nYou pay through Veil. Steps: call veil_quote to get an x402 nonce, ` +
-        `then call veil_pay with that nonce in { payment: { nonce, txHash: "demo-x402-settlement" } }. ` +
+        `${instruction}\n\nYou pay through Kage. Steps: call kage_quote to get an x402 nonce, ` +
+        `then call kage_pay with that nonce in { payment: { nonce, txHash: "demo-x402-settlement" } }. ` +
         `Report the resulting commitment and tx hash.`,
     },
   ];
