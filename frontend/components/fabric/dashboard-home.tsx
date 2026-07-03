@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Store, Server, Workflow } from "lucide-react";
+import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Store, Server, Workflow, Clock } from "lucide-react";
 import { Panel, usdc } from "./ui";
 
 type Stats = {
@@ -22,10 +22,14 @@ function Stat({ icon: Icon, label, value, sub }: { icon: typeof Layers; label: s
   );
 }
 
+type ActItem = { kind: "api" | "workflow" | "mcp"; name: string; slug: string | null; created_at: string };
+
 export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") => void }) {
   const [s, setS] = useState<Stats | null>(null);
+  const [act, setAct] = useState<ActItem[] | null>(null);
   useEffect(() => {
     fetch("/api/stats").then((r) => r.json()).then(setS).catch(() => {});
+    fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
   }, []);
   const t = s?.totals;
   const sess = s?.session;
@@ -91,6 +95,33 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
           ))}
         </div>
       </div>
+
+      {/* Recent activity — real rows from the fabric catalog */}
+      <Panel>
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-accent" />
+          <p className="font-semibold text-white">Recent activity</p>
+        </div>
+        <div className="mt-4 divide-y divide-white/[0.06]">
+          {act === null ? (
+            <p className="py-3 text-sm text-neutral-500">loading…</p>
+          ) : act.length === 0 ? (
+            <p className="py-3 text-sm text-neutral-500">Nothing published yet — create an API, workflow, or MCP server.</p>
+          ) : (
+            act.map((a, i) => {
+              const tint = a.kind === "workflow" ? "text-accent" : a.kind === "mcp" ? "text-sky-400" : "text-amber-400";
+              return (
+                <div key={i} className="flex items-center gap-3 py-2.5 text-sm">
+                  <span className={`w-20 shrink-0 font-mono text-[11px] uppercase ${tint}`}>{a.kind}</span>
+                  <span className="flex-1 truncate text-neutral-200">{a.name}</span>
+                  <span className="hidden font-mono text-xs text-neutral-600 sm:block">/{a.slug}</span>
+                  <span className="w-24 shrink-0 text-right text-xs text-neutral-500">{new Date(a.created_at).toLocaleDateString()}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </Panel>
     </div>
   );
 }

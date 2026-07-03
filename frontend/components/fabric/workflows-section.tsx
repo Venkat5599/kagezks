@@ -16,7 +16,7 @@ type Wf = {
   output_mapping?: { name: string; from: string }[]; allowed_contracts?: string[];
   tags: string[];
 };
-type Variable = { name: string; type: string };
+type Variable = { name: string; type: string; description: string; required: boolean };
 type Output = { name: string; from: string };
 // Builder step keeps every kind's fields flat; `submit` narrows to the engine shape.
 type BStep = {
@@ -271,7 +271,7 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...meta,
-          input_variables: vars.map((v) => ({ name: v.name, type: v.type, required: true })),
+          input_variables: vars.map((v) => ({ name: v.name, type: v.type, description: v.description, required: v.required })),
           steps: steps.map(toEngine),
           output_mapping: outputs.filter((o) => o.name && o.from),
           allowed_contracts: contracts.filter(Boolean),
@@ -303,16 +303,18 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
       <Panel className="space-y-4">
         <div className="flex items-center justify-between">
           <div><p className="font-semibold text-white">Input Variables</p><p className="text-sm text-neutral-500">Inputs agents provide when calling this workflow.</p></div>
-          <Button variant="outline" onClick={() => setVars((v) => [...v, { name: "", type: "string" }])}><Plus className="h-4 w-4" /> Add Variable</Button>
+          <Button variant="outline" onClick={() => setVars((v) => [...v, { name: "", type: "string", description: "", required: true }])}><Plus className="h-4 w-4" /> Add Variable</Button>
         </div>
         {vars.length === 0 ? <Empty>No variables. Reference them in steps via <span className="font-mono text-neutral-400">{"{{input.name}}"}</span></Empty> : (
           <div className="space-y-2">
             {vars.map((v, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input placeholder="variableName" value={v.name} onChange={(e) => setVars((a) => a.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+              <div key={i} className="grid gap-2 sm:grid-cols-[1fr_110px_1fr_auto_auto] sm:items-center">
+                <Input placeholder="variableName" value={v.name} onChange={(e) => setVars((a) => a.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} className="font-mono" />
                 <select value={v.type} onChange={(e) => setVars((a) => a.map((x, j) => j === i ? { ...x, type: e.target.value } : x))} className="rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 text-sm text-white">
                   {["string", "number", "boolean"].map((t) => <option key={t} className="bg-[#0b0b0b]">{t}</option>)}
                 </select>
+                <Input placeholder="description" value={v.description} onChange={(e) => setVars((a) => a.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
+                <button type="button" onClick={() => setVars((a) => a.map((x, j) => j === i ? { ...x, required: !x.required } : x))} className={`rounded-lg border px-2.5 py-2 text-xs ${v.required ? "border-accent/50 bg-accent/15 text-accent" : "border-white/[0.12] text-neutral-500"}`}>{v.required ? "required" : "optional"}</button>
                 <button onClick={() => setVars((a) => a.filter((_, j) => j !== i))} className="text-neutral-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
               </div>
             ))}

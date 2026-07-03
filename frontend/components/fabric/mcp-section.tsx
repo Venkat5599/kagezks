@@ -144,20 +144,58 @@ function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
   );
 }
 
+// Built-in Kage tools the /mcp/<slug> endpoint knows how to serve live.
+const BUILTIN_TOOLS = ["veil_pool_status", "veil_budget", "veil_quote", "veil_pay", "workflow_list", "workflow_run"];
+
 function CreateMcpForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const [f, setF] = useState({ slug: "", display_name: "", description: "", is_public: false });
+  const [tools, setTools] = useState<string[]>([...BUILTIN_TOOLS]);
+  const [workflows, setWorkflows] = useState<string[]>([]);
+  const [apiTools, setApiTools] = useState<string[]>([]);
+  const [wfOptions, setWfOptions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Offer the published APIs (as api__<slug> proxy tools) + workflows to attach.
+  useEffect(() => {
+    fetch("/api/apis").then((r) => r.json()).then((d) => setApiTools((d.apis ?? []).map((a: { slug: string }) => `api__${a.slug}`))).catch(() => {});
+    fetch("/api/workflows").then((r) => r.json()).then((d) => setWfOptions((d.workflows ?? []).map((w: { slug: string }) => w.slug))).catch(() => {});
+  }, []);
+
+  const toggle = (arr: string[], set: (v: string[]) => void, v: string) =>
+    set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   const submit = async () => {
     setBusy(true); setErr(null);
     try {
-      const res = await fetch("/api/mcp-servers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
+      const res = await fetch("/api/mcp-servers", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...f, tools, workflows }),
+      });
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || "failed");
       onDone();
     } catch (e) { setErr(String((e as Error).message)); } finally { setBusy(false); }
   };
+
+  const Pick = ({ label, options, sel, set }: { label: string; options: string[]; sel: string[]; set: (v: string[]) => void }) => (
+    <div>
+      <p className="text-sm font-semibold text-white">{label}</p>
+      {options.length === 0 ? <p className="mt-2 text-xs text-neutral-500">none published yet</p> : (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {options.map((o) => {
+            const on = sel.includes(o);
+            return (
+              <button key={o} type="button" onClick={() => toggle(sel, set, o)}
+                className={`rounded-full border px-3 py-1 font-mono text-xs transition ${on ? "border-accent/50 bg-accent/15 text-accent" : "border-white/[0.12] text-neutral-400 hover:border-white/25"}`}>
+                {on ? "✓ " : ""}{o}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -192,6 +230,13 @@ function CreateMcpForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
           </div>
           <Button variant="outline" onClick={() => setF((s) => ({ ...s, is_public: !s.is_public }))}>{f.is_public ? "Public" : "Private"}</Button>
         </div>
+        <div className="space-y-5 border-t border-white/[0.06] pt-5">
+          <p className="text-sm text-neutral-500">Choose which tools and workflows this server exposes to agents.</p>
+          <Pick label="Built-in tools" options={BUILTIN_TOOLS} sel={tools.filter((t) => BUILTIN_TOOLS.includes(t))} set={(v) => setTools([...v, ...tools.filter((t) => !BUILTIN_TOOLS.includes(t) && apiTools.includes(t))])} />
+          <Pick label="API proxy tools" options={apiTools} sel={tools.filter((t) => apiTools.includes(t))} set={(v) => setTools([...tools.filter((t) => BUILTIN_TOOLS.includes(t)), ...v])} />
+          <Pick label="Workflows" options={wfOptions} sel={workflows} set={setWorkflows} />
+        </div>
+
         {err && <p className="text-sm text-red-400">{err}</p>}
         <Button onClick={submit} disabled={busy || !f.display_name}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Create Server</Button>
       </Panel>
