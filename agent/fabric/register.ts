@@ -12,7 +12,7 @@ import { loadCatalog, type WorkflowRow } from "./catalog.ts";
 import { registerApiTool } from "./proxy-tool.ts";
 import { runWorkflow } from "./engine.ts";
 import { poolStatus } from "./steps.ts";
-import { remainingBudget } from "../../sdk/veil-onchain.ts";
+import { remainingBudget } from "../../sdk/kage-onchain.ts";
 import { currentScope } from "./auth.ts";
 
 const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] });

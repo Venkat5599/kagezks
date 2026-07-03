@@ -38,7 +38,7 @@ ZK-private (who/amount/agent↔payee link hidden)** — all on Stellar.
    │                                      │
    │                                 workflow engine: [check budget] → [pay] → [confirm]
    │                                      │
-   │                                 veil-onchain engine (shared TS):
+   │                                 kage-onchain engine (shared TS):
    │                                   derive note (sdk/veil.ts)
    │                                   groth16 insert proof (snarkjs)
    │                                   deposit(from = SessionAccount), agent-key signs auth
@@ -53,13 +53,13 @@ is the trust anchor. MCP/x402/workflow are convenience + economic + discovery la
 
 ## What to build
 
-### 1. Shared on-chain engine — `sdk/veil-onchain.ts` (NEW, the keystone)
-Extract the programmatic logic that already exists in `frontend/lib/veil-chain.ts`
+### 1. Shared on-chain engine — `sdk/kage-onchain.ts` (NEW, the keystone)
+Extract the programmatic logic that already exists in `frontend/lib/kage-chain.ts`
 (`deposit()`, `withdraw()`, tree rebuild from events, `snarkjs.groth16.fullProve`) into a
 Node/bun-usable module with **no browser/Freighter dependency**, so both the frontend and the
 MCP server import the same code.
 - `payThroughSession({ sessionId, agentSecret, recipientScanKey, amount })`:
-  1. read pool state (root, leaf_count) via RPC (reuse pattern in `frontend/app/api/veil/route.ts`).
+  1. read pool state (root, leaf_count) via RPC (reuse pattern in `frontend/app/api/kage/route.ts`).
   2. derive note — `deriveNoteForRecipient` (`sdk/veil.ts`).
   3. compute new root + leaf index — `MerkleTree` (`sdk/veil.ts`).
   4. generate insert proof — snarkjs `groth16.fullProve` against `circuits/build` artifacts
@@ -106,15 +106,15 @@ workflow autonomously. Prints the discovered tools, the chosen steps, and the re
 
 ### 6. Frontend — `frontend/app/agent/page.tsx` (NEW, optional-but-recommended)
 A page that shows the agent loop live: tools discovered, x402 quote, workflow steps, and the
-resulting ZK-private payment appearing in the pool ledger (reuse `frontend/app/api/veil/route.ts`
+resulting ZK-private payment appearing in the pool ledger (reuse `frontend/app/api/kage/route.ts`
 + existing dashboard components). Ties the new layer into the already-reframed agent narrative.
 
 ---
 
 ## Reuse map (do not rebuild)
 - `sdk/veil.ts` — all crypto/notes/tree/recipientField.
-- `frontend/lib/veil-chain.ts` — programmatic `deposit`/`withdraw` + `groth16.fullProve` →
-  source to extract into `sdk/veil-onchain.ts`.
+- `frontend/lib/kage-chain.ts` — programmatic `deposit`/`withdraw` + `groth16.fullProve` →
+  source to extract into `sdk/kage-onchain.ts`.
 - `scripts/agent-fabric.ts` — SessionAccount deploy / delegate / fund (run once to provision).
 - `contracts/solvency/contracts/session/src/lib.rs` — SessionAccount; **no change** (already
   gates `deposit` + USDC `transfer`→pool, cap, expiry).

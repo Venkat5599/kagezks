@@ -22,7 +22,7 @@ import {
   bigToHex,
   type ProofHex,
   type Note,
-} from "./veil-browser";
+} from "./kage-browser";
 
 export const RPC_URL = "https://soroban-testnet.stellar.org";
 export const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
@@ -133,7 +133,7 @@ export async function deposit(
   const oldRoot = tree.root();
 
   onStep?.("deriving stealth note");
-  const { deriveNoteForRecipient } = await import("./veil-browser");
+  const { deriveNoteForRecipient } = await import("./kage-browser");
   const note = deriveNoteForRecipient(scanPubHex, amount);
   const leafIndex = tree.insert(note.commitment);
   const newRoot = tree.root();

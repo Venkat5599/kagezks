@@ -4,7 +4,7 @@ import { ArrowDownRight, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { KageMark } from "@/components/veil-logo";
+import { KageMark } from "@/components/kage-logo";
 
 const menus = {
   products: [

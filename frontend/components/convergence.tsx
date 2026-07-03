@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { KageMark } from "@/components/veil-logo";
+import { KageMark } from "@/components/kage-logo";
 
 const ease = [0.23, 1, 0.32, 1] as const;
 

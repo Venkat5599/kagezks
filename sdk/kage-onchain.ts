@@ -34,7 +34,7 @@ import {
   recipientField,
   bigToHex,
   type Note,
-} from "./veil.ts";
+} from "./kage.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -88,7 +88,7 @@ export function config() {
   return { VEIL, USDC, session: af?.session, agentSecret: af?.agentSecret, cap: af?.cap, expiry: af?.expiry };
 }
 
-// ---- snarkjs Groth16 → Soroban BN254 byte layout (port of veil-browser) ------
+// ---- snarkjs Groth16 → Soroban BN254 byte layout (port of kage-browser) ------
 type ProofHex = { a: string; b: string; c: string };
 const toBE32 = (dec: string): string => {
   const h = BigInt(dec).toString(16);
@@ -195,7 +195,7 @@ async function rebuildTree(veil: string, leafCount: number): Promise<MerkleTree>
   // deposit veil-deploy.ts makes). Public testnet RPC event retention can drop that
   // event out of the query window, so seed leaf 0 from the known constant when the
   // scan missed it — this reconstructs the REAL tree (its root equals the pool's
-  // current_root), it does not fabricate state. Matches frontend/lib/veil-chain.ts.
+  // current_root), it does not fabricate state. Matches frontend/lib/kage-chain.ts.
   if (byIdx.get(0) === undefined && leafCount >= 1) {
     byIdx.set(0, BigInt("0x" + GENESIS_LEAF));
   }

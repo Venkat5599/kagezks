@@ -5,7 +5,7 @@
 // the on-chain step — the **ZK-private deposit** through the
 // scoped SessionAccount. Workflows are exposed as MCP tools (workflow_list /
 // workflow_run) so an LLM agent can run a whole flow with one call.
-import { poolStatus, remainingBudget, payThroughSession } from "../sdk/veil-onchain.ts";
+import { poolStatus, remainingBudget, payThroughSession } from "../sdk/kage-onchain.ts";
 
 export type StepResult = {
   step: string;

@@ -1,4 +1,4 @@
-import { KageDashboard } from "@/components/veil-dashboard";
+import { KageDashboard } from "@/components/kage-dashboard";
 import { createMetadata } from "@/lib/metadata";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";

@@ -21,7 +21,7 @@ import { findWorkflow, findApi } from "./fabric/catalog.ts";
 import { runWorkflow } from "./fabric/engine.ts";
 import { proxyCall } from "./fabric/proxy-tool.ts";
 import { provisionSession } from "./fabric/provision.ts";
-import { config } from "../sdk/veil-onchain.ts";
+import { config } from "../sdk/kage-onchain.ts";
 
 // Dedicated port env — must NOT reuse VEIL_MCP_PORT (that's the single-agent demo's
 // port; sharing the name collides with veil-mcp when both read the same .env).

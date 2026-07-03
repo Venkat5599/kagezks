@@ -2,7 +2,7 @@
 // BN254 byte layout the Soroban verifier expects, emitting JSON arg files for
 // `stellar contract invoke --<arg>-file-path`.
 //
-//   bun run sdk/veil-convert.ts
+//   bun run sdk/kage-convert.ts
 //
 // Byte layout (EIP-197 / Stellar BN254):
 //   Fr 32B big-endian; G1 = x||y (64B); G2 = x_c1||x_c0||y_c1||y_c0 (128B).
