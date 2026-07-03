@@ -16,6 +16,18 @@ import { quoteFor, verifyPayment } from "../x402.ts";
 
 const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] });
 
+const LOG_ORIGIN = (process.env.KAGE_ORIGIN ?? "https://kageai.me").replace(/\/$/, "");
+const LOG_TOKEN = process.env.KAGE_LOG_TOKEN;
+
+// Fire-and-forget metering log to the web app (one row per proxied call).
+function logRequest(api: ApiRow, status: number, ok: boolean, paid: boolean): void {
+  fetch(`${LOG_ORIGIN}/api/logs`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...(LOG_TOKEN ? { "x-log-token": LOG_TOKEN } : {}) },
+    body: JSON.stringify({ api_slug: api.slug, api_name: api.name, kind: "api", status, ok, paid, price: Number(api.price || 0) }),
+  }).catch(() => {});
+}
+
 // decimal price ("0.01") → 7-decimal integer string the x402 layer settles in.
 export function priceUnits(api: ApiRow): string {
   return String(Math.round(Number(api.price || "0") * 1e7));
@@ -36,7 +48,8 @@ function substitute(tpl: string, args: Record<string, unknown>): string {
 }
 
 // Build + send the upstream request. Path/query variables substitute `{name}`.
-export async function proxyCall(api: ApiRow, args: Record<string, unknown>): Promise<{ status: number; body: unknown }> {
+// `paid` records whether the caller settled the x402 fee (metering log only).
+export async function proxyCall(api: ApiRow, args: Record<string, unknown>, opts?: { paid?: boolean }): Promise<{ status: number; body: unknown }> {
   let url = substitute(api.target_url, args);
   if (api.query_params) {
     const qs = substitute(api.query_params, args).replace(/^\?/, "");
@@ -66,6 +79,7 @@ export async function proxyCall(api: ApiRow, args: Record<string, unknown>): Pro
   } catch {
     /* keep as text */
   }
+  logRequest(api, r.status, r.status >= 200 && r.status < 400, Boolean(opts?.paid));
   return { status: r.status, body };
 }
 
@@ -110,7 +124,7 @@ export function registerApiTool(server: McpServer, api: ApiRow): string {
       }
 
       const { payment: _drop, ...callArgs } = args;
-      const res = await proxyCall(api, callArgs);
+      const res = await proxyCall(api, callArgs, { paid: Number(price) > 0 });
       return json({ status: res.status, body: res.body });
     },
   );
