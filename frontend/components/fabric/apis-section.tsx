@@ -192,10 +192,10 @@ function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () 
     target_url: "", http_method: "GET", content_type: "application/json", query_params: "",
     example_response: '{\n  "data": [ ... ],\n  "success": true\n}', price: "0.01", is_public: false,
   });
-  // Variables (AgentFabric variablesSchema) → Kage `variables`; the `in` field controls
+  // Variables (typed variables) → Kage `variables`; the `in` field controls
   // whether the value substitutes into the query, the URL path, or the request body.
   const [vars, setVars] = useState<{ name: string; type: string; in: string; description: string; required: boolean }[]>([]);
-  // Auth headers (AgentFabric headers) → Kage `auth_headers`; value may be "env:NAME".
+  // Auth headers (auth headers) → Kage `auth_headers`; value may be "env:NAME".
   const [headers, setHeaders] = useState<{ name: string; value: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);

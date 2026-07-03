@@ -31,7 +31,7 @@ payment privacy.
 
 ---
 
-## Agent Fabric — autonomy without custody
+## Kage Fabric — autonomy without custody
 
 The thesis: let an AI agent execute on-chain *without* holding your key, and make
 its settlement **private** with the ZK pool.
@@ -106,7 +106,7 @@ sdk/
 contracts/.../veil/      Soroban pool: deposit (insert-verify), withdraw (membership-verify + nullifier)
 contracts/.../session/   scoped session account (__check_auth policy): agent autonomy without custody
 scripts/
-  agent-fabric.ts        deploy a scoped session, delegate an agent key, fund it
+  kage-provision-cli.ts        deploy a scoped session, delegate an agent key, fund it
   veil-flow.ts           full off-chain flow: derive -> tree -> recognise -> prove
   veil-e2e-gen.ts        build a consistent on-chain deposit->withdraw scenario
   veil-gen-insert.ts     build an insert witness

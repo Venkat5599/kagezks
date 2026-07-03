@@ -1,6 +1,6 @@
-// Veil Agent Fabric — scoped, ZK-private agent payment (testnet).
+// Veil Kage Fabric — scoped, ZK-private agent payment (testnet).
 //
-//   bun run scripts/agent-fabric.ts
+//   bun run scripts/kage-provision-cli.ts
 //
 // The "autonomy without custody" idea, on Stellar and made private with Veil's ZK pool:
 //

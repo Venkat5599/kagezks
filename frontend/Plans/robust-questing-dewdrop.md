@@ -1,9 +1,9 @@
-# Plan — Veil "Agent Fabric" marketplace app (APIs · MCP Servers · Workflows · Dashboard)
+# Plan — Veil "Kage Fabric" marketplace app (APIs · MCP Servers · Workflows · Dashboard)
 
 ## Context
 
 The current `/dashboard` is a read-only ZK-pool monitor. The user wants the full
-**Agent-Fabric-style product app** (per the reference screenshots): a marketplace +
+**Fabric-style product app** (per the reference screenshots): a marketplace +
 builder for **APIs** (x402 payment-gated proxies), **MCP Servers**, and **Workflows**,
 plus a **Dashboard** with stats — but **Veil-branded** (Stellar / Soroban / ZK /
 SessionAccount, not EVM/EIP-7702) and using **our existing left side-panel** nav.
@@ -61,7 +61,7 @@ Keep the left dock (from current file) but change sections to
 Branding & adaptation (design taste — match reference's clean dark cards + OUR green
 `--accent`, reuse `Card`/`Field`/`Mono` helpers already in `kage-dashboard.tsx`, and
 `VeilMark` logo):
-- Wordmark "Veil" (green accent on second word style already in hero), not "Agent Fabric".
+- Wordmark "Veil" (green accent on second word style already in hero), not "Kage Fabric".
 - Chain = Stellar testnet; amounts in USDC; "EIP-7702 smart account" → "scoped
   SessionAccount key"; keccak/0x addresses → Soroban `C…`/`G…` strkeys.
 

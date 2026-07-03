@@ -1,7 +1,7 @@
 // Template resolution for the workflow engine.
 //
 // Two interchangeable syntaxes are supported so the same engine runs both Kage-native
-// and AgentFabric-style workflows:
+// and both template syntaxes:
 //   {{input.amount}}            ·  $.input.amount              — a workflow input
 //   {{steps.swap.output.hash}}  ·  $.steps.swap.output.hash    — an earlier step's output
 //
@@ -15,7 +15,7 @@ export type RunCtx = { input: Record<string, unknown>; steps: Record<string, { o
 
 const ONLY = /^\{\{\s*([^}]+?)\s*\}\}$/;
 const ANY = /\{\{\s*([^}]+?)\s*\}\}/g;
-// AgentFabric `$.path` expressions (e.g. $.input.x, $.steps.id.output.field).
+// `$.path` expressions (e.g. $.input.x, $.steps.id.output.field).
 const DOLLAR_ONLY = /^\$\.([\w.[\]]+)$/;
 const DOLLAR_ANY = /\$\.([\w.[\]]+)/g;
 

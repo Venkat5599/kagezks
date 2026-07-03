@@ -19,7 +19,7 @@ export const revalidate = 0;
 const RPC_URL = "https://soroban-testnet.stellar.org";
 const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
-const DEMO_CAP = 50_000_000n; // 5 USDC scoped cap (matches scripts/agent-fabric.ts)
+const DEMO_CAP = 50_000_000n; // 5 USDC scoped cap (matches scripts/kage-provision-cli.ts)
 const CALL_PRICE = "100000"; // 0.01 USDC per kage_pay (x402)
 
 const TOOLS = ["kage_pool_status", "kage_budget", "kage_quote", "kage_pay", "workflow_run"];

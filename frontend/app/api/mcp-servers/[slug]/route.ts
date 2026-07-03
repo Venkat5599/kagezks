@@ -1,5 +1,5 @@
 // Update an MCP server's exposed tools / workflows (post-create management, like
-// AgentFabric's "Available Tools" + "Workflow Tools" sections on the detail page).
+// the Available Tools + Workflow Tools sections on the detail page).
 import { sql, type McpServerRow } from "@/lib/db";
 
 export const dynamic = "force-dynamic";

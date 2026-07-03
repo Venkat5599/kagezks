@@ -13,12 +13,12 @@ snarkjs (in-browser Groth16 proving).
 ```
 app/
   page.tsx           # landing: "Agents that pay. Leak nothing."
-  dashboard/page.tsx # live pool dashboard (root, leaf count, deposit/withdraw, agent-fabric)
+  dashboard/page.tsx # live pool dashboard (root, leaf count, deposit/withdraw, kage fabric)
   api/veil/route.ts  # read-only pool state proxy (RPC)
 components/
   hero, how-it-works, feature-showcase, features-bento, convergence, faq, footer
   kage-dashboard.tsx # the dashboard shell (Overview · Connect & pay · Pool ledger ·
-                     #   Proven flow · Chain vs private · Agent fabric · The ZK)
+                     #   Proven flow · Chain vs private · Kage fabric · The ZK)
   veil-actions.tsx   # connect wallet, deposit, withdraw
 lib/
   config.ts          # ⭐ all marketing copy (single source of truth)
@@ -36,7 +36,7 @@ public/
   drain** and seals each payment in **zero-knowledge**.
 - **Dashboard** proves it live: deposit a stealth note (in-browser insert proof),
   watch the pool root advance, withdraw to a fresh stealth address, and see a
-  double-spend rejected. The **Agent fabric** section explains autonomy without
+  double-spend rejected. The **Kage fabric** section explains autonomy without
   custody (`SessionAccount.__check_auth`).
 
 ## Run

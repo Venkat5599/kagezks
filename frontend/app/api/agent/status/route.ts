@@ -1,5 +1,5 @@
 // Live read of the agent's scoped SessionAccount + the pool's deposit history, for
-// the dashboard's Agent-fabric monitor. All values are read on-chain from testnet.
+// the dashboard's Kage fabric monitor. All values are read on-chain from testnet.
 import {
   rpc,
   Contract,
