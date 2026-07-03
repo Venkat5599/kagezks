@@ -1,10 +1,10 @@
 {
   "network": "testnet",
-  "contractId": "CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B",
+  "contractId": "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC",
   "usdcSac": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
-  "sessionAccount": "CBJOY7CX36SI6P6JQJXM3MM4L3J4GTPWBTKUHN23J3HDAGJLHBOKWGR4",
+  "sessionAccount": "CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636",
   "explorer": {
-    "contract": "https://stellar.expert/explorer/testnet/contract/CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B",
+    "contract": "https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC",
     "depositTx": "https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597",
     "withdrawTx": "https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b"
   },

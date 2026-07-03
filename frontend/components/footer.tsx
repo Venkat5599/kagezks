@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { VeilMark } from "@/components/veil-logo";
 
 const CONTRACT_URL =
-  "https://stellar.expert/explorer/testnet/contract/CBRM3RK26Q3KLZC2KYRQ5OZ2HLCN7SV5A7EZMCUC27GL7QXUS32UB76B";
+  "https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
 
 const TX = "https://stellar.expert/explorer/testnet/tx/";
 
