@@ -26,13 +26,8 @@ type ActItem = { kind: "api" | "workflow" | "mcp"; name: string; slug: string | 
 type LogRow = { id: string; api_name: string | null; api_slug: string | null; status: number | null; ok: boolean; paid: boolean; price: number; created_at: string };
 type LogStats = { total: number; ok: number; paid: number; revenue: number };
 
-const PERIODS: { k: string; label: string }[] = [
-  { k: "24h", label: "24h" }, { k: "7d", label: "7d" }, { k: "30d", label: "30d" }, { k: "all", label: "All" },
-];
-
-// Per-request metering log with a period filter — real rows from request_logs.
-function RequestLogs() {
-  const [period, setPeriod] = useState("7d");
+// Per-request metering log — real rows from request_logs, filtered by the dashboard period.
+function RequestLogs({ period }: { period: string }) {
   const [logs, setLogs] = useState<LogRow[] | null>(null);
   const [stats, setStats] = useState<LogStats | null>(null);
   useEffect(() => {
@@ -42,14 +37,7 @@ function RequestLogs() {
 
   return (
     <Panel>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Request logs</p></div>
-        <div className="flex gap-1 rounded-lg border border-white/[0.08] p-0.5">
-          {PERIODS.map((p) => (
-            <button key={p.k} onClick={() => setPeriod(p.k)} className={`rounded-md px-2.5 py-1 text-xs transition ${period === p.k ? "bg-accent/15 text-accent" : "text-neutral-500 hover:text-neutral-300"}`}>{p.label}</button>
-          ))}
-        </div>
-      </div>
+      <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Recent Requests</p><span className="text-xs text-neutral-500">· request activity for your APIs</span></div>
 
       {stats && (
         <div className="mt-4 grid grid-cols-3 gap-3">
@@ -83,10 +71,12 @@ function RequestLogs() {
 export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") => void }) {
   const [s, setS] = useState<Stats | null>(null);
   const [act, setAct] = useState<ActItem[] | null>(null);
+  const [period, setPeriod] = useState("all");
   useEffect(() => {
     fetch("/api/stats").then((r) => r.json()).then(setS).catch(() => {});
     fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
   }, []);
+  const TOGGLE = [{ k: "all", label: "All Time" }, { k: "30d", label: "Last 30 Days" }, { k: "7d", label: "Last 7 Days" }];
   const t = s?.totals;
   const sess = s?.session;
   const cap = sess?.cap ? Number(sess.cap) : null;
@@ -95,9 +85,16 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-4xl font-semibold tracking-tight text-white">Dashboard</h1>
-        <p className="mt-1 text-neutral-400">Your agent-payment infrastructure — live on Stellar testnet.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-semibold tracking-tight text-white">Dashboard</h1>
+          <p className="mt-1 text-neutral-400">Manage your creations and track performance — live on Stellar testnet.</p>
+        </div>
+        <div className="flex gap-1 rounded-xl border border-white/[0.08] p-1">
+          {TOGGLE.map((t) => (
+            <button key={t.k} onClick={() => setPeriod(t.k)} className={`rounded-lg px-3 py-1.5 text-sm transition ${period === t.k ? "bg-accent/15 text-accent" : "text-neutral-500 hover:text-neutral-300"}`}>{t.label}</button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -152,7 +149,7 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
         </div>
       </div>
 
-      <RequestLogs />
+      <RequestLogs period={period} />
 
       {/* Recent activity — real rows from the fabric catalog */}
       <Panel>
