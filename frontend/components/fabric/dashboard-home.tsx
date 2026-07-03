@@ -23,6 +23,62 @@ function Stat({ icon: Icon, label, value, sub }: { icon: typeof Layers; label: s
 }
 
 type ActItem = { kind: "api" | "workflow" | "mcp"; name: string; slug: string | null; created_at: string };
+type LogRow = { id: string; api_name: string | null; api_slug: string | null; status: number | null; ok: boolean; paid: boolean; price: number; created_at: string };
+type LogStats = { total: number; ok: number; paid: number; revenue: number };
+
+const PERIODS: { k: string; label: string }[] = [
+  { k: "24h", label: "24h" }, { k: "7d", label: "7d" }, { k: "30d", label: "30d" }, { k: "all", label: "All" },
+];
+
+// Per-request metering log with a period filter — real rows from request_logs.
+function RequestLogs() {
+  const [period, setPeriod] = useState("7d");
+  const [logs, setLogs] = useState<LogRow[] | null>(null);
+  const [stats, setStats] = useState<LogStats | null>(null);
+  useEffect(() => {
+    setLogs(null);
+    fetch(`/api/logs?period=${period}`).then((r) => r.json()).then((d) => { setLogs(d.logs ?? []); setStats(d.stats ?? null); }).catch(() => setLogs([]));
+  }, [period]);
+
+  return (
+    <Panel>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Request logs</p></div>
+        <div className="flex gap-1 rounded-lg border border-white/[0.08] p-0.5">
+          {PERIODS.map((p) => (
+            <button key={p.k} onClick={() => setPeriod(p.k)} className={`rounded-md px-2.5 py-1 text-xs transition ${period === p.k ? "bg-accent/15 text-accent" : "text-neutral-500 hover:text-neutral-300"}`}>{p.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {stats && (
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3"><p className="text-xs text-neutral-500">Calls</p><p className="mt-0.5 text-xl font-semibold text-white">{stats.total}</p></div>
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3"><p className="text-xs text-neutral-500">Paid</p><p className="mt-0.5 text-xl font-semibold text-white">{stats.paid}</p></div>
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3"><p className="text-xs text-neutral-500">Revenue</p><p className="mt-0.5 text-xl font-semibold text-white">${(stats.revenue ?? 0).toFixed(2)}</p></div>
+        </div>
+      )}
+
+      <div className="mt-4 divide-y divide-white/[0.06]">
+        {logs === null ? (
+          <p className="py-3 text-sm text-neutral-500">loading…</p>
+        ) : logs.length === 0 ? (
+          <p className="py-3 text-sm text-neutral-500">No requests in this window yet. Calls to any <span className="font-mono">api__*</span> tool land here.</p>
+        ) : (
+          logs.map((l) => (
+            <div key={l.id} className="flex items-center gap-3 py-2 text-sm">
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${l.ok ? "bg-accent" : "bg-red-400"}`} />
+              <span className="flex-1 truncate text-neutral-200">{l.api_name ?? l.api_slug ?? "—"}</span>
+              {l.paid && <span className="rounded bg-accent/10 px-1.5 py-0.5 font-mono text-[10px] text-accent">paid ${Number(l.price).toFixed(2)}</span>}
+              <span className={`w-10 text-right font-mono text-xs ${l.ok ? "text-neutral-500" : "text-red-400"}`}>{l.status ?? "—"}</span>
+              <span className="hidden w-28 shrink-0 text-right text-xs text-neutral-600 sm:block">{new Date(l.created_at).toLocaleTimeString()}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </Panel>
+  );
+}
 
 export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") => void }) {
   const [s, setS] = useState<Stats | null>(null);
@@ -95,6 +151,8 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
           ))}
         </div>
       </div>
+
+      <RequestLogs />
 
       {/* Recent activity — real rows from the fabric catalog */}
       <Panel>
