@@ -86,6 +86,25 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
     setWstat(null);
     fetch(`/api/wallet-status?address=${address}`).then((r) => r.json()).then((d) => setWstat(d.ok ? { funded: d.funded, xlm: d.xlm } : null)).catch(() => {});
   }, [address]);
+
+  // Per-user session provisioning (only for generated wallets, whose secret we hold).
+  const [prov, setProv] = useState<{ sessionId: string; token: string } | null>(null);
+  const [provBusy, setProvBusy] = useState(false);
+  useEffect(() => {
+    const t = localStorage.getItem("kage_session_token"); const sid = localStorage.getItem("kage_session_id");
+    if (t && sid) setProv({ token: t, sessionId: sid });
+  }, []);
+  const provision = async () => {
+    if (!address || !secret) return;
+    setProvBusy(true);
+    try {
+      const r = await fetch("/api/fabric/provision", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ownerAddress: address, ownerSecret: secret }) });
+      const d = await r.json();
+      if (d.ok) { setProv({ sessionId: d.sessionId, token: d.token }); localStorage.setItem("kage_session_token", d.token); localStorage.setItem("kage_session_id", d.sessionId); }
+      else alert(`Provision failed: ${d.error}`);
+    } catch (e) { alert(`Provision failed: ${String((e as Error).message)}`); } finally { setProvBusy(false); }
+  };
+
   const t = s?.totals;
   const sess = s?.session;
   const cap = sess?.cap ? Number(sess.cap) : null;
@@ -177,6 +196,29 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
               )}
             </div>
           </div>
+        )}
+
+        {/* Provision a real per-user SessionAccount (generated wallets only). */}
+        {address && secret && (
+          prov ? (
+            <div className="mt-4 rounded-xl border border-accent/25 bg-accent/[0.06] p-5">
+              <p className="font-semibold text-white">Your Session Account is live</p>
+              <p className="mt-1 font-mono text-[11px] text-neutral-400">{prov.sessionId}</p>
+              <p className="mt-3 text-xs text-neutral-400">Personal agent token — use as the Bearer to settle through <span className="text-neutral-200">your</span> session:</p>
+              <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-black/40 px-3 py-2">
+                <span className="flex-1 truncate font-mono text-[11px] text-accent">{prov.token}</span>
+                <CopyBtn text={prov.token} />
+              </div>
+              <div className="mt-2"><CopyBtn text={`claude mcp add kage --transport http https://kageai.me/mcp/kage --header "Authorization: Bearer ${prov.token}"`} /></div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+              <p className="text-sm text-neutral-400">Deploy a scoped SessionAccount owned by <span className="font-mono text-neutral-300">{shortAddr(address)}</span> — only Kage.deposit into the ZK pool, up to a 5 USDC cap. Your agent then settles through your own session, not the shared demo.</p>
+              <button onClick={provision} disabled={provBusy} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
+                <KeyRound className="h-4 w-4" /> {provBusy ? "Provisioning on-chain… (~30s)" : "Provision Session Account"}
+              </button>
+            </div>
+          )
         )}
       </Panel>
 
