@@ -22,6 +22,35 @@ const KEY = "kage_owner";
 const SECKEY = "kage_owner_secret";
 const REALKEY = "kage_owner_real";
 
+// Record the wallet against the onboarding table. Fire-and-forget on purpose:
+// tracking must never block or fail a connect, so a dead endpoint or an offline
+// DB is swallowed here rather than surfaced to the user.
+function registerUser(address: string, walletKind: "freighter" | "generated") {
+  fetch("/api/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      address,
+      walletKind,
+      referrer: typeof document !== "undefined" ? document.referrer || null : null,
+    }),
+  }).catch(() => {});
+}
+
+// Attach a real testnet transaction to the connected wallet, so onboarding
+// numbers stay backed by hashes anyone can check on stellar.expert.
+export function recordTx(
+  address: string,
+  action: "deposit" | "withdraw" | "provision" | "agent_run",
+  txHash?: string,
+) {
+  fetch("/api/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ address, action, txHash: txHash ?? null }),
+  }).catch(() => {});
+}
+
 // Try Freighter's injected API across its version variants.
 async function tryFreighter(): Promise<string | null> {
   const fa = (typeof window !== "undefined" ? (window as unknown as { freighterApi?: Record<string, (...a: unknown[]) => Promise<unknown>> }).freighterApi : undefined);
@@ -64,6 +93,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (!fa) { alert("Freighter not detected. Use 'Generate Session Account Wallet' instead."); return; }
       setAddress(fa); setReal(true); setSecret(null);
       localStorage.setItem(KEY, fa); localStorage.setItem(REALKEY, "1"); localStorage.removeItem(SECKEY);
+      registerUser(fa, "freighter");
     } finally { setConnecting(false); }
   };
 
@@ -78,6 +108,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const sec = kp.secret();
       setAddress(pub); setSecret(sec); setReal(false);
       localStorage.setItem(KEY, pub); localStorage.setItem(SECKEY, sec); localStorage.setItem(REALKEY, "0");
+      registerUser(pub, "generated");
       // fire-and-forget testnet funding
       fetch(`https://friendbot.stellar.org/?addr=${pub}`).catch(() => {});
     } finally { setConnecting(false); }
