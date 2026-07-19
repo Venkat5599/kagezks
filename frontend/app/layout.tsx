@@ -1,3 +1,4 @@
+import { FeedbackWidget } from "@/components/feedback-widget";
 import { Header } from "@/components/header";
 import { Providers } from "@/components/providers";
 import { SkipToContent } from "@/components/skip-to-content";
@@ -69,6 +70,7 @@ export default function RootLayout({
           
           <SkipToContent />
           {children}
+          <FeedbackWidget />
         </Providers>
       </body>
     </html>
