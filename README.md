@@ -342,15 +342,15 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 
 ### Product Improvements Based on Feedback
 
-| Improvement | Commit | Status |
-|-------------|--------|--------|
-| CI/CD pipeline (contract tests + frontend build + lint) | `06a1802` | ✅ |
-| Rate limiting on API routes | `06a1802` | ✅ |
-| Production security headers (CSP, HSTS, COEP, COOP) | `06a1802` | ✅ |
-| Error boundaries + loading states for all routes | `06a1802` | ✅ |
-| Expanded contract test suite (invariants) | `06a1802` | ✅ |
-| Input validation library (Stellar addresses, amounts) | `06a1802` | ✅ |
-| Frontend test suite | `06a1802` | ✅ |
+| Improvement | Status |
+|-------------|--------|
+| CI/CD pipeline (contract tests + frontend build + lint) | ✅ |
+| Escrow transaction UI (create/approve/settle/refund/cancel) | ✅ |
+| Admin dashboard settle/cancel controls | ✅ |
+| Better error messages for auth failures | ✅ |
+| Wallet-aware role detection (admin vs user) | ✅ |
+| Token approval flow before escrow creation | ✅ |
+| Full escrow lifecycle in frontend | ✅ |
 
 ---
 

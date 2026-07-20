@@ -2,21 +2,13 @@
 // and MCP servers, unioned and sorted by creation time. Real rows from Neon (no
 // synthetic data); the dashboard renders them as an activity feed.
 import { sql } from "@/lib/db";
-import { rateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type Activity = { kind: "api" | "workflow" | "mcp"; name: string; slug: string | null; created_at: string };
 
-export async function GET(req: Request) {
-  const limitResult = rateLimit(req, RATE_LIMITS.api, "activity");
-  if (!limitResult.allowed) {
-    return new Response(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
-      headers: { "Content-Type": "application/json", ...rateLimitHeaders(limitResult) },
-    });
-  }
+export async function GET() {
   try {
     const rows = (await sql`
       SELECT 'api' AS kind, name, slug, created_at FROM apis
@@ -25,7 +17,7 @@ export async function GET(req: Request) {
       ORDER BY created_at DESC
       LIMIT 12
     `) as Activity[];
-    return Response.json({ ok: true, activity: rows }, { headers: rateLimitHeaders(limitResult) });
+    return Response.json({ ok: true, activity: rows });
   } catch (e) {
     return Response.json({ ok: false, activity: [], error: String(e) }, { status: 500 });
   }

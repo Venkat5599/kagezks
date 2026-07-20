@@ -1,7 +1,6 @@
 // Dashboard stats: DB aggregates (APIs / requests / earnings) + live on-chain
 // session + pool reads (the scoped-key panel).
 import { sql } from "@/lib/db";
-import { rateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/rate-limit";
 import {
   rpc,
   Contract,
@@ -20,13 +19,6 @@ const SESSION = "CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
 
 export async function GET(req: Request) {
-  const limitResult = rateLimit(req, RATE_LIMITS.api, "stats");
-  if (!limitResult.allowed) {
-    return new Response(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
-      headers: { "Content-Type": "application/json", ...rateLimitHeaders(limitResult) },
-    });
-  }
   // Per-user aggregates when ?owner is provided (the connected wallet); global otherwise.
   const owner = new URL(req.url).searchParams.get("owner");
   let totals = { apis: 0, requests: 0, success: 0, earnings: 0, mcpServers: 0, workflows: 0 };
@@ -76,8 +68,5 @@ export async function GET(req: Request) {
   } catch {}
 
   const successRate = totals.requests > 0 ? Math.round((totals.success / totals.requests) * 100) : 0;
-  return Response.json(
-    { totals: { ...totals, successRate }, session },
-    { headers: rateLimitHeaders(limitResult) }
-  );
+  return Response.json({ totals: { ...totals, successRate }, session });
 }
