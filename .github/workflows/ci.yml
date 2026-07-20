@@ -19,22 +19,22 @@ jobs:
         run: cargo test -p veil
       - name: Run session account tests
         working-directory: contracts/solvency
-        run: cargo test -p session
+        run: cargo test -p session_account
       - name: Clippy lint (veil)
         working-directory: contracts/solvency
         run: cargo clippy -p veil -- -D warnings
-      - name: Clippy lint (session)
+      - name: Clippy lint (session_account)
         working-directory: contracts/solvency
-        run: cargo clippy -p session -- -D warnings
+        run: cargo clippy -p session_account -- -D warnings
       - name: Rust format check
         working-directory: contracts/solvency
         run: cargo fmt --check
       - name: Verify WASM build (veil)
         working-directory: contracts/solvency
         run: cargo build -p veil --target wasm32-unknown-unknown --release
-      - name: Verify WASM build (session)
+      - name: Verify WASM build (session_account)
         working-directory: contracts/solvency
-        run: cargo build -p session --target wasm32-unknown-unknown --release
+        run: cargo build -p session_account --target wasm32-unknown-unknown --release
 
   frontend-build:
     name: Frontend Build & Test
