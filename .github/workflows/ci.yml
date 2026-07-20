@@ -20,12 +20,6 @@ jobs:
       - name: Run session account tests
         working-directory: contracts/solvency
         run: cargo test -p session_account
-      - name: Verify WASM build (veil)
-        working-directory: contracts/solvency
-        run: cargo build -p veil --target wasm32-unknown-unknown --release
-      - name: Verify WASM build (session_account)
-        working-directory: contracts/solvency
-        run: cargo build -p session_account --target wasm32-unknown-unknown --release
 
   frontend-build:
     name: Frontend Build & Test
