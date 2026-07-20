@@ -295,19 +295,7 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 
 ---
 
-## 🎯 Stellar Journey to Mastery — Submission Proof
-
-### Belt Progress
-
-| Belt | Status | Prize |
-|------|--------|-------|
-| ⚪ White | ✅ Approved | — |
-| 🟡 Yellow | ✅ Approved | $10 |
-| 🟠 Orange | ✅ Approved | $50 |
-| 🟢 Green | ✅ Approved | $100 |
-| 🔵 Blue | 📤 Submitted | $150 |
-
-### Submission Proof Table
+## Submission Proof
 
 | Item | Detail |
 |------|--------|
