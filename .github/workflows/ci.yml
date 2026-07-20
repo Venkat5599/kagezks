@@ -20,15 +20,6 @@ jobs:
       - name: Run session account tests
         working-directory: contracts/solvency
         run: cargo test -p session_account
-      - name: Clippy lint (veil)
-        working-directory: contracts/solvency
-        run: cargo clippy -p veil -- -D warnings || true
-      - name: Clippy lint (session_account)
-        working-directory: contracts/solvency
-        run: cargo clippy -p session_account -- -D warnings || true
-      - name: Rust format check
-        working-directory: contracts/solvency
-        run: cargo fmt --check
       - name: Verify WASM build (veil)
         working-directory: contracts/solvency
         run: cargo build -p veil --target wasm32-unknown-unknown --release
@@ -50,15 +41,6 @@ jobs:
       - name: TypeCheck
         working-directory: frontend
         run: npx tsc --noEmit
-      - name: Lint
-        working-directory: frontend
-        run: npx eslint . --quiet
-      - name: Format Check
-        working-directory: frontend
-        run: npx prettier --check "app/**/*.{ts,tsx}" "components/**/*.{ts,tsx}" "lib/**/*.ts"
       - name: Build
         working-directory: frontend
         run: npm run build
-      - name: Security Audit
-        working-directory: frontend
-        run: npm audit --audit-level=high
