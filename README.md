@@ -367,13 +367,3 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 | Phase 6 | Settlement standard, ZK compliance proofs, funded team | ⬜ Planned |
 
 ---
-
-<div align="center">
-
-## Built for Stellar Hacks · Real-World ZK 🕶️
-
-**Autonomy without custody. Settlement without surveillance.**
-
-*Private payments for autonomous agents on Stellar.*
-
-</div>
