@@ -62,3 +62,55 @@ fn extend_updates_cap_and_expiry() {
     assert_eq!(p.expiry, 12_345u64);
     assert_eq!(client.remaining(), 9_000_000i128); // spent still 0
 }
+
+// ── Invariants ───────────────────────────────────────────────────
+
+#[test]
+fn invariant_remaining_equals_cap_minus_spent() {
+    let env = Env::default();
+    let client = setup(&env);
+    let p = client.policy();
+    assert_eq!(client.remaining(), p.cap - p.spent);
+    client.extend(&10_000_000i128, &99_999u64);
+    assert_eq!(client.remaining(), 10_000_000i128);
+}
+
+#[test]
+fn invariant_initial_spent_is_zero() {
+    let env = Env::default();
+    let client = setup(&env);
+    assert_eq!(client.policy().spent, 0i128);
+}
+
+#[test]
+fn invariant_cap_is_positive() {
+    let env = Env::default();
+    let client = setup(&env);
+    assert!(client.policy().cap > 0i128);
+}
+
+#[test]
+fn invariant_revoked_expiry_is_zero() {
+    let env = Env::default();
+    let client = setup(&env);
+    client.revoke();
+    assert_eq!(client.policy().expiry, 0u64);
+}
+
+#[test]
+fn invariant_extend_preserves_spent() {
+    let env = Env::default();
+    let client = setup(&env);
+    let before = client.policy().spent;
+    client.extend(&8_000_000i128, &50_000u64);
+    let after = client.policy().spent;
+    assert_eq!(after, before, "spent should not be reset by extend");
+}
+
+#[test]
+fn invariant_owner_is_set() {
+    let env = Env::default();
+    let client = setup(&env);
+    let p = client.policy();
+    assert!(p.owner.to_string().len() > 0);
+}

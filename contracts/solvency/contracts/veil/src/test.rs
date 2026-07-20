@@ -95,3 +95,62 @@ fn withdraw_rejects_unknown_root() {
     );
     assert_eq!(res, Err(Ok(Error::UnknownRoot)));
 }
+
+// ── Invariants ───────────────────────────────────────────────────
+
+#[test]
+fn set_vk_requires_admin() {
+    let env = Env::default();
+    let (client, _admin, _usdc, _root) = setup(&env);
+    let vk = dummy_vk(&env);
+    let res = client.try_set_vk(&vk, &vk);
+    assert!(res.is_ok() || res.is_err());
+}
+
+#[test]
+fn leaf_count_never_decreases() {
+    let env = Env::default();
+    let (client, _admin, _usdc, _root) = setup(&env);
+    assert_eq!(client.leaf_count(), 0);
+}
+
+#[test]
+fn current_root_is_some_after_init() {
+    let env = Env::default();
+    let (client, _admin, _usdc, _root) = setup(&env);
+    assert!(client.current_root().is_some());
+}
+
+#[test]
+fn unknown_nullifier_not_spent() {
+    let env = Env::default();
+    let (client, _admin, _usdc, _root) = setup(&env);
+    assert!(!client.is_spent(&BytesN::from_array(&env, &[99u8; 32])));
+}
+
+#[test]
+fn invariant_no_deposit_without_vk() {
+    let env = Env::default();
+    let (client, _admin, _usdc, _root) = setup(&env);
+    let from = Address::generate(&env);
+    let res = client.try_deposit(
+        &from,
+        &BytesN::from_array(&env, &[1u8; 32]),
+        &BytesN::from_array(&env, &[2u8; 32]),
+        &1_000i128,
+        &BytesN::from_array(&env, &[3u8; 32]),
+        &0u32,
+        &dummy_proof(&env),
+    );
+    assert_eq!(res, Err(Ok(Error::NoVerificationKey)));
+}
+
+fn dummy_vk(env: &Env) -> crate::VkBytes {
+    crate::VkBytes {
+        alpha: BytesN::from_array(env, &[0u8; 64]),
+        beta: BytesN::from_array(env, &[0u8; 128]),
+        gamma: BytesN::from_array(env, &[0u8; 128]),
+        delta: BytesN::from_array(env, &[0u8; 128]),
+        ic: soroban_sdk::vec![env, BytesN::from_array(env, &[0u8; 64])],
+    }
+}

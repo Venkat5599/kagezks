@@ -12,6 +12,7 @@ import {
   BASE_FEE,
 } from "@stellar/stellar-sdk";
 import { randomUUID } from "node:crypto";
+import { rateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,6 +29,13 @@ const toHex = (b: unknown) => (b instanceof Uint8Array ? Buffer.from(b).toString
 type Step = { phase: string; tool?: string; label: string; status: "ok" | "info" | "skipped"; detail: string; data?: unknown };
 
 export async function POST(req: Request) {
+  const limitResult = rateLimit(req, RATE_LIMITS.api, "agent-run");
+  if (!limitResult.allowed) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), {
+      status: 429,
+      headers: { "Content-Type": "application/json", ...rateLimitHeaders(limitResult) },
+    });
+  }
   const body = await req.json().catch(() => ({}));
   const amount = BigInt(String(body?.amount ?? "5000000")); // default 0.5 USDC
   const scanKey: string = body?.scanKey ?? "cd2e7738…4181f16c";
