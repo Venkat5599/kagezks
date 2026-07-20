@@ -295,6 +295,91 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 
 ---
 
+## 🎯 Stellar Journey to Mastery — Submission Proof
+
+### Belt Progress
+
+| Belt | Status | Prize |
+|------|--------|-------|
+| ⚪ White | ✅ Approved | — |
+| 🟡 Yellow | ✅ Approved | $10 |
+| 🟠 Orange | ✅ Approved | $50 |
+| 🟢 Green | ✅ Approved | $100 |
+| 🔵 Blue | 📤 Submitted | $150 |
+
+### Submission Proof Table
+
+| Item | Detail |
+|------|--------|
+| **Pool Contract** | `CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC` |
+| **Session Contract** | `CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636` |
+| **Deposit TX** | `308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597` |
+| **Withdraw TX** | `044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b` |
+| **Live Demo** | [kageai.me](https://kageai.me) |
+| **Pitch Deck** | [docs/pitch-deck.md](docs/pitch-deck.md) |
+| **CI/CD** | ![CI](https://github.com/Venkat5599/kagezks/actions/workflows/ci.yml/badge.svg) |
+| **License** | MIT |
+
+### Test Results
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Veil Pool Contract | 10 (4 smoke + 6 invariants) | ✅ All passing |
+| Session Account Contract | 10 (4 smoke + 6 invariants) | ✅ All passing |
+| Frontend (validation + rate limiting) | 17 | ✅ All passing |
+| **Total** | **37** | **Zero warnings** |
+
+### Screenshots
+
+| View | Preview |
+|------|---------|
+| Dashboard | ![Dashboard](kage-dashboard.png) |
+| Landing Page | ![Landing](kage-landing.jpeg) |
+| CI/CD Pipeline | [GitHub Actions](https://github.com/Venkat5599/kagezks/actions) |
+
+---
+
+## 👥 User Feedback — Blue Belt
+
+50 testnet users onboarded with wallet interactions on Stellar testnet. Feedback exported to CSV: [docs/user-feedback.csv](docs/user-feedback.csv)
+
+**Average Rating:** 4.4/5
+
+### Top Requested Features (from user feedback)
+
+1. Mainnet deployment with security audit (most requested)
+2. Mobile app / PWA version
+3. Multi-token support (EURC, BRL, ARS)
+4. View/spend key separation for production-grade stealth
+5. Batch payments (pay N recipients in one TX)
+
+### Product Improvements Based on Feedback
+
+| Improvement | Commit | Status |
+|-------------|--------|--------|
+| CI/CD pipeline (contract tests + frontend build + lint) | `06a1802` | ✅ |
+| Rate limiting on API routes | `06a1802` | ✅ |
+| Production security headers (CSP, HSTS, COEP, COOP) | `06a1802` | ✅ |
+| Error boundaries + loading states for all routes | `06a1802` | ✅ |
+| Expanded contract test suite (invariants) | `06a1802` | ✅ |
+| Input validation library (Stellar addresses, amounts) | `06a1802` | ✅ |
+| Frontend test suite | `06a1802` | ✅ |
+
+---
+
+## 🗺️ Roadmap
+
+| Phase | Focus | Status |
+|-------|-------|--------|
+| Phase 1 | MVP — ZK pool + session account + stealth notes on testnet | ✅ Done |
+| Phase 2 | CI/CD, tests, security hardening, user onboarding | ✅ Done |
+| Phase 3 | Mainnet deployment, external security audit, $150K SCF | ⬜ Planned |
+| Phase 4 | 10+ tokens, view/spend key separation, anchor SDK | ⬜ Planned |
+| Phase 5 | Institutional dashboard, liquidity optimization, banking integration | ⬜ Planned |
+| Phase 6 | Settlement standard, ZK compliance proofs, funded team | ⬜ Planned |
+
+---
+
 <div align="center">
 
 ## Built for Stellar Hacks · Real-World ZK 🕶️
