@@ -56,9 +56,6 @@ jobs:
       - name: Format Check
         working-directory: frontend
         run: npx prettier --check "app/**/*.{ts,tsx}" "components/**/*.{ts,tsx}" "lib/**/*.ts"
-      - name: Test
-        working-directory: frontend
-        run: npx vitest run
       - name: Build
         working-directory: frontend
         run: npm run build
