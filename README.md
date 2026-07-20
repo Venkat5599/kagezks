@@ -16,6 +16,9 @@
   <a href="https://kageai.me">
     <img src="https://img.shields.io/badge/🌐_DEMO-kageai.me-00D4FF?style=for-the-badge" alt="Live Demo" />
   </a>
+  <a href="https://youtu.be/s4WmqpLhH4s">
+    <img src="https://img.shields.io/badge/▶_VIDEO-Watch_Demo-FF0000?style=for-the-badge&labelColor=0a0f12" alt="Video Demo" />
+  </a>
   <img src="https://img.shields.io/badge/ZK-Groth16_·_BN254-00FF88?style=for-the-badge" alt="ZK" />
   <img src="https://img.shields.io/badge/Soroban-Rust-363636?style=for-the-badge" alt="Soroban" />
 </p>
@@ -262,6 +265,7 @@ stellar/
 | Resource | URL |
 |----------|-----|
 | **Live Demo** | [kageai.me](https://kageai.me) |
+| **Video Demo** | [Watch on YouTube](https://youtu.be/s4WmqpLhH4s) |
 | **Pool Contract** | [View on Explorer](https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC) |
 | **Session Account** | [View on Explorer](https://stellar.expert/explorer/testnet/contract/CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636) |
 | **Deposit TX** | [View TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) |
