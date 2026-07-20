@@ -312,10 +312,9 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 
 | Suite | Tests | Status |
 |-------|-------|--------|
-| Veil Pool Contract | 10 (4 smoke + 6 invariants) | ✅ All passing |
-| Session Account Contract | 10 (4 smoke + 6 invariants) | ✅ All passing |
-| Frontend (validation + rate limiting) | 17 | ✅ All passing |
-| **Total** | **37** | **Zero warnings** |
+| Veil Pool Contract | 4 | ✅ All passing |
+| Session Account Contract | 4 | ✅ All passing |
+| **Total** | **8** | **Zero warnings** |
 
 ### Screenshots
 
