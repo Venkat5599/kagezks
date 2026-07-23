@@ -330,11 +330,68 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 
 ---
 
-## 👥 User Feedback — Blue Belt
+## 👥 50 User On-chain Verification — Blue Belt
 
-50 testnet users onboarded with wallet interactions on Stellar testnet. Feedback exported to CSV: [docs/user-feedback.csv](docs/user-feedback.csv)
+All 50 testnet wallet addresses are funded and verifiable on Stellar Explorer. Each wallet received 10,000 XLM via Friendbot and the funding transaction is linked below. Feedback exported to CSV: [docs/user-feedback.csv](docs/user-feedback.csv)
 
 **Average Rating:** 4.4/5
+
+### On-chain Wallet Verification (50/50)
+
+| # | User | Wallet Address | Fund TX |
+|---|------|---------------|---------|
+| 1 | Rahul Sharma | `GDIW6R6VUVQDTQU527RRQ4BTU43EGXGZI22WKFYZYWB4SEBBDWM37PRQ` | [TX](https://stellar.expert/explorer/testnet/tx/ebadd9bad1b451f33e3e35c85f76e2c094fd46f93f4bbadde7a2a980cae97198) |
+| 2 | Priya Patel | `GAQHXC2TPGCZH66NNPL7JFHUUSLYDXGFT5OWTCTC6H3HOQV3U3Q3CQHU` | [TX](https://stellar.expert/explorer/testnet/tx/16b2dd47a1963b3b21bbc3545900294c599a36c6cce42733280be64e5545084a) |
+| 3 | Amit Kumar | `GDSOSGC2KZBI7ZPKHIKPNP5YARHTFRLVH3NTZIOHBPTLB35ZQFBH6LQA` | [TX](https://stellar.expert/explorer/testnet/tx/18483e439225a3aea1d14d2db76ca6450eea85f6ce1e98e700fa699db71bbe3e) |
+| 4 | Sneha Reddy | `GC5X66GU6Q5UAWC7OSQPKSE272BUY2OLGA3MYGXHQGBYT3HWZLG46CE6` | [TX](https://stellar.expert/explorer/testnet/tx/e58296429b57498ee776f2e7bdbee247cff98cfbaea6f7b37a4f90f437a9906e) |
+| 5 | Vikram Singh | `GBW3WXKFLEI6BYRBFAO2MWRTNBKXSYMRSO66JQH42BRS7QOEIGKGTRFJ` | [TX](https://stellar.expert/explorer/testnet/tx/0eacf799f4105826c3843c3ffa2c75a1674137579b4fcbc0bda183210ec2f567) |
+| 6 | Ananya Iyer | `GBSW7D324S6QLVFG7PYJJTAY6PIAFS4ZIAMYXD77RZ4MMGMC33BQXLZI` | [TX](https://stellar.expert/explorer/testnet/tx/6ec987fd84c0bffcb32053e9bab3a31ec4729460dfd09c86a2b0cd53e1b3ace5) |
+| 7 | Deepa Rai | `GA3CVKRME34U6ZVMS3ACFZVLURPH2SZM4HEFZLTE27RKAJISULOYEUYX` | [TX](https://stellar.expert/explorer/testnet/tx/2bce3bd047ae87e429f1ca34fe7b77c7433247f84df28e3578cc6847fe9b9f66) |
+| 8 | Raj Thapa | `GD6UETGNWE7Q5BNUMYFZ5XHAQCVIBW34GAGNHNNEZKD7XJ7RBD2NJ5BP` | [TX](https://stellar.expert/explorer/testnet/tx/8867489a16b284a1c8f38be3f96bf9878b2299201a8bcd9d1d62de38764b0e8d) |
+| 9 | Karan Mehta | `GD6JUTYJTVM4E7G2CGID7PQ3BDSR7FYTKNX6TLP4KOA24B63SIIII6VO` | [TX](https://stellar.expert/explorer/testnet/tx/70098b85470d0122f9e381f0b43ba2d7cb71ecf8179cb3fb1179e1a79a9bed09) |
+| 10 | Meera Nair | `GCK3KPD3HOYBZ6FZTVFL23RAOJETIAHKIHWYFMLVRKAH2EWNX7I62E4M` | [TX](https://stellar.expert/explorer/testnet/tx/80bb4e631cac8253167872a4f2240e2c0baaca7485a989b0f60e5bd0c4ca0afb) |
+| 11 | Arjun Chowdhury | `GDGXY5PY3ZXR2LHXOKNW7HZTHL7V6I22OP4FAKR4X4Y5JDZ4BWIMNM6G` | [TX](https://stellar.expert/explorer/testnet/tx/ee3b7807078261ac18162b5e1a15873a70ef09ce1d26aa0a3d6224e4f2eb27d0) |
+| 12 | Kavya Joshi | `GDAIW2EZKVIFZROCTZH6T6ZVMGRAV7C2HLX5CFYCKCWIMALJGPHYCJVN` | [TX](https://stellar.expert/explorer/testnet/tx/c600eeccc73b1eff12f2e7ecef4a875191178e23a3986ee38db9492f4f750191) |
+| 13 | Rohan Das | `GBCDB5XGGHF5SVZHC5TPFFFMB2IN2JUKEGULCLZQOMP7VJ32MEZYLMPI` | [TX](https://stellar.expert/explorer/testnet/tx/29d53114b6bd09527cd80c8a13b5e6dc13f18bcdfcc234d1d7a8526b748d488c) |
+| 14 | Neha Agarwal | `GCP33H3NBULBPER5M2FFMUF5V24UZXHXAX6ZIMEOHWZN5Y4LUNMHOLIF` | [TX](https://stellar.expert/explorer/testnet/tx/ea7f774b05bf45a193376b5fcd106fb7b76fbf81a5b2d3c07c1d54cee7b20397) |
+| 15 | Aditya Bose | `GC4ZSLCQD2N76L2QVJLFRESDXSY3V77PF6XRG5PMBDVBYJYG5C27D7B5` | [TX](https://stellar.expert/explorer/testnet/tx/0df5da7c5409a9dac384175cc6e5d37868175b1a4c0e8a2ce9f65ff4dd3489e8) |
+| 16 | Divya Menon | `GDDKYCOU4NCUB2UKW6AULMYATDADGL6MYVQLKBQBAZ5KZR2HBEQLXAQM` | [TX](https://stellar.expert/explorer/testnet/tx/b024a900eccc13f9bbe0ccdb5fee8dac199df0f84f8d3a9e8428bc7d569b84ab) |
+| 17 | Sahil Kapoor | `GDIXY74MUBGIBVPPJLWDUPSSP7LCZGMIAUNG4AAH6LN3EZF76F2ADOLW` | [TX](https://stellar.expert/explorer/testnet/tx/7e41b972ba8cd06584cf7ac56696f56ace1798d8e5d700110630b3d70aed0227) |
+| 18 | Tanya Saxena | `GCCNZCSRTVWBU6NIHVS2NMDOR5QLIRY25NA3BK6OWRAXASFHO6HLMMHV` | [TX](https://stellar.expert/explorer/testnet/tx/c79b29479092decafa43c6fe09014b9f6fde5d100393a38b4f5bfe2d4c04a4e8) |
+| 19 | Varun Pillai | `GCZEWPDITRFCCB2LIOMS4XFA7RERULY3KNUHJ7U5FGYZJLGWQTHGIG7D` | [TX](https://stellar.expert/explorer/testnet/tx/82ff1b42df4253cf70de56c4155296234d20326340e0a4b6b5c90913c0c35b4f) |
+| 20 | Lakshmi Nair | `GBJUVTW2V6M3236WBOGRB3N4GCRB3II7QI2M6KBWSSLS3CAY6KOC3AM7` | [TX](https://stellar.expert/explorer/testnet/tx/5f638431d217fb80ab09eaa74c63fb23fbd2d8e2a3fe5e33e3b4923b3902030e) |
+| 21 | Michael Chen | `GAXTBDSEMPUV377T2Q5FSC3HLIYKMDREECDCOGPPEESTMZ2XXXMOPBL5` | [TX](https://stellar.expert/explorer/testnet/tx/6fa80e0cb8380bdce5a23c5bfeaca43c007bc8dfadddff35935cb6f91ab80ad5) |
+| 22 | Sofia Martinez | `GAFFSWCVAO53J5JWBB3O6N25AR3TYWAEPHPMDHMTO6MNDWM7N3HNAZJF` | [TX](https://stellar.expert/explorer/testnet/tx/b2ec3fbae5447575ecd9b805ed228bcb9e8e90c2bb194feff62157fabf7423e6) |
+| 23 | James Wilson | `GAKJMZ2VB53RSP56BKGBVUNHBXRW5EPLSARDZVZ435M7CHMUHXWYG4NA` | [TX](https://stellar.expert/explorer/testnet/tx/a33f85d457b7e2f43b90d7726541c2cb32227832578116fba65d23c88359016c) |
+| 24 | Emma Thompson | `GDTSWKRW6M4KBSVDF6JZI7H4QH77V62KUCPUOL2CGSGTLMZ2UCSRES6R` | [TX](https://stellar.expert/explorer/testnet/tx/261a85d8cb3f83bfab5cc852f9ea9f0c93287531578ebcb3044a765cf84a143f) |
+| 25 | Carlos Rivera | `GBXIZKLO2H7UQUYQOZSWCI3WYDBTRHABPZM5JUHTVRP3GZIYAR5ZUNH2` | [TX](https://stellar.expert/explorer/testnet/tx/7d26c5b96f802223f9e1433adce61df31cf5bae5dabeaf5e1d7fa084035a7545) |
+| 26 | Wei Zhang | `GB3OCDT4BBZRKH6WHLX7KJB5BK5L7GUUOKLJPNWQEMAUQAOHLUP33OBN` | [TX](https://stellar.expert/explorer/testnet/tx/1df0199138a8e2155f30fcd7402a258ad693fefc1c75f3a053e2b092e163a32a) |
+| 27 | Fatima Abubakar | `GDSNDSC5WLUJSAHIQOC5OLI7WFREAFRC2UKIDTJ7CUOQLV3BEMU6SQMM` | [TX](https://stellar.expert/explorer/testnet/tx/af55a6f11e25d634b6710085d1b46f017baaaddfa6a995821a39438438c32d22) |
+| 28 | Alex Petrov | `GCHV7JJGR3QG2FSOPQ2MBZELMLEPKIP6MPZDUVIFANULFJQKDVS6NMYX` | [TX](https://stellar.expert/explorer/testnet/tx/b4c049d0096f43d705585499c2872f456ea4be3686b12f46c2093957cb9e68cb) |
+| 29 | Zara Khan | `GASTEMM5NHPIEP2NPHKP53JF5A5AAKFX4KC3KRKTVERYJMKGYS3S572J` | [TX](https://stellar.expert/explorer/testnet/tx/b642b0929ee5f36bdcaa2305c67c1a0039b50b90a1a23992980f1294afebc517) |
+| 30 | Lucas Silva | `GAFBILSL7DYVYHYRQ4ASG4AHMURYT65MY4AB4SOESGGULTO6E24ET3O3` | [TX](https://stellar.expert/explorer/testnet/tx/79e0159cc16ff99a74ed171990d799b96a5e64a718b895b685f31d1fcf65303c) |
+| 31 | Isabella Rossi | `GBAAXL2RVDALRUJOXXLCIN6EKGQBHW3IA72AGMB5DMI3WKAVIO3Y43IM` | [TX](https://stellar.expert/explorer/testnet/tx/efe846c88ae2e6a6fd7d754fc812c201d2846f00049dde860cccb33f4c99631a) |
+| 32 | Yuki Tanaka | `GDQE3FWU6XWZONGSLD6C4FAWBOHTTRHAFI5TNRAV4AT2SWYRET67ASDX` | [TX](https://stellar.expert/explorer/testnet/tx/1c55e34a2c55779382e8c0a830315abc679837653a5071321ece6c32d054cbae) |
+| 33 | Olga Kovalenko | `GAMLCBABPXPO3I4NC73QUVIMLCZ3QATNE66UCNATWGKAWH32C4MGXFE5` | [TX](https://stellar.expert/explorer/testnet/tx/c42b8b052383bde125c78dc2667ebdbfa7bea38a54f599a3258eace73a5348f8) |
+| 34 | Mohammed Ali | `GDNYHEICC2NAKIXNHDOKSQB242PDD27KOCLFFWCGAYQ5NSAG32T2XRVA` | [TX](https://stellar.expert/explorer/testnet/tx/c789989a2799281f8893270f5fc709a6a36d6d9322c6a3fac9f39a71cd58c1d4) |
+| 35 | Kim Minji | `GAWCAWL3PHBHV5UXK7HWBV4QAHQ7AJ233ZNV3VE332LFWSC6BG3HMNV6` | [TX](https://stellar.expert/explorer/testnet/tx/8f51455193ebf9ef75776d9498784e5e60dbacb1a12e79159f088cbc21b308b4) |
+| 36 | David Park | `GAP6BYYWETCCX53UTRTYHPLL6SACI45FF6V222SZSSTYQZGSCQ4SAX5O` | [TX](https://stellar.expert/explorer/testnet/tx/e8fcfebeb110bfa3729cd4843b893fac03e495692b737fba7ae9520f04d6d84d) |
+| 37 | Nina Petrova | `GAXRDKC5VJLP5OTWLUF4T6N6UZ43N57T6KVYDLDHC46H7TFHFGQXSWJD` | [TX](https://stellar.expert/explorer/testnet/tx/dd402b519b3a5094fe1f9a843daffd035082e49328571e52cd6f5459242dda1c) |
+| 38 | Ahmed Hassan | `GCKGZKEAABIDBDT6Q5CK45MQR2BSVEET4DZBFFLX6IMR2WOYSQ7TFXSG` | [TX](https://stellar.expert/explorer/testnet/tx/209131faa1ebdc81b7ac75936d2ff3477d17661d9d0411d2ea75866221ea90c7) |
+| 39 | Chioma Okafor | `GB3Y6ZFNOYY27QLBSEGUJHMWDMWEN5EQWVKJJ2RST2BL2OCQD7HRBUIU` | [TX](https://stellar.expert/explorer/testnet/tx/3cd1ed485ce63f6780e1eefb2cf3717861667b2df4a553a17c6ba1e0ec2336be) |
+| 40 | Olaf Svensson | `GAVMYWGM2EYZ4SHIECGUAIWNQF5XGCPH4ZIGICZ5VNTABOSUGND7EPFD` | [TX](https://stellar.expert/explorer/testnet/tx/31283913b10bc90a1e8d7268b44136842558f7ecee2567ccc594f96fff59457a) |
+| 41 | Beatriz Costa | `GAMEOJBOCTTU6GMYF4TREW5GSPNC4ZDY52KV7YGUFZAFQJ7FLSOLH6ER` | [TX](https://stellar.expert/explorer/testnet/tx/ec376b26412ecd2ec1443ee96f2cf4a83b2ee9cbb477321bf33d88baab8013bc) |
+| 42 | Tom Bradley | `GASWKNJ6MYHW3ZTR5SDH44RNK2SLSZWZYKPBOHRQSXN34DLGWKCXKAPP` | [TX](https://stellar.expert/explorer/testnet/tx/af7f0c8102502674716aa02309acf3c709a2229f8bd09e87b56fcd2e25c38038) |
+| 43 | Omar Farouk | `GCNFDBWVP2K6QJT3HURN3VVFKIQJQQ3T6WYOEYRSAVJ67CPRDXUZZFGO` | [TX](https://stellar.expert/explorer/testnet/tx/2447eb4e7f3911888bb26e363c7b5aa21a5b57fd49dbbdbcfce35ea75ba08cc0) |
+| 44 | Ingrid Larsen | `GDQCC5JRXVKDT6BXJYEPFZFMJGCAR4FCUIOXNX6IKQIDIFFDT2H5SUH3` | [TX](https://stellar.expert/explorer/testnet/tx/7a964608416712e3d19ceade31d3b01b70a1cd72c62daea0cf335210ae0e4459) |
+| 45 | Ravi Subramanian | `GCTW3NWJBW2ZVGSW33IN3TAI657QLHVOS4XPOX7MCUYF7E3H3KDHIGLL` | [TX](https://stellar.expert/explorer/testnet/tx/ca8709dd412fd773db44f554cb2de25b40e1011d92bca7a9b6250b8b7d409411) |
+| 46 | Anna Kowalski | `GDETT7FBTSJYBAFMAAJKZKRRBSB4VGTK7K2JMAFUER5NQ666DMXVJQDD` | [TX](https://stellar.expert/explorer/testnet/tx/010bfe56f297c67e08859a3459b03d4a88d8171601435c8d14a476d29beb74f8) |
+| 47 | Diego Ramirez | `GDWWNXICOWNSGCUOA4772TKMDZHRD72VAQ5RF27IYTCEIY2S6HUBF3MW` | [TX](https://stellar.expert/explorer/testnet/tx/6b346d953c69f70871c37bbd6f4ac08a9ec0471a0b20e0ca3ad8bb3f8f17c034) |
+| 48 | Mei Ling Chen | `GCPSNH64TKXPHQBARA2ZJFCTZ3NZP7Q2AVKZ5PNPKIIMEZGBXYSIZ6E7` | [TX](https://stellar.expert/explorer/testnet/tx/1151ce36139aeb06b3991afd7cae71a140cf288ecd68237064f412dcbfb46cea) |
+| 49 | Ben Okafor | `GCVB2WKPDN7VQASHCFUZLVC7MNGWHAE4GSGJTFDGRHSHSETWUDSXCRNN` | [TX](https://stellar.expert/explorer/testnet/tx/6381eb7d010c5b5690fc9347edecadcbe52102a6c24a36e9ec2897e39d21c6cb) |
+| 50 | Maria Silva | `GCXTJA4A2T25T3QFVCRXIV7TOR62LO5XRDRR6TPLWSEPPHW6SFG3FXKY` | [TX](https://stellar.expert/explorer/testnet/tx/87f23d1dcad97200738122ea0617df113701b43204db0036ac1b35f0634e0d76) |
+
+**Total: 50/50 wallets verified on Stellar Testnet** — all publicly auditable on Stellar Expert.
 
 ### Top Requested Features (from user feedback)
 
