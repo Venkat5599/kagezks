@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Store, Server, Workflow, Clock, Wallet, Eye, EyeOff } from "lucide-react";
 import { Panel, usdc, CopyBtn } from "./ui";
+import { SendXlm } from "./send-xlm";
 import { useWallet } from "@/lib/wallet";
 
 type Stats = {
@@ -255,6 +256,9 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
           )
         )}
       </Panel>
+
+      {/* White Belt: Send XLM — simple testnet transaction with success/failure feedback */}
+      <SendXlm />
 
       <div>
         <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">Manage</p>
