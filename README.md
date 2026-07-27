@@ -51,9 +51,9 @@ on-chain proof that it ran.
 | 4 | Wallet **disconnect** | ✅ | `frontend/lib/wallet.tsx:212` — `disconnect()` clears address + local state; UI button in `dashboard-home.tsx:214` | Dashboard → *Disconnect* |
 | 5 | Fetch XLM balance | ✅ | `frontend/app/api/wallet-status/route.ts` — reads the `native` balance for the connected address straight from Horizon testnet; unfunded accounts return `funded:false` | `curl "https://kageai.me/api/wallet-status?address=<G...>"` |
 | 6 | Display balance in UI | ✅ | `dashboard-home.tsx:191-193` — large `X.XX XLM` figure plus a *funded on testnet* / *not funded yet* state | x402 Payments panel on the dashboard |
-| 7 | Send an **XLM transaction** on testnet | ✅ | `agent/x402.ts:64` — `payX402()` builds a classic `Operation.payment` with `Asset.native()`, memo = `sha256(nonce)`, signs, and submits to Horizon testnet. Triggered from the UI through `/api/agent/run` | Any workflow *settle* step returns a live tx hash |
-| 8 | Transaction feedback — success / failure | ✅ | Success: explorer link rendered at `frontend/components/fabric/workflows-section.tsx:232`. Failure: `frontend/lib/kage-chain.ts:116` throws `tx <STATUS>: <hash>` on any non-`SUCCESS` result and the error surfaces in the run panel | See proof links below |
-| 9 | Transaction hash shown to the user | ✅ | `workflows-section.tsx:233` — *View settlement tx ↗* linking to `stellar.expert/explorer/testnet/tx/<hash>` | [Deposit TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) · [Withdraw TX](https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b) |
+| 7 | Send an **XLM transaction** on testnet | ✅ | `frontend/components/fabric/send-xlm.tsx:71` — the **Send XLM** form on the dashboard: `Operation.payment` with `Asset.native()` (`:107`), built for `Networks.TESTNET`, signed by Freighter (or the generated keypair) and submitted. Also used agent-side by `payX402()` in [`agent/x402.ts`](./agent/x402.ts) for x402-gated API calls | Dashboard → **Send XLM** |
+| 8 | Transaction feedback — success / failure | ✅ | Both states are explicit: success panel at `send-xlm.tsx:197`, failure message at `:221` (invalid address, unfunded account, rejected signature, and ledger `ERROR` results are each reported) | Send to a bad address to see the failure state |
+| 9 | Transaction hash shown to the user | ✅ | `send-xlm.tsx:197` prints the **TX hash**, and `:201` links it to `stellar.expert/explorer/testnet/tx/<hash>` | [Deposit TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) · [Withdraw TX](https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b) |
 | 10 | Public GitHub repo | ✅ | <https://github.com/Venkat5599/kagezks> | Public, MIT licensed |
 | 11 | README with project description | ✅ | [Project Overview](#-project-overview) | — |
 | 12 | README with local setup instructions | ✅ | [Deploy Your Own](#deploy-your-own) — clone → install → build circuits → deploy contracts → run | — |
@@ -406,10 +406,11 @@ surfaced in the UI.
 | **Ledger** | 3416312 (Stellar Testnet) |
 | **Verify** | [stellar.expert ↗](https://stellar.expert/explorer/testnet/tx/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) · [Horizon ↗](https://horizon-testnet.stellar.org/transactions/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) |
 
-> This settlement moves **USDC** through the ZK shielded pool — that is what Kage is for.
-> The transaction fee itself is paid in XLM, and the plain **native XLM payment** path
-> required at White Belt is implemented in [`agent/x402.ts`](./agent/x402.ts) (`payX402()`,
-> `Operation.payment` with `Asset.native()`), which is what every x402-gated API call pays with.
+> This particular settlement moves **USDC** through the ZK shielded pool — that is what
+> Kage is for. The plain **native XLM payment** required at White Belt has its own UI:
+> the **Send XLM** panel on the dashboard
+> ([`send-xlm.tsx`](./frontend/components/fabric/send-xlm.tsx) — `Operation.payment` with
+> `Asset.native()` on testnet), which renders the same success / failure / tx-hash states.
 
 #### Product
 

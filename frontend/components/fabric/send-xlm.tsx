@@ -17,9 +17,56 @@ import {
 } from "@stellar/stellar-sdk";
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
-const HORIZON = "https://horizon-testnet.stellar.org";
 
 type TxResult = { ok: true; hash: string } | { ok: false; error: string };
+
+type SignResult = { ok: true; xdr: string } | { ok: false; error: string };
+
+// Sign an XDR with Freighter. Prefers the official @stellar/freighter-api adapter
+// (v6 talks over an extension messaging bridge and injects nothing on the page),
+// and falls back to the legacy `window.freighterApi` object for Freighter <=v5.
+// Imported lazily so the module never evaluates during SSR.
+async function signWithFreighter(xdr: string): Promise<SignResult> {
+  try {
+    const api = await import("@stellar/freighter-api");
+    const res = await api.signTransaction(xdr, {
+      networkPassphrase: Networks.TESTNET,
+    });
+    if (!res.error && res.signedTxXdr) return { ok: true, xdr: res.signedTxXdr };
+  } catch {
+    /* fall through to the legacy object */
+  }
+
+  const legacy =
+    typeof window !== "undefined"
+      ? (
+          window as unknown as {
+            freighterApi?: {
+              signTransaction?: (x: string, o?: unknown) => Promise<unknown>;
+            };
+          }
+        ).freighterApi
+      : undefined;
+  if (legacy?.signTransaction) {
+    try {
+      const r = await legacy.signTransaction(xdr, {
+        networkPassphrase: Networks.TESTNET,
+      });
+      // <=v5 returned the XDR string directly; v6-shaped objects carry signedTxXdr.
+      const signed =
+        typeof r === "string" ? r : (r as { signedTxXdr?: string })?.signedTxXdr;
+      if (signed) return { ok: true, xdr: signed };
+    } catch {
+      /* reported below */
+    }
+  }
+
+  return {
+    ok: false,
+    error:
+      "Freighter could not sign. Unlock the extension, make sure it is set to Testnet, and approve the signing prompt — then try again.",
+  };
+}
 
 export function SendXlm() {
   const { address, secret, real } = useWallet();
@@ -48,7 +95,6 @@ export function SendXlm() {
       }
 
       const amountXlm = amount.trim();
-      const amountStroops = (Number(amountXlm) * 1e7).toFixed(0);
 
       const server = new rpc.Server(RPC_URL);
       const srcAccount = await server.getAccount(address);
@@ -71,20 +117,16 @@ export function SendXlm() {
       let signedXdr: string;
 
       if (real) {
-        // Freighter wallet — sign in extension
-        const fa = (
-          typeof window !== "undefined"
-            ? (window as unknown as { freighterApi?: { signTransaction?: (xdr: string, opts?: unknown) => Promise<string> } }).freighterApi
-            : undefined
-        );
-        if (!fa?.signTransaction) {
-          setResult({ ok: false, error: "Freighter not available. Try refreshing." });
+        // Freighter wallet — sign in the extension. Uses the official adapter:
+        // Freighter v6 no longer injects `window.freighterApi`, so probing the
+        // window object alone fails on every current install.
+        const signed = await signWithFreighter(prepared.toXDR());
+        if (!signed.ok) {
+          setResult({ ok: false, error: signed.error });
           setSending(false);
           return;
         }
-        signedXdr = await fa.signTransaction(prepared.toXDR(), {
-          networkPassphrase: Networks.TESTNET,
-        });
+        signedXdr = signed.xdr;
       } else if (secret) {
         // Generated wallet — sign with stored secret
         const kp = Keypair.fromSecret(secret);
@@ -102,7 +144,10 @@ export function SendXlm() {
       if (sent.status === "ERROR") {
         const msg =
           sent.errorResult && typeof sent.errorResult === "object"
-            ? String((sent.errorResult as Record<string, unknown>).result || JSON.stringify(sent.errorResult))
+            ? String(
+                (sent.errorResult as unknown as Record<string, unknown>).result ||
+                  JSON.stringify(sent.errorResult)
+              )
             : "Transaction failed";
         setResult({ ok: false, error: msg.substring(0, 200) });
       } else {
