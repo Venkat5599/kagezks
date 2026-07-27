@@ -38,3 +38,22 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  record-deployment:
+    # The app is served from a VPS (pm2 + nginx, see deploy/README.md), so this job
+    # does not perform the deploy itself. It records the environment against the
+    # commit once tests and the build pass, which is what surfaces the live URL in
+    # the repository's Environments panel and the deployment history.
+    name: Record Production Environment
+    needs: [contract-tests, frontend-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://kageai.me
+    steps:
+      - name: Verify the live app is reachable
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://kageai.me)
+          echo "kageai.me returned HTTP $code"
+          test "$code" = "200"
