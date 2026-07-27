@@ -25,6 +25,48 @@
 
 ---
 
+## 🥋 Stellar Belt Progression — Requirement Coverage
+
+Kage is one continuous project submitted across belts. This section exists so a reviewer
+at **any** level can find that level's requirements without reading the whole README.
+
+| Belt | Level | Status | Jump to |
+|------|-------|--------|---------|
+| ⬜ White | Level 1 | ✅ Complete | [Level 1 checklist](#level-1--white-belt-checklist) |
+| 🟦 Blue | Level 3 | ✅ Complete | [50 onboarded users + feedback](#-user-feedback--blue-belt) |
+| 🟥 Higher belts | ZK + agent payments | ✅ Live on testnet | [Proven end-to-end](#-proven-end-to-end-real-testnet-transactions) |
+
+**Deployed app:** <https://kageai.me> · **Network:** Stellar Testnet · **Repo:** public (this one)
+
+### Level 1 — White Belt checklist
+
+Every White Belt requirement, mapped to the exact file that implements it and the
+on-chain proof that it ran.
+
+| # | Requirement | Status | Implementation | Proof / verify |
+|---|-------------|--------|----------------|----------------|
+| 1 | Freighter wallet set up | ✅ | `frontend/lib/wallet.tsx:99` — `tryFreighter()` uses the official `@stellar/freighter-api` adapter (`isConnected` → `requestAccess` → `getNetwork`), with a `window.freighterApi` fallback at `:75` for Freighter ≤v5 | Click **Connect Freighter** on [kageai.me/dashboard](https://kageai.me/dashboard) |
+| 2 | Uses Stellar **Testnet** | ✅ | `Networks.TESTNET` in `frontend/lib/kage-chain.ts:47` and `agent/x402.ts`; Horizon `https://horizon-testnet.stellar.org`; Soroban RPC `https://soroban-testnet.stellar.org` (`kage-chain.ts:27`) | [Network details](#network-details) |
+| 3 | Wallet **connect** | ✅ | `frontend/lib/wallet.tsx:161` — `connect()`, which also rejects a non-TESTNET Freighter network; UI button in `frontend/components/fabric/dashboard-home.tsx:184` | Dashboard → *Connect Freighter* |
+| 4 | Wallet **disconnect** | ✅ | `frontend/lib/wallet.tsx:212` — `disconnect()` clears address + local state; UI button in `dashboard-home.tsx:214` | Dashboard → *Disconnect* |
+| 5 | Fetch XLM balance | ✅ | `frontend/app/api/wallet-status/route.ts` — reads the `native` balance for the connected address straight from Horizon testnet; unfunded accounts return `funded:false` | `curl "https://kageai.me/api/wallet-status?address=<G...>"` |
+| 6 | Display balance in UI | ✅ | `dashboard-home.tsx:191-193` — large `X.XX XLM` figure plus a *funded on testnet* / *not funded yet* state | x402 Payments panel on the dashboard |
+| 7 | Send an **XLM transaction** on testnet | ✅ | `agent/x402.ts:64` — `payX402()` builds a classic `Operation.payment` with `Asset.native()`, memo = `sha256(nonce)`, signs, and submits to Horizon testnet. Triggered from the UI through `/api/agent/run` | Any workflow *settle* step returns a live tx hash |
+| 8 | Transaction feedback — success / failure | ✅ | Success: explorer link rendered at `frontend/components/fabric/workflows-section.tsx:232`. Failure: `frontend/lib/kage-chain.ts:116` throws `tx <STATUS>: <hash>` on any non-`SUCCESS` result and the error surfaces in the run panel | See proof links below |
+| 9 | Transaction hash shown to the user | ✅ | `workflows-section.tsx:233` — *View settlement tx ↗* linking to `stellar.expert/explorer/testnet/tx/<hash>` | [Deposit TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) · [Withdraw TX](https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b) |
+| 10 | Public GitHub repo | ✅ | <https://github.com/Venkat5599/kagezks> | Public, MIT licensed |
+| 11 | README with project description | ✅ | [Project Overview](#-project-overview) | — |
+| 12 | README with local setup instructions | ✅ | [Deploy Your Own](#deploy-your-own) — clone → install → build circuits → deploy contracts → run | — |
+| 13 | Real deployed application | ✅ | <https://kageai.me> (Next.js app + MCP server on a VPS behind nginx — see [`deploy/README.md`](./deploy/README.md)) | Load the site |
+| 14 | Screenshots — connected wallet, balance, tx result | ✅ | [Level 1 — required states](#level-1--required-states) — three captures, plus the tx hash from shot 3 verified on Horizon | [Verify that tx ↗](https://stellar.expert/explorer/testnet/tx/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) |
+
+**Wallet note:** the dashboard offers two paths — *Connect Freighter* (requirement 1, no key
+material ever leaves the extension) and *Generate Session Account Wallet*, which creates a
+fresh testnet keypair and funds it via Friendbot so a reviewer without the extension
+installed can still exercise the whole flow end to end.
+
+---
+
 ## 📋 Project Overview
 
 **Kage** lets an AI agent pay in USDC on Stellar **without holding your key** and
@@ -77,6 +119,17 @@ With Kage:                     Agent → Scoped Session Key → ZK Pool → Ledg
 
 ## 🚀 Deployment Information
 
+### Deployed Application
+
+| Item | Value |
+|------|-------|
+| **Live app** | <https://kageai.me> |
+| **Dashboard (wallet · balance · transactions)** | <https://kageai.me/dashboard> |
+| **Balance API** | `GET https://kageai.me/api/wallet-status?address=<G...>` |
+| **Hosting** | VPS — Next.js app on `:3000` + MCP server on `:8402`, both under pm2 behind nginx ([`deploy/README.md`](./deploy/README.md), [`deploy/nginx-kage.conf`](./deploy/nginx-kage.conf)) |
+| **CI** | GitHub Actions — tests, build, typecheck ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) |
+| **Network** | Stellar **Testnet** only — no mainnet deployment |
+
 ### Live Contracts on Stellar Testnet
 
 | Contract | Address | Explorer |
@@ -99,8 +152,8 @@ Live demo:   https://kageai.me
 
 ```bash
 # 1. Clone
-git clone https://github.com/Venkat5599/stellar.git
-cd stellar
+git clone https://github.com/Venkat5599/kagezks.git
+cd kagezks
 
 # 2. Install (bun; Rust GNU toolchain on Windows, circom, snarkjs, stellar CLI)
 bun install
@@ -321,6 +374,44 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 | **Total** | **8** | **Zero warnings** |
 
 ### Screenshots
+
+#### Level 1 — required states
+
+**1. Wallet connected (Freighter) + balance displayed**
+
+Freighter connected on Stellar Testnet. The header shows the connected account
+`GB4ONR…EAPF` and a **Stellar testnet** network badge; the *Your wallet* row shows the
+live balance read from Horizon.
+
+![Freighter wallet connected with XLM balance](docs/screenshots/wallet-connected-freighter.png)
+
+**2. Balance displayed — generated session wallet**
+
+The no-extension path: *Generate Session Account Wallet* creates a fresh testnet keypair,
+funds it via Friendbot, and shows `10000.00 XLM`. The secret is revealed once so it can be
+imported into Freighter.
+
+![Session wallet with 10000 XLM balance](docs/screenshots/wallet-balance-session.png)
+
+**3. Transaction result shown to the user**
+
+Settlement confirmation with the transaction hash, recipient, and on-chain status
+surfaced in the UI.
+
+![Transaction success with hash](docs/screenshots/transaction-success.png)
+
+| Field | Value |
+|-------|-------|
+| **Transaction hash** | `e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437` |
+| **Ledger** | 3416312 (Stellar Testnet) |
+| **Verify** | [stellar.expert ↗](https://stellar.expert/explorer/testnet/tx/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) · [Horizon ↗](https://horizon-testnet.stellar.org/transactions/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) |
+
+> This settlement moves **USDC** through the ZK shielded pool — that is what Kage is for.
+> The transaction fee itself is paid in XLM, and the plain **native XLM payment** path
+> required at White Belt is implemented in [`agent/x402.ts`](./agent/x402.ts) (`payX402()`,
+> `Operation.payment` with `Asset.native()`), which is what every x402-gated API call pays with.
+
+#### Product
 
 | View | Preview |
 |------|---------|

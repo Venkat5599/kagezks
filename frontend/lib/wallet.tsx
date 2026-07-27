@@ -4,7 +4,13 @@
 // (real Stellar address); otherwise falls back to a stable per-browser demo identity so
 // per-user isolation still works in a demo without the extension installed. The address
 // is the `owner_address` stamped on everything you create and used to filter "my" items.
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { Keypair } from "@stellar/stellar-sdk";
 
 type WalletCtx = {
@@ -16,7 +22,15 @@ type WalletCtx = {
   generate: () => Promise<void>; // create a fresh Stellar wallet + friendbot fund
   disconnect: () => void;
 };
-const Ctx = createContext<WalletCtx>({ address: null, secret: null, real: false, connecting: false, connect: async () => {}, generate: async () => {}, disconnect: () => {} });
+const Ctx = createContext<WalletCtx>({
+  address: null,
+  secret: null,
+  real: false,
+  connecting: false,
+  connect: async () => {},
+  generate: async () => {},
+  disconnect: () => {},
+});
 
 const KEY = "kage_owner";
 const SECKEY = "kage_owner_secret";
@@ -32,7 +46,8 @@ function registerUser(address: string, walletKind: "freighter" | "generated") {
     body: JSON.stringify({
       address,
       walletKind,
-      referrer: typeof document !== "undefined" ? document.referrer || null : null,
+      referrer:
+        typeof document !== "undefined" ? document.referrer || null : null,
     }),
   }).catch(() => {});
 }
@@ -42,7 +57,7 @@ function registerUser(address: string, walletKind: "freighter" | "generated") {
 export function recordTx(
   address: string,
   action: "deposit" | "withdraw" | "provision" | "agent_run",
-  txHash?: string,
+  txHash?: string
 ) {
   fetch("/api/users", {
     method: "POST",
@@ -51,27 +66,80 @@ export function recordTx(
   }).catch(() => {});
 }
 
-// Try Freighter's injected API across its version variants.
-async function tryFreighter(): Promise<string | null> {
-  const fa = (typeof window !== "undefined" ? (window as unknown as { freighterApi?: Record<string, (...a: unknown[]) => Promise<unknown>> }).freighterApi : undefined);
+type FreighterResult =
+  | { ok: true; address: string; network: string | null }
+  | { ok: false; reason: string };
+
+// Legacy path: Freighter <=v5 injected `window.freighterApi` directly. Kept as a
+// fallback for older extension builds that the official package won't talk to.
+async function tryInjected(): Promise<string | null> {
+  const fa = (
+    window as unknown as {
+      freighterApi?: Record<string, (...a: unknown[]) => Promise<unknown>>;
+    }
+  ).freighterApi;
   if (!fa) return null;
   try {
-    if (fa.requestAccess) {
-      const r = (await fa.requestAccess()) as { address?: string } | string;
+    for (const m of ["requestAccess", "getAddress", "getPublicKey"] as const) {
+      if (!fa[m]) continue;
+      const r = (await fa[m]()) as { address?: string } | string;
       const a = typeof r === "string" ? r : r?.address;
       if (a) return a;
     }
-    if (fa.getAddress) {
-      const r = (await fa.getAddress()) as { address?: string } | string;
-      const a = typeof r === "string" ? r : r?.address;
-      if (a) return a;
-    }
-    if (fa.getPublicKey) {
-      const a = (await fa.getPublicKey()) as string;
-      if (a) return a;
-    }
-  } catch { /* fall through to demo identity */ }
+  } catch {
+    /* caller decides what to tell the user */
+  }
   return null;
+}
+
+// Connect through the official @stellar/freighter-api adapter. Freighter v6 stopped
+// injecting `window.freighterApi` on every page and talks over an extension messaging
+// bridge instead — probing the window object alone is why this reported "not detected"
+// with the extension installed. Imported lazily so it never evaluates during SSR.
+async function tryFreighter(): Promise<FreighterResult> {
+  if (typeof window === "undefined")
+    return {
+      ok: false,
+      reason: "Wallet connect is only available in the browser.",
+    };
+
+  let api: typeof import("@stellar/freighter-api");
+  try {
+    api = await import("@stellar/freighter-api");
+  } catch {
+    const legacy = await tryInjected();
+    return legacy
+      ? { ok: true, address: legacy, network: null }
+      : { ok: false, reason: "Could not load the Freighter adapter." };
+  }
+
+  const conn = await api.isConnected().catch(() => null);
+  if (!conn || conn.error || !conn.isConnected) {
+    const legacy = await tryInjected();
+    if (legacy) return { ok: true, address: legacy, network: null };
+    return {
+      ok: false,
+      reason:
+        "Freighter not detected. Install it from freighter.app, unlock the wallet, reload this page, then connect again — or use 'Generate Session Account Wallet' to continue without the extension.",
+    };
+  }
+
+  // requestAccess() prompts on first use and returns the address once approved.
+  const access = await api.requestAccess().catch(() => null);
+  if (!access || access.error || !access.address) {
+    return {
+      ok: false,
+      reason:
+        "Freighter did not grant access. Approve the connection prompt (look for a pending Freighter popup) and try again.",
+    };
+  }
+
+  const net = await api.getNetwork().catch(() => null);
+  return {
+    ok: true,
+    address: access.address,
+    network: net && !net.error ? net.network : null,
+  };
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -82,19 +150,40 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem(KEY);
-    if (saved) { setAddress(saved); setReal(localStorage.getItem(REALKEY) === "1"); setSecret(localStorage.getItem(SECKEY)); }
+    if (saved) {
+      setAddress(saved);
+      setReal(localStorage.getItem(REALKEY) === "1");
+      setSecret(localStorage.getItem(SECKEY));
+    }
   }, []);
 
   // Connect an existing Freighter wallet (no key material leaves the extension).
   const connect = async () => {
     setConnecting(true);
     try {
-      const fa = await tryFreighter();
-      if (!fa) { alert("Freighter not detected. Use 'Generate Session Account Wallet' instead."); return; }
-      setAddress(fa); setReal(true); setSecret(null);
-      localStorage.setItem(KEY, fa); localStorage.setItem(REALKEY, "1"); localStorage.removeItem(SECKEY);
-      registerUser(fa, "freighter");
-    } finally { setConnecting(false); }
+      const res = await tryFreighter();
+      if (!res.ok) {
+        alert(res.reason);
+        return;
+      }
+      // Kage is testnet-only; connecting a PUBLIC-network account would sign
+      // against contracts that don't exist there.
+      if (res.network && res.network.toUpperCase() !== "TESTNET") {
+        alert(
+          `Freighter is set to ${res.network}. Kage runs on Stellar TESTNET — switch the network in Freighter, then connect again.`
+        );
+        return;
+      }
+      setAddress(res.address);
+      setReal(true);
+      setSecret(null);
+      localStorage.setItem(KEY, res.address);
+      localStorage.setItem(REALKEY, "1");
+      localStorage.removeItem(SECKEY);
+      registerUser(res.address, "freighter");
+    } finally {
+      setConnecting(false);
+    }
   };
 
   // Generate a fresh Stellar wallet in the browser and fund it via friendbot. The secret
@@ -106,20 +195,44 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const kp = Keypair.random();
       const pub = kp.publicKey();
       const sec = kp.secret();
-      setAddress(pub); setSecret(sec); setReal(false);
-      localStorage.setItem(KEY, pub); localStorage.setItem(SECKEY, sec); localStorage.setItem(REALKEY, "0");
+      setAddress(pub);
+      setSecret(sec);
+      setReal(false);
+      localStorage.setItem(KEY, pub);
+      localStorage.setItem(SECKEY, sec);
+      localStorage.setItem(REALKEY, "0");
       registerUser(pub, "generated");
       // fire-and-forget testnet funding
       fetch(`https://friendbot.stellar.org/?addr=${pub}`).catch(() => {});
-    } finally { setConnecting(false); }
+    } finally {
+      setConnecting(false);
+    }
   };
 
   const disconnect = () => {
-    setAddress(null); setSecret(null); setReal(false);
-    localStorage.removeItem(KEY); localStorage.removeItem(SECKEY); localStorage.removeItem(REALKEY);
+    setAddress(null);
+    setSecret(null);
+    setReal(false);
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(SECKEY);
+    localStorage.removeItem(REALKEY);
   };
 
-  return <Ctx.Provider value={{ address, secret, real, connecting, connect, generate, disconnect }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider
+      value={{
+        address,
+        secret,
+        real,
+        connecting,
+        connect,
+        generate,
+        disconnect,
+      }}
+    >
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export const useWallet = () => useContext(Ctx);

@@ -27,7 +27,7 @@ stellar keys add issuer --secret-key   # paste the S... secret; or `stellar keys
 ## 1. Clone + configure
 
 ```bash
-git clone https://github.com/Venkat5599/stellar.git veil && cd veil
+git clone https://github.com/Venkat5599/kagezks.git kage && cd kage
 bun install
 cd frontend && npm install && cd ..
 
