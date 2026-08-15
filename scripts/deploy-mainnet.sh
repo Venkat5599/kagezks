@@ -57,10 +57,15 @@ echo "==> veil set_vks"
 stellar contract invoke --id "$VEIL_ID" --source-account "$ADMIN_SECRET" --network-passphrase "$PASSPHRASE" --rpc-url "$RPC" -- \
   set_vks --insert_vk-file-path "$ROOT/sdk/build/insert_vk.json" --withdraw_vk-file-path "$ROOT/sdk/build/withdraw_vk.json"
 
-# --- 4. Deploy SessionAccount ---
-echo "==> deploy session_account.wasm"
-SESSION_ID=$(deploy "$SESSION_OPT")
-echo "session = $SESSION_ID"
+# --- 4. Deploy SessionAccount (skip when LEAN=1 — veil only + fee-sponsorship) ---
+if [ "${LEAN:-0}" = "1" ]; then
+  echo "==> LEAN mode: skipping session contract"
+  SESSION_ID=""
+else
+  echo "==> deploy session_account.wasm"
+  SESSION_ID=$(deploy "$SESSION_OPT")
+  echo "session = $SESSION_ID"
+fi
 
 echo ""
 echo "DEPLOYED:"
