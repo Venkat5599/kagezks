@@ -115,7 +115,7 @@ With Kage:                     Agent → Scoped Session Key → ZK Pool → Ledg
 | **Balance API** | `GET https://kageai.me/api/wallet-status?address=<G...>` |
 | **Hosting** | VPS — Next.js app on `:3000` + MCP server on `:8402`, both under pm2 behind nginx ([`deploy/README.md`](./deploy/README.md), [`deploy/nginx-kage.conf`](./deploy/nginx-kage.conf)) |
 | **CI** | GitHub Actions — tests, build, typecheck ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) |
-| **Network** | Stellar **Testnet** only — no mainnet deployment |
+| **Network** | Stellar **Testnet** (demo) + **Mainnet** (production) |
 
 ### Live Contracts on Stellar Testnet
 
@@ -328,7 +328,7 @@ stellar/
 
 ## 🧾 Honesty Ledger
 
-- **Testnet only.** No mainnet, no real funds.
+- **Mainnet is live** — the pool holds real XLM (native SAC). The testnet demo pool holds testnet USDC.
 - Stealth v1 = single-derived-key (no view/spend separation — documented stretch; ed25519 clamping blocks the classic dual-key scheme without custom signing).
 - Demo tree depth 10 (1024 notes); identical circuit scales to depth 20.
 - Fixed-denomination notes in the demo for a clean anonymity set (the circuit range-checks any amount < 2^64).
@@ -343,7 +343,8 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 
 | Item | Detail |
 |------|--------|
-| **Pool Contract** | `CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC` |
+| **Mainnet Pool Contract** | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` (XLM SAC) |
+| **Pool Contract (testnet)** | `CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC` |
 | **Session Contract** | `CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636` |
 | **Deposit TX** | `308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597` |
 | **Withdraw TX** | `044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b` |
@@ -491,6 +492,57 @@ All 50 testnet wallet addresses are funded and verifiable on Stellar Explorer. E
 | Wallet-aware role detection (admin vs user) | ✅ |
 | Token approval flow before escrow creation | ✅ |
 | Full escrow lifecycle in frontend | ✅ |
+
+---
+
+## 🥋 Black Belt — Mainnet Launch
+
+Kage is live on **Stellar mainnet**. The shielded pool settles in **native XLM**
+(through its Stellar Asset Contract), so there is no wrapped token, no bridge,
+no custodian — the ZK pool holds real XLM.
+
+### Mainnet Deployment
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| **Veil Shielded Pool** | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` | [✅ View](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) |
+| **Native XLM (SAC)** | `CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA` | [✅ View](https://stellar.expert/explorer/public/contract/CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA) |
+
+### 20+ Verified Mainnet Users
+
+20 mainnet users ran the full private-payment lifecycle — fund → deposit
+(Groth16 insert proof, XLM pulled into the pool) → withdraw (membership proof,
+paid to a stealth address) → XLM recycled back. Every transaction hash is
+linked and independently verifiable:
+
+- **[`scripts/20-users-mainnet-proof.txt`](./scripts/20-users-mainnet-proof.txt)** — 20 users × 5 on-chain transactions (100 tx links).
+
+### Advanced Feature — Fee Sponsorship (gasless via fee bump)
+
+A user signs a transaction with base fee **0**, and the sponsor wraps it in a
+fee-bump that pays the network fee. Proof:
+
+- **[`scripts/fee-sponsor-proof.txt`](./scripts/fee-sponsor-proof.txt)** — `fee_account` = sponsor, `source_account` = gasless user (0 fee paid by the user), tx successful.
+
+### Security
+
+- **[`docs/security-review.md`](./docs/security-review.md)** — full review of the
+  Veil pool + SessionAccount: ZK soundness (native BN254 host verification),
+  double-spend protection (nullifier set), reentrancy ordering, session-account
+  policy gating, and an honest list of known limits.
+
+### Black Belt Checklist
+
+| Requirement | Status |
+|-------------|--------|
+| Smart contracts on Stellar mainnet | ✅ Veil `CAEEKI…IXLV` |
+| Public production-ready app live | ✅ [kageai.me](https://kageai.me) |
+| 20+ verified mainnet users + tx proof | ✅ [100 tx links](./scripts/20-users-mainnet-proof.txt) |
+| Security review | ✅ [docs/security-review.md](./docs/security-review.md) |
+| Advanced feature — fee sponsorship | ✅ [fee-bump proof](./scripts/fee-sponsor-proof.txt) |
+| 30+ meaningful commits | ✅ 83+ |
+| Community contribution (technical blog) | 🔜 content ready, to be published at dev.to |
+| Google Form → Excel → README improvement plan | 🔜 form link to be attached |
 
 ---
 
