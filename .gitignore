@@ -33,6 +33,7 @@ scripts/*-wallets.txt
 # generated build artifacts that embed testnet private keys
 sdk/build/veil_manifest.json
 sdk/build/agent_fabric.json
+sdk/build/veil_deployment_mainnet.json
 
 # os
 .DS_Store

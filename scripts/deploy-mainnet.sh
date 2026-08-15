@@ -20,9 +20,22 @@ echo "admin: $ADMIN_PUB"
 
 inv() { stellar contract invoke --id "$1" --source-account "$ADMIN_SECRET" --network-passphrase "$PASSPHRASE" --rpc-url "$RPC" -- "${@:2}"; }
 
+# Capture a contract ID from CLI output (stdout+stderr), then validate it.
+deploy() {
+  local out id
+  out=$(stellar contract deploy --wasm "$1" --source-account "$ADMIN_SECRET" --network-passphrase "$PASSPHRASE" --rpc-url "$RPC" 2>&1)
+  id=$(printf '%s\n' "$out" | grep -oE 'C[A-Z2-7]{55}' | tail -1)
+  if [ -z "$id" ]; then
+    echo "DEPLOY FAILED — no contract id in output:" >&2
+    printf '%s\n' "$out" >&2
+    exit 1
+  fi
+  printf '%s\n' "$id"
+}
+
 # --- 1. Deploy Veil ---
 echo "==> deploy veil.wasm"
-VEIL_ID=$(stellar contract deploy --wasm "$VEIL_WASM" --source-account "$ADMIN_SECRET" --network-passphrase "$PASSPHRASE" --rpc-url "$RPC" 2>/dev/null | tail -1)
+VEIL_ID=$(deploy "$VEIL_WASM")
 echo "veil = $VEIL_ID"
 
 # --- 2. init(admin, usdc=XLM SAC, empty_root) ---
@@ -36,7 +49,7 @@ stellar contract invoke --id "$VEIL_ID" --source-account "$ADMIN_SECRET" --netwo
 
 # --- 4. Deploy SessionAccount ---
 echo "==> deploy session_account.wasm"
-SESSION_ID=$(stellar contract deploy --wasm "$SESSION_WASM" --source-account "$ADMIN_SECRET" --network-passphrase "$PASSPHRASE" --rpc-url "$RPC" 2>/dev/null | tail -1)
+SESSION_ID=$(deploy "$SESSION_WASM")
 echo "session = $SESSION_ID"
 
 echo ""
@@ -45,3 +58,9 @@ echo "  admin   = $ADMIN_PUB"
 echo "  veil    = $VEIL_ID"
 echo "  session = $SESSION_ID"
 echo "  xlm_sac = $XLM_SAC"
+
+# Persist (local, gitignored) so onboarding + frontend can read the IDs.
+cat > "$ROOT/sdk/build/veil_deployment_mainnet.json" <<EOF
+{"network":"mainnet","contract_id":"$VEIL_ID","session_id":"$SESSION_ID","xlm_sac":"$XLM_SAC","admin":"$ADMIN_PUB"}
+EOF
+echo "saved -> sdk/build/veil_deployment_mainnet.json"
