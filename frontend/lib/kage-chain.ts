@@ -24,9 +24,9 @@ import {
   type Note,
 } from "./kage-browser";
 
-export const RPC_URL = "https://soroban-testnet.stellar.org";
-export const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
-export const USDC_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+export const RPC_URL = "https://mainnet.sorobanrpc.com";
+export const CONTRACT = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
+export const XLM_SAC = "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA";
 // Known genesis leaf (the proven e2e deposit) — used to seed the tree if the
 // original deposit events have aged out of RPC's retention window.
 const GENESIS_LEAF = "057206e8b530c5dae19f754d6072f1ef375df2501bfd9144e294e7262b8466a7";
@@ -42,9 +42,9 @@ const proofScVal = (p: ProofHex) =>
 
 async function simRead(method: string, ...args: xdr.ScVal[]) {
   const s = server();
-  // a throwaway-but-real source for read-only simulation
-  const src = await s.getAccount("GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y");
-  const tx = new TransactionBuilder(src, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+  // a real mainnet account for read-only simulation
+  const src = await s.getAccount("GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6");
+  const tx = new TransactionBuilder(src, { fee: BASE_FEE, networkPassphrase: Networks.PUBLIC })
     .addOperation(new Contract(CONTRACT).call(method, ...args))
     .setTimeout(30)
     .build();
@@ -99,13 +99,13 @@ export type SignFn = (xdrB64: string) => Promise<string>;
 async function submit(opXdr: xdr.Operation, sourcePub: string, sign: SignFn): Promise<string> {
   const s = server();
   const src = await s.getAccount(sourcePub);
-  const built = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: Networks.TESTNET })
+  const built = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: Networks.PUBLIC })
     .addOperation(opXdr)
     .setTimeout(120)
     .build();
   const prepared = await s.prepareTransaction(built);
   const signedXdr = await sign(prepared.toXDR());
-  const signedTx = TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET);
+  const signedTx = TransactionBuilder.fromXDR(signedXdr, Networks.PUBLIC);
   const sent = await s.sendTransaction(signedTx);
   if (sent.status === "ERROR") throw new Error(`submit failed: ${JSON.stringify(sent.errorResult)}`);
   let got = await s.getTransaction(sent.hash);

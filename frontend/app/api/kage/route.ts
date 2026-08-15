@@ -15,10 +15,10 @@ import {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const RPC_URL = "https://soroban-testnet.stellar.org";
-const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
-const USDC_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
+const RPC_URL = "https://mainnet.sorobanrpc.com";
+const CONTRACT = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
+const XLM_SAC = "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA";
+const SOURCE = "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6";
 const SPENT_NULLIFIER =
   "29ac5fdb4f26ad08cba65991236bb87a88813ebba7d6288101e3635906567b77";
 
@@ -31,7 +31,7 @@ export async function GET() {
     const account = await server.getAccount(SOURCE);
 
     const call = async (cid: string, method: string, ...args: ReturnType<typeof nativeToScVal>[]) => {
-      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.PUBLIC })
         .addOperation(new Contract(cid).call(method, ...args))
         .setTimeout(30)
         .build();
@@ -44,7 +44,7 @@ export async function GET() {
       call(CONTRACT, "current_root"),
       call(CONTRACT, "leaf_count"),
       call(CONTRACT, "is_spent", nativeToScVal(Buffer.from(SPENT_NULLIFIER, "hex"), { type: "bytes" })),
-      call(USDC_SAC, "balance", new Address(CONTRACT).toScVal()),
+      call(XLM_SAC, "balance", new Address(CONTRACT).toScVal()),
     ]);
 
     // Real deposit / withdraw events (best-effort; may age out of RPC retention).

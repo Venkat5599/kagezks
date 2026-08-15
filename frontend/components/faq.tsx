@@ -133,7 +133,7 @@ export function FAQ(): ReactNode {
               View on GitHub
             </motion.a>
             <motion.a
-              href="https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC"
+              href="https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV"
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.02 }}

@@ -16,7 +16,7 @@ import {
   Keypair,
 } from "@stellar/stellar-sdk";
 
-const RPC_URL = "https://soroban-testnet.stellar.org";
+const RPC_URL = "https://mainnet.sorobanrpc.com";
 
 type TxResult = { ok: true; hash: string } | { ok: false; error: string };
 
@@ -30,7 +30,7 @@ async function signWithFreighter(xdr: string): Promise<SignResult> {
   try {
     const api = await import("@stellar/freighter-api");
     const res = await api.signTransaction(xdr, {
-      networkPassphrase: Networks.TESTNET,
+      networkPassphrase: Networks.PUBLIC,
     });
     if (!res.error && res.signedTxXdr) return { ok: true, xdr: res.signedTxXdr };
   } catch {
@@ -50,7 +50,7 @@ async function signWithFreighter(xdr: string): Promise<SignResult> {
   if (legacy?.signTransaction) {
     try {
       const r = await legacy.signTransaction(xdr, {
-        networkPassphrase: Networks.TESTNET,
+        networkPassphrase: Networks.PUBLIC,
       });
       // <=v5 returned the XDR string directly; v6-shaped objects carry signedTxXdr.
       const signed =
@@ -101,7 +101,7 @@ export function SendXlm() {
 
       const tx = new TransactionBuilder(srcAccount, {
         fee: BASE_FEE,
-        networkPassphrase: Networks.TESTNET,
+        networkPassphrase: Networks.PUBLIC,
       })
         .addOperation(
           Operation.payment({
@@ -138,7 +138,7 @@ export function SendXlm() {
         return;
       }
 
-      const signedTx = TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET);
+      const signedTx = TransactionBuilder.fromXDR(signedXdr, Networks.PUBLIC);
       const sent = await server.sendTransaction(signedTx);
 
       if (sent.status === "ERROR") {

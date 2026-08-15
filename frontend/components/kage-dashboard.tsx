@@ -20,8 +20,8 @@ const SECTIONS: { key: SectionKey; label: string; icon: LucideIcon }[] = [
   { key: "marketplace", label: "Marketplace", icon: ShoppingBag },
 ];
 
-const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
-const EXPLORER = `https://stellar.expert/explorer/testnet/contract/${CONTRACT}`;
+const CONTRACT = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
+const EXPLORER = `https://stellar.expert/explorer/public/contract/${CONTRACT}`;
 const short = (s: string, head = 7, tail = 5) => (s.length > head + tail ? `${s.slice(0, head)}…${s.slice(-tail)}` : s);
 
 export function KageDashboard(): ReactNode {

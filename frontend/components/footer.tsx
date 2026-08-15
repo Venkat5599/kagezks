@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { KageMark } from "@/components/kage-logo";
 
 const CONTRACT_URL =
-  "https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
+  "https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
 
 const TX = "https://stellar.expert/explorer/testnet/tx/";
 

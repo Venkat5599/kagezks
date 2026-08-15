@@ -13,8 +13,8 @@ import {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const RPC_URL = "https://soroban-testnet.stellar.org";
-const POOL = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
+const RPC_URL = "https://mainnet.sorobanrpc.com";
+const POOL = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
 const SESSION = "CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
 
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     const server = new rpc.Server(RPC_URL);
     const account = await server.getAccount(SOURCE);
     const call = async (cid: string, method: string) => {
-      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.PUBLIC })
         .addOperation(new Contract(cid).call(method))
         .setTimeout(30)
         .build();

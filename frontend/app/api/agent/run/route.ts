@@ -16,8 +16,8 @@ import { randomUUID } from "node:crypto";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const RPC_URL = "https://soroban-testnet.stellar.org";
-const CONTRACT = "CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC";
+const RPC_URL = "https://mainnet.sorobanrpc.com";
+const CONTRACT = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
 const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
 const DEMO_CAP = 50_000_000n; // 5 USDC scoped cap (matches scripts/kage-provision-cli.ts)
 const CALL_PRICE = "100000"; // 0.01 USDC per kage_pay (x402)
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     const server = new rpc.Server(RPC_URL);
     const account = await server.getAccount(SOURCE);
     const call = async (method: string) => {
-      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.PUBLIC })
         .addOperation(new Contract(CONTRACT).call(method))
         .setTimeout(30)
         .build();
