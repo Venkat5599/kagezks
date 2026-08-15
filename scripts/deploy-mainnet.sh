@@ -15,6 +15,16 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VEIL_WASM="$ROOT/contracts/solvency/target/wasm32v1-none/release/veil.wasm"
 SESSION_WASM="$ROOT/contracts/solvency/target/wasm32v1-none/release/session_account.wasm"
 
+# Shrink the wasm before upload — Soroban upload fee is ~1.5 XLM/KB, so this
+# cuts the deploy cost ~27% (wasm-opt). Keep the optimized artifacts out of git.
+VEIL_OPT="$ROOT/contracts/solvency/target/wasm32v1-none/release/veil.optimized.wasm"
+SESSION_OPT="$ROOT/contracts/solvency/target/wasm32v1-none/release/session_account.optimized.wasm"
+echo "==> optimizing wasm (wasm-opt)"
+stellar contract optimize --wasm "$VEIL_WASM" --wasm-out "$VEIL_OPT" 2>/dev/null
+stellar contract optimize --wasm "$SESSION_WASM" --wasm-out "$SESSION_OPT" 2>/dev/null
+echo "    veil $(wc -c <"$VEIL_WASM") -> $(wc -c <"$VEIL_OPT") bytes"
+echo "    session $(wc -c <"$SESSION_WASM") -> $(wc -c <"$SESSION_OPT") bytes"
+
 ADMIN_PUB=$(node -e 'const s=require("@stellar/stellar-sdk");console.log(s.Keypair.fromSecret(process.argv[1]).publicKey())' "$ADMIN_SECRET")
 echo "admin: $ADMIN_PUB"
 
@@ -35,7 +45,7 @@ deploy() {
 
 # --- 1. Deploy Veil ---
 echo "==> deploy veil.wasm"
-VEIL_ID=$(deploy "$VEIL_WASM")
+VEIL_ID=$(deploy "$VEIL_OPT")
 echo "veil = $VEIL_ID"
 
 # --- 2. init(admin, usdc=XLM SAC, empty_root) ---
@@ -49,7 +59,7 @@ stellar contract invoke --id "$VEIL_ID" --source-account "$ADMIN_SECRET" --netwo
 
 # --- 4. Deploy SessionAccount ---
 echo "==> deploy session_account.wasm"
-SESSION_ID=$(deploy "$SESSION_WASM")
+SESSION_ID=$(deploy "$SESSION_OPT")
 echo "session = $SESSION_ID"
 
 echo ""
