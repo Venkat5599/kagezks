@@ -28,6 +28,8 @@ circuits/build/input.json
 *.secret
 identity*.toml
 *_seed.txt
+# onboarding wallet keys (keep proof files committed, secret keys local)
+scripts/*-wallets.txt
 # generated build artifacts that embed testnet private keys
 sdk/build/veil_manifest.json
 sdk/build/agent_fabric.json
