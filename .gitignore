@@ -31,6 +31,7 @@ identity*.toml
 # onboarding wallet keys (keep proof files committed, secret keys local)
 scripts/*-wallets.txt
 scripts/*-notes.txt
+scripts/pool-leaves.json
 # generated build artifacts that embed testnet private keys
 sdk/build/veil_manifest.json
 sdk/build/agent_fabric.json
