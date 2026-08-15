@@ -1,0 +1,4 @@
+Fee-sponsored payment (gasless via fee bump):
+  user: GDKSN4H633CEYETRF3GZUQKRISX2J3QXQ43LKGQH6GUVRN56TW4F5H2D
+  tx: https://stellar.expert/explorer/public/tx/027cd20c2b04230ad8cfcb94962269bd815c51c29d175b40c3693f2fcd979397
+

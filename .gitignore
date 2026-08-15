@@ -32,6 +32,7 @@ identity*.toml
 scripts/*-wallets.txt
 scripts/*-notes.txt
 scripts/pool-leaves.json
+scripts/fee-sponsor-wallets.txt
 # generated build artifacts that embed testnet private keys
 sdk/build/veil_manifest.json
 sdk/build/agent_fabric.json
