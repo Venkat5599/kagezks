@@ -19,6 +19,9 @@
   <a href="https://youtu.be/s4WmqpLhH4s">
     <img src="https://img.shields.io/badge/▶_VIDEO-Watch_Demo-FF0000?style=for-the-badge&labelColor=0a0f12" alt="Video Demo" />
   </a>
+  <a href="https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform">
+    <img src="https://img.shields.io/badge/📝_REVIEW-Leave_Feedback-22C55E?style=for-the-badge&labelColor=0a0f12" alt="Give Feedback" />
+  </a>
   <img src="https://img.shields.io/badge/ZK-Groth16_·_BN254-00FF88?style=for-the-badge" alt="ZK" />
   <img src="https://img.shields.io/badge/Soroban-Rust-363636?style=for-the-badge" alt="Soroban" />
 </p>
@@ -311,6 +314,7 @@ stellar/
 | **Deposit TX** | [View TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) |
 | **Withdraw TX** | [View TX](https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b) |
 | **Testnet Faucet** | [Friendbot](https://friendbot.stellar.org) |
+| **Give Feedback** | [KAGE Review Google Form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) |
 
 ---
 
@@ -541,8 +545,8 @@ fee-bump that pays the network fee. Proof:
 | Security review | ✅ [docs/security-review.md](./docs/security-review.md) |
 | Advanced feature — fee sponsorship | ✅ [fee-bump proof](./scripts/fee-sponsor-proof.txt) |
 | 30+ meaningful commits | ✅ 83+ |
-| Community contribution (technical blog) | 🔜 content ready, to be published at dev.to |
-| Google Form → Excel → README improvement plan | 🔜 form link to be attached |
+| Community contribution (technical blog) | ✅ [dev.to, published](https://dev.to/venkat___/kage-private-payments-for-autonomous-ai-agents-43bj) |
+| Google Form → Excel → README improvement plan | ✅ [KAGE Review form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) — responses feed `docs/user-feedback.csv` → improvement plan |
 
 ---
 
