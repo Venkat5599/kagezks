@@ -314,7 +314,7 @@ stellar/
 | **Deposit TX** | [View TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) |
 | **Withdraw TX** | [View TX](https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b) |
 | **Testnet Faucet** | [Friendbot](https://friendbot.stellar.org) |
-| **Give Feedback** | [KAGE Review Google Form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) |
+| **Give Feedback** | [KAGE Review Google Form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) · [Responses sheet](https://docs.google.com/spreadsheets/d/15ykfAnk4OiueDgqt--TueD5_8Bxp6iP6YsmG8Durn4I/edit?usp=sharing) |
 
 ---
 
@@ -542,11 +542,11 @@ fee-bump that pays the network fee. Proof:
 | Smart contracts on Stellar mainnet | ✅ Veil `CAEEKI…IXLV` |
 | Public production-ready app live | ✅ [kageai.me](https://kageai.me) |
 | 20+ verified mainnet users + tx proof | ✅ [100 tx links](./scripts/20-users-mainnet-proof.txt) |
-| Security review | ✅ [docs/security-review.md](./docs/security-review.md) |
+| Security review | ✅ [docs/security-review.md](./docs/security-review.md) (self-review, submitted as the security deliverable) |
 | Advanced feature — fee sponsorship | ✅ [fee-bump proof](./scripts/fee-sponsor-proof.txt) |
 | 30+ meaningful commits | ✅ 83+ |
 | Community contribution (technical blog) | ✅ [dev.to, published](https://dev.to/venkat___/kage-private-payments-for-autonomous-ai-agents-43bj) |
-| Google Form → Excel → README improvement plan | ✅ [KAGE Review form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) — responses feed `docs/user-feedback.csv` → improvement plan |
+| Google Form → Excel → README improvement plan | ✅ [KAGE Review form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) · [Responses sheet](https://docs.google.com/spreadsheets/d/15ykfAnk4OiueDgqt--TueD5_8Bxp6iP6YsmG8Durn4I/edit?usp=sharing) — 70 responses → `docs/user-feedback.csv` → [improvement plan](#product-improvements-based-on-feedback) |
 
 ---
 

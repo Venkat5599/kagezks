@@ -84,9 +84,11 @@ raw `BytesN<64>` signature, never the owner's key — "autonomy without custody"
 
 ## 7. Honest scope / limits (what this review does NOT cover)
 
-1. **This is a self-review, not a third-party audit.** The belt requirement is
-   "audit OR security review approved by mentors/team"; approval is pending the
-   reviewer's sign-off.
+1. **This is a self-review, not a third-party audit.** It is the submitted
+   security-review deliverable for the Black Belt requirement, written by the
+   project maintainers and covering every contract surface deployed to mainnet.
+   It is offered for mentor/team review and approval at evaluation; no external
+   audit was engaged.
 2. **Trusted setup** — Groth16 requires a trusted setup. Phase 1 reuses the
    Hermez `powers-of-tau` (pot14); the phase-2 contribution is single-party.
    A malicious phase-2 participant could forge proofs; multi-party ceremony is
