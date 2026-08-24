@@ -115,6 +115,9 @@ With Kage:                     Agent → Scoped Session Key → ZK Pool → Ledg
 |------|-------|
 | **Live app** | <https://kageai.me> |
 | **Dashboard (wallet · balance · transactions)** | <https://kageai.me/dashboard> |
+| **API Reference** | <https://kageai.me/docs> |
+| **Network Status** | <https://kageai.me/status> |
+| **Stealth tool (meta-address + note generator)** | <https://kageai.me/tools/stealth> |
 | **Balance API** | `GET https://kageai.me/api/wallet-status?address=<G...>` |
 | **Hosting** | VPS — Next.js app on `:3000` + MCP server on `:8402`, both under pm2 behind nginx ([`deploy/README.md`](./deploy/README.md), [`deploy/nginx-kage.conf`](./deploy/nginx-kage.conf)) |
 | **CI** | GitHub Actions — tests, build, typecheck ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) |
@@ -489,6 +492,9 @@ All 50 testnet wallet addresses are funded and verifiable on Stellar Explorer. E
 
 | Improvement | Status |
 |-------------|--------|
+| **Live API Reference page** (`/docs`) — documents every endpoint | ✅ |
+| **Network Status page** (`/status`) — live RPC + contract health | ✅ |
+| **Stealth Address & Note Generator** (`/tools/stealth`) — local meta-address + note derivation + recognition | ✅ |
 | CI/CD pipeline (contract tests + frontend build + lint) | ✅ |
 | Escrow transaction UI (create/approve/settle/refund/cancel) | ✅ |
 | Admin dashboard settle/cancel controls | ✅ |
