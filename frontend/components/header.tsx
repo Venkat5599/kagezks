@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { KageMark } from "@/components/kage-logo";
 
-const menus = {
+type MenuItem = { label: string; description: string; href?: string };
+
+const menus: Record<"products" | "resources", MenuItem[]> = {
   products: [
     { label: "Stealth notes", description: "Hide which payee is paid (X25519 ECDH)" },
     { label: "Shielded pool", description: "Break the agent→payee link in ZK" },
@@ -15,8 +17,9 @@ const menus = {
   ],
   resources: [
     { label: "How it works", description: "The three-step agent payment flow" },
-    { label: "Architecture", description: "Circuits, SDK, Soroban contract" },
-    { label: "Live contract", description: "Deposit + withdraw on testnet" },
+    { label: "API reference", description: "Every endpoint the product exposes", href: "/docs" },
+    { label: "Network status", description: "Live RPC + contract health", href: "/status" },
+    { label: "Stealth tool", description: "Generate a stealth address + note locally", href: "/tools/stealth" },
     { label: "FAQ", description: "Scope and trust assumptions" },
   ],
 };
@@ -74,7 +77,11 @@ function DesktopDropdown({
           >
             <div className="bg-frame border border-border rounded-2xl shadow-lg overflow-hidden p-2">
               {menus[menuKey].map((item) => (
-                <a key={item.label} href="#" className="block px-4 py-3 rounded-xl hover:bg-muted transition-colors">
+                <a
+                  key={item.label}
+                  href={item.href ?? "#"}
+                  className="block px-4 py-3 rounded-xl hover:bg-muted transition-colors"
+                >
                   <div className="text-sm font-medium text-foreground">{item.label}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{item.description}</div>
                 </a>
@@ -125,7 +132,7 @@ function MobileExpandable({
               {menus[menuKey].map((item) => (
                 <a
                   key={item.label}
-                  href="#"
+                  href={item.href ?? "#"}
                   className="block py-2 text-sm text-foreground/80 hover:text-foreground"
                   onClick={onClose}
                 >
