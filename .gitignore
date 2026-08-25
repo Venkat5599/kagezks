@@ -52,3 +52,9 @@ sdk/build/veil_contract.txt
 sdk/build/agent_keys.json
 # stray windows reserved-name file from build redirects
 nul
+scripts/onboard-mainnet.ts
+
+# Master cohort (in-progress) — ignore until the full 50-user run completes
+scripts/50-users-mainnet-proof.txt
+scripts/1-users-mainnet-proof.txt
+scripts/gen-master-feedback.py
