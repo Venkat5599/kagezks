@@ -47,7 +47,7 @@ on-chain proof that it ran.
 | 10 | Public GitHub repo | ✅ | <https://github.com/Venkat5599/kagezks> | Public, MIT licensed |
 | 11 | README with project description | ✅ | [Project Overview](#-project-overview) | — |
 | 12 | README with local setup instructions | ✅ | [Deploy Your Own](#deploy-your-own) — clone → install → build circuits → deploy contracts → run | — |
-| 13 | Real deployed application | ✅ | <https://kageai.me> (Next.js app + MCP server on a VPS behind nginx — see [`deploy/README.md`](./deploy/README.md)) | Load the site |
+| 13 | Real deployed application | ✅ | <https://kageai.me> · <https://kagezks.vercel.app> (Next.js on Vercel + Neon Postgres; fabric MCP host: see [`deploy/README.md`](./deploy/README.md)) | Load the site |
 | 14 | Screenshots — connected wallet, balance, tx result | ✅ | [Level 1 — required states](#level-1--required-states) — three captures, plus the tx hash from shot 3 verified on Horizon | [Verify that tx ↗](https://stellar.expert/explorer/testnet/tx/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) |
 
 **Wallet note:** the dashboard offers two paths — *Connect Freighter* (requirement 1, no key
