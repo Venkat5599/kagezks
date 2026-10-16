@@ -121,7 +121,7 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight text-white">Dashboard</h1>
-          <p className="mt-1 text-neutral-400">Manage your creations and track performance — live on Stellar testnet.</p>
+          <p className="mt-1 text-neutral-400">Manage your creations and track performance — live on Stellar mainnet.</p>
         </div>
         <div className="flex gap-1 rounded-xl border border-white/[0.08] p-1">
           {TOGGLE.map((t) => (
@@ -173,7 +173,7 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
               <button onClick={() => setShowSec((v) => !v)} className="text-neutral-400 hover:text-white" title={showSec ? "Hide" : "Reveal"}>{showSec ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               <CopyBtn text={secret} />
             </div>
-            <p className="mt-2 text-[11px] text-neutral-500">Hidden by default (safe to screen-share). Reveal to view, or copy directly. Funding via friendbot…</p>
+            <p className="mt-2 text-[11px] text-neutral-500">Hidden by default (safe to screen-share). Reveal to view, or copy directly. Fund it by sending XLM to this address.</p>
           </div>
         )}
 
@@ -191,7 +191,7 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
               <p className="text-xs text-neutral-500">Your wallet balance</p>
               <p className="mt-0.5 text-2xl font-semibold text-white">{wstat === null ? "—" : `${Number(wstat.xlm).toFixed(2)} XLM`}</p>
-              <p className="mt-1 text-[11px] text-neutral-500">{wstat?.funded ? "funded on testnet" : "not funded yet"}</p>
+              <p className="mt-1 text-[11px] text-neutral-500">{wstat?.funded ? "funded on mainnet" : "not funded yet"}</p>
             </div>
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
               <p className="text-xs text-neutral-500">Demo agent session {sess?.live && <span className="text-accent">· live</span>}</p>
@@ -257,7 +257,7 @@ export function DashboardHome({ go }: { go: (s: "apis" | "mcp" | "workflows") =>
         )}
       </Panel>
 
-      {/* White Belt: Send XLM — simple testnet transaction with success/failure feedback */}
+      {/* White Belt: Send XLM — simple mainnet transaction with success/failure feedback */}
       <SendXlm />
 
       <div>

@@ -19,7 +19,7 @@ type WalletCtx = {
   real: boolean; // true = Freighter; false = generated/demo
   connecting: boolean;
   connect: () => Promise<void>; // Freighter
-  generate: () => Promise<void>; // create a fresh Stellar wallet + friendbot fund
+  generate: () => Promise<void>; // create a fresh Stellar wallet (fund it by sending XLM)
   disconnect: () => void;
 };
 const Ctx = createContext<WalletCtx>({
@@ -52,7 +52,7 @@ function registerUser(address: string, walletKind: "freighter" | "generated") {
   }).catch(() => {});
 }
 
-// Attach a real testnet transaction to the connected wallet, so onboarding
+// Attach a real mainnet transaction to the connected wallet, so onboarding
 // numbers stay backed by hashes anyone can check on stellar.expert.
 export function recordTx(
   address: string,
@@ -166,11 +166,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         alert(res.reason);
         return;
       }
-      // Kage is testnet-only; connecting a PUBLIC-network account would sign
+      // Kage runs on Stellar mainnet; connecting a TESTNET account would sign
       // against contracts that don't exist there.
-      if (res.network && res.network.toUpperCase() !== "TESTNET") {
+      if (res.network && res.network.toUpperCase() !== "PUBLIC") {
         alert(
-          `Freighter is set to ${res.network}. Kage runs on Stellar TESTNET — switch the network in Freighter, then connect again.`
+          `Freighter is set to ${res.network}. Kage runs on Stellar MAINNET — switch Freighter to Mainnet (PUBLIC), then connect again.`
         );
         return;
       }
@@ -186,7 +186,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Generate a fresh Stellar wallet in the browser and fund it via friendbot. The secret
+  // Generate a fresh Stellar wallet in the browser (the user funds it with XLM). The secret
   // is shown once for the user to import into their wallet app (mirrors the smart-account
   // wallet-generation flow). Each user gets a distinct address = distinct owner identity.
   const generate = async () => {
@@ -202,8 +202,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(SECKEY, sec);
       localStorage.setItem(REALKEY, "0");
       registerUser(pub, "generated");
-      // fire-and-forget testnet funding
-      fetch(`https://friendbot.stellar.org/?addr=${pub}`).catch(() => {});
     } finally {
       setConnecting(false);
     }

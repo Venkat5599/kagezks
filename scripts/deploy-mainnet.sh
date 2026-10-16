@@ -75,7 +75,7 @@ echo "  session = $SESSION_ID"
 echo "  xlm_sac = $XLM_SAC"
 
 # Persist (local, gitignored) so onboarding + frontend can read the IDs.
-cat > "$ROOT/sdk/build/veil_deployment_mainnet.json" <<EOF
+cat > "$ROOT/sdk/build/veil_deployment.mainnet.json" <<EOF
 {"network":"mainnet","contract_id":"$VEIL_ID","session_id":"$SESSION_ID","xlm_sac":"$XLM_SAC","admin":"$ADMIN_PUB"}
 EOF
-echo "saved -> sdk/build/veil_deployment_mainnet.json"
+echo "saved -> sdk/build/veil_deployment.mainnet.json"

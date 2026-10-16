@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC">
-    <img src="https://img.shields.io/badge/🔴_LIVE-Stellar_Testnet-7C3AED?style=for-the-badge" alt="Live on Stellar" />
+  <a href="https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV">
+    <img src="https://img.shields.io/badge/🟢_LIVE-Stellar_Mainnet-7C3AED?style=for-the-badge" alt="Live on Stellar mainnet" />
   </a>
   <a href="https://kageai.me">
     <img src="https://img.shields.io/badge/🌐_DEMO-kageai.me-00D4FF?style=for-the-badge" alt="Live Demo" />
@@ -36,14 +36,14 @@ on-chain proof that it ran.
 | # | Requirement | Status | Implementation | Proof / verify |
 |---|-------------|--------|----------------|----------------|
 | 1 | Freighter wallet set up | ✅ | `frontend/lib/wallet.tsx:99` — `tryFreighter()` uses the official `@stellar/freighter-api` adapter (`isConnected` → `requestAccess` → `getNetwork`), with a `window.freighterApi` fallback at `:75` for Freighter ≤v5 | Click **Connect Freighter** on [kageai.me/dashboard](https://kageai.me/dashboard) |
-| 2 | Uses Stellar **Testnet** | ✅ | `Networks.TESTNET` in `frontend/lib/kage-chain.ts:47` and `agent/x402.ts`; Horizon `https://horizon-testnet.stellar.org`; Soroban RPC `https://soroban-testnet.stellar.org` (`kage-chain.ts:27`) | [Network details](#network-details) |
-| 3 | Wallet **connect** | ✅ | `frontend/lib/wallet.tsx:161` — `connect()`, which also rejects a non-TESTNET Freighter network; UI button in `frontend/components/fabric/dashboard-home.tsx:184` | Dashboard → *Connect Freighter* |
+| 2 | Stellar network | ✅ | **Mainnet**: `Networks.PUBLIC` in `frontend/lib/kage-chain.ts`; agent backend reads `sdk/network.ts` (default mainnet); Horizon `https://horizon.stellar.org`; Soroban RPC `https://mainnet.sorobanrpc.com` | [Network details](#network-details) |
+| 3 | Wallet **connect** | ✅ | `frontend/lib/wallet.tsx:161` — `connect()`, which also rejects a Freighter account not on Mainnet (PUBLIC); UI button in `frontend/components/fabric/dashboard-home.tsx:184` | Dashboard → *Connect Freighter* |
 | 4 | Wallet **disconnect** | ✅ | `frontend/lib/wallet.tsx:212` — `disconnect()` clears address + local state; UI button in `dashboard-home.tsx:214` | Dashboard → *Disconnect* |
-| 5 | Fetch XLM balance | ✅ | `frontend/app/api/wallet-status/route.ts` — reads the `native` balance for the connected address straight from Horizon testnet; unfunded accounts return `funded:false` | `curl "https://kageai.me/api/wallet-status?address=<G...>"` |
-| 6 | Display balance in UI | ✅ | `dashboard-home.tsx:191-193` — large `X.XX XLM` figure plus a *funded on testnet* / *not funded yet* state | x402 Payments panel on the dashboard |
-| 7 | Send an **XLM transaction** on testnet | ✅ | `frontend/components/fabric/send-xlm.tsx:71` — the **Send XLM** form on the dashboard: `Operation.payment` with `Asset.native()` (`:107`), built for `Networks.TESTNET`, signed by Freighter (or the generated keypair) and submitted. Also used agent-side by `payX402()` in [`agent/x402.ts`](./agent/x402.ts) for x402-gated API calls | Dashboard → **Send XLM** |
+| 5 | Fetch XLM balance | ✅ | `frontend/app/api/wallet-status/route.ts` — reads the `native` balance for the connected address straight from Horizon mainnet; unfunded accounts return `funded:false` | `curl "https://kageai.me/api/wallet-status?address=<G...>"` |
+| 6 | Display balance in UI | ✅ | `dashboard-home.tsx:191-193` — large `X.XX XLM` figure plus a *funded on mainnet* / *not funded yet* state | x402 Payments panel on the dashboard |
+| 7 | Send an **XLM transaction** | ✅ | `frontend/components/fabric/send-xlm.tsx:71` — the **Send XLM** form on the dashboard: `Operation.payment` with `Asset.native()` (`:107`), built for `Networks.PUBLIC`, signed by Freighter (or the generated keypair) and submitted. Also used agent-side by `payX402()` in [`agent/x402.ts`](./agent/x402.ts) for x402-gated API calls | Dashboard → **Send XLM** |
 | 8 | Transaction feedback — success / failure | ✅ | Both states are explicit: success panel at `send-xlm.tsx:197`, failure message at `:221` (invalid address, unfunded account, rejected signature, and ledger `ERROR` results are each reported) | Send to a bad address to see the failure state |
-| 9 | Transaction hash shown to the user | ✅ | `send-xlm.tsx:197` prints the **TX hash**, and `:201` links it to `stellar.expert/explorer/testnet/tx/<hash>` | [Deposit TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) · [Withdraw TX](https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b) |
+| 9 | Transaction hash shown to the user | ✅ | `send-xlm.tsx:197` prints the **TX hash**, and `:201` links it to `stellar.expert/explorer/public/tx/<hash>` | [Deposit TX](https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379) · [Withdraw TX](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
 | 10 | Public GitHub repo | ✅ | <https://github.com/Venkat5599/kagezks> | Public, MIT licensed |
 | 11 | README with project description | ✅ | [Project Overview](#-project-overview) | — |
 | 12 | README with local setup instructions | ✅ | [Deploy Your Own](#deploy-your-own) — clone → install → build circuits → deploy contracts → run | — |
@@ -52,7 +52,7 @@ on-chain proof that it ran.
 
 **Wallet note:** the dashboard offers two paths — *Connect Freighter* (requirement 1, no key
 material ever leaves the extension) and *Generate Session Account Wallet*, which creates a
-fresh testnet keypair and funds it via Friendbot so a reviewer without the extension
+fresh keypair in the browser; send it a little XLM and a reviewer without the extension
 installed can still exercise the whole flow end to end.
 
 ---
@@ -119,25 +119,24 @@ With Kage:                     Agent → Scoped Session Key → ZK Pool → Ledg
 | **Network Status** | <https://kageai.me/status> |
 | **Stealth tool (meta-address + note generator)** | <https://kageai.me/tools/stealth> |
 | **Balance API** | `GET https://kageai.me/api/wallet-status?address=<G...>` |
-| **Hosting** | VPS — Next.js app on `:3000` + MCP server on `:8402`, both under pm2 behind nginx ([`deploy/README.md`](./deploy/README.md), [`deploy/nginx-kage.conf`](./deploy/nginx-kage.conf)) |
+| **Hosting** | Next.js app on Vercel (+ Neon Postgres); agent fabric MCP on a VPS under pm2 behind Caddy, served at `kageai.me/fabric/mcp` ([`deploy/README.md`](./deploy/README.md)) |
 | **CI** | GitHub Actions — tests, build, typecheck ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) |
-| **Network** | Stellar **Testnet** (demo) + **Mainnet** (production) |
+| **Network** | Stellar **Mainnet** |
 
-### Live Contracts on Stellar Testnet
+### Live Contracts on Stellar Mainnet
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| **Kage Shielded Pool** | `CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC` | [✅ View](https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC) |
-| **Scoped Session Account** | `CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636` | [✅ View](https://stellar.expert/explorer/testnet/contract/CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636) |
-| **USDC (SAC)** | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` | [✅ View](https://stellar.expert/explorer/testnet/contract/CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC) |
+| **Kage Shielded Pool** | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` | [✅ View](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) |
+| **Settlement asset (native XLM SAC)** | `CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA` | [✅ View](https://stellar.expert/explorer/public/contract/CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA) |
 
 ### Network Details
 
 ```
-Network:     Stellar Testnet
-RPC URL:     https://soroban-testnet.stellar.org
-Explorer:    https://stellar.expert/explorer/testnet
-Asset:       USDC (Soroban Asset Contract)
+Network:     Stellar Mainnet (Public Global Stellar Network ; September 2015)
+RPC URL:     https://mainnet.sorobanrpc.com
+Explorer:    https://stellar.expert/explorer/public
+Asset:       native XLM (Stellar Asset Contract)
 Live demo:   https://kageai.me
 ```
 
@@ -289,13 +288,15 @@ stellar/
 
 ---
 
-## 🧪 Proven End-to-End (real testnet transactions)
+## 🧪 Proven End-to-End (real mainnet transactions)
 
 | Step | Result | Detail |
 |------|--------|--------|
-| **Deposit** | ✅ verified | On-chain insert proof verified (BN254) with amount binding; USDC pulled; commitment + ephemeral key announced. [TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) |
-| **Withdraw** | ✅ verified | Membership proof verified; payout paid to a stealth address bound into the proof (keccak(ScAddress) matched cross-language). [TX](https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b) |
-| **Double-spend** | ❌ rejected | Replaying the same nullifier reverts with `NullifierUsed (#9)`. |
+| **Deposit** | ✅ verified | On-chain insert proof verified (BN254) with amount binding; XLM pulled into the pool; commitment + ephemeral key announced. [TX](https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379) |
+| **Withdraw** | ✅ verified | Membership proof verified; payout paid to a stealth address bound into the proof. [TX](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
+| **Double-spend** | ❌ rejected | Replaying the same nullifier reverts with `NullifierUsed (#9)` (contract test + development network run). |
+
+Full mainnet cohort with every hash: [`scripts/20-users-mainnet-proof.txt`](./scripts/20-users-mainnet-proof.txt).
 
 ### Local (real Groth16)
 
@@ -312,11 +313,9 @@ stellar/
 |----------|-----|
 | **Live Demo** | [kageai.me](https://kageai.me) |
 | **Video Demo** | [Watch on YouTube](https://youtu.be/s4WmqpLhH4s) |
-| **Pool Contract** | [View on Explorer](https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC) |
-| **Session Account** | [View on Explorer](https://stellar.expert/explorer/testnet/contract/CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636) |
-| **Deposit TX** | [View TX](https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597) |
-| **Withdraw TX** | [View TX](https://stellar.expert/explorer/testnet/tx/044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b) |
-| **Testnet Faucet** | [Friendbot](https://friendbot.stellar.org) |
+| **Pool Contract** | [View on Explorer](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) |
+| **Deposit TX** | [View TX](https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379) |
+| **Withdraw TX** | [View TX](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
 | **Give Feedback** | [KAGE Review Google Form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) · [Responses sheet](https://docs.google.com/spreadsheets/d/15ykfAnk4OiueDgqt--TueD5_8Bxp6iP6YsmG8Durn4I/edit?usp=sharing) |
 
 ---
@@ -335,7 +334,7 @@ stellar/
 
 ## 🧾 Honesty Ledger
 
-- **Mainnet is live** — the pool holds real XLM (native SAC). The testnet demo pool holds testnet USDC.
+- **Mainnet is live** — the pool holds real XLM (native SAC).
 - Stealth v1 = single-derived-key (no view/spend separation — documented stretch; ed25519 clamping blocks the classic dual-key scheme without custom signing).
 - Demo tree depth 10 (1024 notes); identical circuit scales to depth 20.
 - Fixed-denomination notes in the demo for a clean anonymity set (the circuit range-checks any amount < 2^64).
@@ -351,10 +350,8 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 | Item | Detail |
 |------|--------|
 | **Mainnet Pool Contract** | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` (XLM SAC) |
-| **Pool Contract (testnet)** | `CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC` |
-| **Session Contract** | `CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636` |
-| **Deposit TX** | `308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597` |
-| **Withdraw TX** | `044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b` |
+| **Deposit TX** | `bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379` |
+| **Withdraw TX** | `5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793` |
 | **Live Demo** | [kageai.me](https://kageai.me) |
 | **Pitch Deck** | [docs/pitch-deck.md](docs/pitch-deck.md) |
 | **CI/CD** | ![CI](https://github.com/Venkat5599/kagezks/actions/workflows/ci.yml/badge.svg) |
@@ -370,7 +367,7 @@ See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
 
 ### Screenshots
 
-#### Level 1 — required states
+#### Level 1 — required states (captured during development, before the mainnet launch)
 
 **1. Wallet connected (Freighter) + balance displayed**
 
@@ -417,7 +414,7 @@ surfaced in the UI.
 
 ---
 
-## 👥 50 User On-chain Verification — Blue Belt
+## 👥 50 User On-chain Verification — Blue Belt (development network cohort, pre-mainnet)
 
 All 50 testnet wallet addresses are funded and verifiable on Stellar Explorer. Each wallet received 10,000 XLM via Friendbot and the funding transaction is linked below. Feedback exported to CSV: [docs/user-feedback.csv](docs/user-feedback.csv)
 
@@ -560,9 +557,9 @@ fee-bump that pays the network fee. Proof:
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| Phase 1 | MVP — ZK pool + session account + stealth notes on testnet | ✅ Done |
+| Phase 1 | MVP — ZK pool + session account + stealth notes | ✅ Done |
 | Phase 2 | CI/CD, tests, security hardening, user onboarding | ✅ Done |
-| Phase 3 | Mainnet deployment, external security audit, $150K SCF | ⬜ Planned |
+| Phase 3 | Mainnet deployment ✅ · external security audit ⬜ | 🟡 In progress |
 | Phase 4 | 10+ tokens, view/spend key separation, anchor SDK | ⬜ Planned |
 | Phase 5 | Institutional dashboard, liquidity optimization, banking integration | ⬜ Planned |
 | Phase 6 | Settlement standard, ZK compliance proofs, funded team | ⬜ Planned |

@@ -11,14 +11,14 @@ export const revalidate = 0;
 
 export const metadata = {
   title: "Metrics — Kage",
-  description: "Wallets onboarded, on-chain activity, and feedback for Kage on Stellar testnet.",
+  description: "Wallets onboarded, on-chain activity, and feedback for Kage on Stellar mainnet.",
 };
 
 type UserAgg = { total: number; freighter: number; generated: number; with_tx: number };
 type TxRow = { action: string; tx_hash: string; created_at: string };
 type FbAgg = { count: number; average: number };
 
-const EXPLORER = "https://stellar.expert/explorer/testnet/tx";
+const EXPLORER = "https://stellar.expert/explorer/public/tx";
 
 async function load() {
   try {
@@ -67,7 +67,7 @@ export default async function MetricsPage() {
     <main className="mx-auto max-w-3xl px-6 py-24">
       <h1 className="text-3xl font-semibold tracking-tight text-foreground">Metrics</h1>
       <p className="mt-3 max-w-xl text-muted-foreground">
-        Every number is a count over rows written by real usage on Stellar testnet. Nothing here is
+        Every number is a count over rows written by real usage on Stellar mainnet. Nothing here is
         seeded — an empty database reports zero.
       </p>
 

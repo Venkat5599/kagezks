@@ -7,7 +7,7 @@ import { KageMark } from "@/components/kage-logo";
 const CONTRACT_URL =
   "https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
 
-const TX = "https://stellar.expert/explorer/testnet/tx/";
+const TX = "https://stellar.expert/explorer/public/tx/";
 
 const footerLinks = {
   menu: [
@@ -17,8 +17,8 @@ const footerLinks = {
   ],
   onchain: [
     { label: "Pool contract", href: CONTRACT_URL },
-    { label: "Deposit tx", href: `${TX}308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597` },
-    { label: "Withdraw tx", href: `${TX}044a103c5ef5f09fbe6ab39be9b042b62fc113f3d0f3e4c0a01aa77b889c1f7b` },
+    { label: "Deposit tx", href: `${TX}bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379` },
+    { label: "Withdraw tx", href: `${TX}5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793` },
   ],
 };
 

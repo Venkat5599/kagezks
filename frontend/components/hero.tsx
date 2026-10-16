@@ -68,7 +68,7 @@ function LivePoolPreview(): ReactNode {
             }`}
           >
             <Radio className={`h-2.5 w-2.5 ${live ? "animate-pulse" : ""}`} />
-            {live ? "live · testnet" : "connecting"}
+            {live ? "live · mainnet" : "connecting"}
           </span>
         </div>
         <a
@@ -240,7 +240,7 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            Real-World ZK · Live on Stellar testnet
+            Real-World ZK · Live on Stellar mainnet
             <Sparkles className="h-3.5 w-3.5 text-accent" strokeWidth={1.8} />
           </motion.div>
 

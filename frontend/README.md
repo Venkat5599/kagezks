@@ -1,8 +1,8 @@
-# Veil — frontend
+# Kage — frontend
 
-The web app for [Veil](../README.md): **private payments for autonomous agents on
-Stellar.** A marketing site plus a live shielded-pool dashboard that reads the Veil
-contract on testnet and lets a connected wallet deposit into / withdraw from the ZK
+The web app for [Kage](../README.md): **private payments for autonomous agents on
+Stellar.** A marketing site plus a live shielded-pool dashboard that reads the Kage
+pool contract on Stellar mainnet and lets a connected wallet deposit into / withdraw from the ZK
 pool.
 
 Next.js 16 (App Router) · TypeScript · Tailwind v4 · Motion · Freighter wallet ·
@@ -47,10 +47,7 @@ npm run dev      # http://localhost:3000
 npm run typecheck && npm run lint
 ```
 
-The dashboard talks to the Veil contract in `public/veil.json` on Stellar testnet.
-> The deployed contract predates the deposit **amount-binding** fix — redeploy the
-> current `veil.wasm` + `set_vks` and update `public/veil.json` before live deposits
-> (the insert proof now carries a 5th public input).
+The dashboard talks to the mainnet pool `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` (`lib/kage-chain.ts`).
 
 ## Editing copy
 

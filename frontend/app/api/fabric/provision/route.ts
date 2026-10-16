@@ -1,5 +1,5 @@
 // Dashboard → fabric bridge for provisioning a per-user SessionAccount. The browser
-// posts the generated wallet's owner address + secret (testnet only); the Bun fabric
+// posts the generated wallet's owner address + secret; the Bun fabric
 // deploys + inits + funds a real SessionAccount and returns a personal bearer token.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

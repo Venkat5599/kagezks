@@ -4,7 +4,7 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const HORIZON = "https://horizon-testnet.stellar.org";
+const HORIZON = "https://horizon.stellar.org";
 
 export async function GET(req: Request) {
   const address = new URL(req.url).searchParams.get("address");

@@ -28,7 +28,7 @@ import { quoteFor, verifyPayment } from "./x402.ts";
 const PORT = Number(process.env.VEIL_MCP_PORT ?? 8402);
 // The G-account that pays the tx fee and submits (owner/relayer). Never the agent key.
 const FEE_SECRET = process.env.VEIL_FEE_SECRET ?? "";
-// Where x402 per-call fees are paid (operator, a real testnet account by default).
+// Where x402 per-call fees are paid (operator account on the active network).
 const OPERATOR = process.env.VEIL_OPERATOR ?? "GC3KDBUQ53VQ377LUDUNSV3RQL3MFRYWYYLXD76TXRVR5O7AEO7Y4CAA";
 const CALL_PRICE = process.env.VEIL_CALL_PRICE ?? "100000"; // 0.01 XLM per kage_pay
 

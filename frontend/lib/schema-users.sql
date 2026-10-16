@@ -20,12 +20,12 @@ CREATE INDEX IF NOT EXISTS users_first_seen_idx ON users (first_seen DESC);
 
 -- One row per on-chain action a user takes through the app. This is the
 -- "proof of wallet interactions" the belt asks for: each row carries a real
--- testnet transaction hash that resolves on stellar.expert.
+-- mainnet transaction hash that resolves on stellar.expert.
 CREATE TABLE IF NOT EXISTS user_txs (
   id         BIGSERIAL PRIMARY KEY,
   address    TEXT NOT NULL REFERENCES users (address) ON DELETE CASCADE,
   action     TEXT NOT NULL,              -- 'deposit' | 'withdraw' | 'provision' | 'agent_run'
-  tx_hash    TEXT,                       -- testnet hash, verifiable on stellar.expert
+  tx_hash    TEXT,                       -- mainnet hash, verifiable on stellar.expert
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

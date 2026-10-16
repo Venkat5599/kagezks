@@ -110,7 +110,7 @@ needs custom EdDSA scalar-signing and is a documented stretch.
 
 ## 6. Honesty ledger
 
-- **Testnet only.** No mainnet, no real funds.
+- **Mainnet, native XLM.** Real funds; no third-party audit yet (self-review: `docs/security-review.md`).
 - v1 stealth = single-derived-key (no view/spend separation — stretch).
 - Demo tree depth 10; scales to 20 with the same circuit, bigger ptau.
 - Fixed-denomination notes in the demo for a clean anonymity set; arbitrary

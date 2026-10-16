@@ -45,5 +45,5 @@ Or do it in one call: `workflow_run { name: "pay-if-budget", recipientScanKey, a
   stores only commitments, a Merkle root, and nullifier hashes.
 - **Can't be redirected**: the payout address is bound into the proof.
 
-Testnet only. The reference driver is `scripts/agent-pay.ts`; the LLM-driven client is
+Runs on Stellar mainnet (native XLM pool). The reference driver is `scripts/agent-pay.ts`; the LLM-driven client is
 `agent/demo-agent.ts`.

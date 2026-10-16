@@ -1,5 +1,5 @@
 // Live read of the agent's scoped SessionAccount + the pool's deposit history, for
-// the dashboard's Kage fabric monitor. All values are read on-chain from testnet.
+// the dashboard's Kage fabric monitor. All values are read on-chain from mainnet.
 import {
   rpc,
   Contract,
@@ -14,8 +14,9 @@ export const revalidate = 0;
 
 const RPC_URL = "https://mainnet.sorobanrpc.com";
 const POOL = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
-const SESSION = "CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636";
-const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
+// Mainnet SessionAccount for the demo agent (set once provisioned); empty = not provisioned yet.
+const SESSION = process.env.KAGE_SESSION ?? "";
+const SOURCE = "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6";
 
 const toHex = (b: unknown) => (b instanceof Uint8Array ? Buffer.from(b).toString("hex") : "");
 
@@ -34,8 +35,8 @@ export async function GET() {
     };
 
     const [remaining, policy, leafCount] = await Promise.all([
-      call(SESSION, "remaining"),
-      call(SESSION, "policy"),
+      SESSION ? call(SESSION, "remaining") : Promise.resolve(null),
+      SESSION ? call(SESSION, "policy") : Promise.resolve(null),
       call(POOL, "leaf_count"),
     ]);
 

@@ -130,7 +130,7 @@ export function FeatureShowcase(): ReactNode {
                   <span className="flex items-center gap-1.5 text-sm font-medium text-white">
                     Kage pool
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-accent">
-                      <Radio className="h-3 w-3" /> testnet
+                      <Radio className="h-3 w-3" /> mainnet
                     </span>
                   </span>
                 </div>

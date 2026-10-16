@@ -2,7 +2,7 @@
 // app; repeat connects bump `visits` and `last_seen` rather than duplicating a
 // row, so the user count is distinct wallets and nothing else.
 //
-// Also accepts an on-chain action (`action` + `txHash`) so a real testnet
+// Also accepts an on-chain action (`action` + `txHash`) so a real mainnet
 // transaction taken in-app is attributable to the wallet that made it — that
 // pairing is what makes the onboarding numbers verifiable on stellar.expert.
 import { sql } from "@/lib/db";

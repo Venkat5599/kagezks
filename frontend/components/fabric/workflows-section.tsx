@@ -230,7 +230,7 @@ function RunWorkflow({ wf }: { wf: Wf }) {
                 ))}
               </ol>
               {txHash && (
-                <a href={`https://stellar.expert/explorer/testnet/tx/${txHash}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-sm text-accent hover:underline">
+                <a href={`https://stellar.expert/explorer/public/tx/${txHash}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-sm text-accent hover:underline">
                   View settlement tx ↗ <span className="font-mono text-xs">{short(txHash, 8, 6)}</span>
                 </a>
               )}

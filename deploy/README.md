@@ -18,10 +18,10 @@ sudo npm i -g pm2
 sudo apt-get install -y nginx
 ```
 
-Import the funded testnet identity used to pay fees:
+Import the funded mainnet identity used to pay fees (`VEIL_FEE_SECRET`):
 
 ```bash
-stellar keys add issuer --secret-key   # paste the S... secret; or `stellar keys generate issuer` + friendbot
+stellar keys add issuer --secret-key   # paste the S... secret of a funded mainnet account
 ```
 
 ## 1. Clone + configure

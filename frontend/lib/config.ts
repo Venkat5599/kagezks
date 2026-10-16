@@ -31,7 +31,7 @@ export const siteConfig = {
 };
 
 export const heroConfig = {
-  badge: "Real-World ZK · Live on Stellar testnet",
+  badge: "Real-World ZK · Live on Stellar mainnet",
   headline: {
     line1: "Agent payments,",
     line2: "proven in",

@@ -15,8 +15,8 @@ export const revalidate = 0;
 
 const RPC_URL = "https://mainnet.sorobanrpc.com";
 const POOL = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
-const SESSION = "CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636";
-const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
+const SESSION = process.env.KAGE_SESSION ?? "";
+const SOURCE = "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6";
 
 export async function GET(req: Request) {
   // Per-user aggregates when ?owner is provided (the connected wallet); global otherwise.
@@ -52,8 +52,8 @@ export async function GET(req: Request) {
       return scValToNative(sim.result.retval);
     };
     const [remaining, policy, leafCount] = await Promise.all([
-      call(SESSION, "remaining"),
-      call(SESSION, "policy"),
+      SESSION ? call(SESSION, "remaining") : Promise.resolve(null),
+      SESSION ? call(SESSION, "policy") : Promise.resolve(null),
       call(POOL, "leaf_count"),
     ]);
     const p = (policy ?? {}) as Record<string, unknown>;

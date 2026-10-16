@@ -41,8 +41,8 @@ const ROOT = join(HERE, "..");
 const SDKB = join(ROOT, "sdk", "build");
 const CIRCB = join(ROOT, "circuits", "build");
 
-export const RPC_URL = process.env.VEIL_RPC_URL ?? "https://soroban-testnet.stellar.org";
-export const PASSPHRASE = Networks.TESTNET;
+import { RPC_URL, PASSPHRASE, deployment } from "./network.ts";
+export { RPC_URL, PASSPHRASE };
 
 // Manifest genesis commitment (leaf 0 of a freshly-deployed pool). Used to seed the
 // tree when RPC event retention has dropped the original deposit event.
@@ -80,11 +80,10 @@ function readJson<T>(p: string): T | null {
 }
 
 export function config() {
-  const dep = readJson<Deployment>(join(SDKB, "veil_deployment.json"));
+  const dep: Deployment = deployment();
   const af = readJson<SessionCfg>(join(SDKB, "agent_fabric.json"));
-  const VEIL = process.env.VEIL_CONTRACT ?? dep?.contract_id;
-  const USDC = process.env.VEIL_USDC ?? dep?.usdc_sac;
-  if (!VEIL || !USDC) throw new Error("missing Kage deployment (sdk/build/veil_deployment.json)");
+  const VEIL = dep.contract_id;
+  const USDC = dep.usdc_sac;
   return { VEIL, USDC, session: af?.session, agentSecret: af?.agentSecret, cap: af?.cap, expiry: af?.expiry };
 }
 

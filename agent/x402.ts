@@ -5,7 +5,7 @@
 // payment proof; the server verifies the payment ON-CHAIN and then runs the tool.
 // This gives real pay-per-call economics for an agent's tool use.
 //
-// Settlement asset is Stellar (testnet) — a tiny native payment to the operator,
+// Settlement asset is Stellar (mainnet) — a tiny native payment to the operator,
 // bound to the quote via a memo-hash of the one-time nonce. Verification is REAL:
 // `verifyPayment` looks the tx up on Horizon and confirms it succeeded, is a
 // payment of >= the quoted amount to the operator, and carries the nonce's memo.
@@ -22,7 +22,7 @@ import {
   Horizon,
 } from "@stellar/stellar-sdk";
 
-const HORIZON = process.env.VEIL_HORIZON ?? "https://horizon-testnet.stellar.org";
+import { HORIZON_URL as HORIZON, PASSPHRASE, NETWORK } from "../sdk/network.ts";
 const memoHash = (nonce: string) => createHash("sha256").update(nonce).digest();
 
 export type Quote = {
@@ -45,7 +45,7 @@ function gc() {
   for (const [nonce, q] of issued) if (q.expiresAt < now) issued.delete(nonce);
 }
 
-export function quoteFor(amount: string, payTo: string, network: Quote["network"] = "testnet"): Quote {
+export function quoteFor(amount: string, payTo: string, network: Quote["network"] = NETWORK): Quote {
   gc();
   const nonce = randomBytes(16).toString("hex");
   const quote: Quote = {
@@ -66,7 +66,7 @@ export async function payX402(secret: string, quote: Pick<Quote, "amount" | "pay
   const kp = Keypair.fromSecret(secret);
   const server = new Horizon.Server(HORIZON);
   const account = await server.loadAccount(kp.publicKey());
-  const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+  const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: PASSPHRASE })
     .addOperation(
       Operation.payment({ destination: quote.payTo, asset: Asset.native(), amount: (Number(quote.amount) / 1e7).toFixed(7) }),
     )
@@ -127,7 +127,7 @@ function parseProofHeader(raw: string | undefined): PaymentProof | null {
 export function x402({
   price,
   payTo,
-  network = "testnet",
+  network = NETWORK,
 }: {
   price: (req: Request) => string;
   payTo: string;

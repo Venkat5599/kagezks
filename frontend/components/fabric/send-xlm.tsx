@@ -1,6 +1,6 @@
 "use client";
 
-// Send XLM on Stellar testnet — the core White Belt requirement.
+// Send XLM on Stellar mainnet — the core White Belt requirement.
 // Works with both Freighter (real wallet) and generated (browser keypair) wallets.
 import { useState, type FormEvent } from "react";
 import { Send, Loader2, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
@@ -64,7 +64,7 @@ async function signWithFreighter(xdr: string): Promise<SignResult> {
   return {
     ok: false,
     error:
-      "Freighter could not sign. Unlock the extension, make sure it is set to Testnet, and approve the signing prompt — then try again.",
+      "Freighter could not sign. Unlock the extension, make sure it is set to Mainnet, and approve the signing prompt — then try again.",
   };
 }
 
@@ -171,10 +171,10 @@ export function SendXlm() {
       <div className="flex items-center gap-2">
         <Send className="h-5 w-5 text-accent" />
         <p className="text-lg font-semibold text-white">Send XLM</p>
-        <span className="text-xs text-neutral-500">· Stellar testnet</span>
+        <span className="text-xs text-neutral-500">· Stellar mainnet</span>
       </div>
       <p className="mt-1 text-sm text-neutral-500">
-        Send XLM to any Stellar testnet address. Sign with your connected wallet.
+        Send XLM to any Stellar mainnet address. Sign with your connected wallet.
       </p>
 
       {result ? (
@@ -198,7 +198,7 @@ export function SendXlm() {
                 </p>
               </div>
               <a
-                href={`https://stellar.expert/explorer/testnet/tx/${result.hash}`}
+                href={`https://stellar.expert/explorer/public/tx/${result.hash}`}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"

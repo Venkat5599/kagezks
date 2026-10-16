@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 export const metadata: Metadata = createMetadata({
   title: "Kage — Live pool dashboard",
   description:
-    "Live on-chain state of the Kage shielded pool for agent payments on Stellar testnet: Merkle root, note count, spent nullifiers, and the proven deposit / withdraw / double-spend-reject flow.",
+    "Live on-chain state of the Kage shielded pool for agent payments on Stellar mainnet: Merkle root, note count, spent nullifiers, and the proven deposit / withdraw / double-spend-reject flow.",
   path: "/dashboard",
 });
 

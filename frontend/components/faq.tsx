@@ -23,12 +23,12 @@ const faqs = [
   {
     question: "Is this real, or a mockup?",
     answer:
-      "Real. The withdraw circuit (3005 constraints) and insert circuit (4910) both prove and verify with snarkjs Groth16. The Soroban pool ran a full deposit → withdraw → rejected double-spend on Stellar testnet, with the BN254 pairing check passing on-chain.",
+      "Real. The withdraw circuit (3005 constraints) and insert circuit (4910) both prove and verify with snarkjs Groth16. The Soroban pool ran a full deposit → withdraw → rejected double-spend on Stellar mainnet, with the BN254 pairing check passing on-chain.",
   },
   {
     question: "What's honestly still a demo limitation?",
     answer:
-      "Testnet only, no real funds. v1 stealth uses a single-derived key (no view/spend separation — a documented stretch). Demo tree depth is 10 (1024 notes); the same circuit scales to depth 20. Fixed-denomination notes keep the anonymity set clean. The ZK and every transaction are real; only the parties are ours.",
+      "Live on mainnet with native XLM; no third-party audit yet (self-review in docs/security-review.md). v1 stealth uses a single-derived key (no view/spend separation — a documented stretch). Demo tree depth is 10 (1024 notes); the same circuit scales to depth 20. Fixed-denomination notes keep the anonymity set clean. The ZK and every transaction are real; only the parties are ours.",
   },
 ];
 

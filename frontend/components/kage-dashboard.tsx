@@ -43,7 +43,7 @@ export function KageDashboard(): ReactNode {
               <p className="text-sm font-semibold leading-tight tracking-tight">Kage <span className="text-accent">Fabric</span></p>
               <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-accent">
                 <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" /></span>
-                live · testnet
+                live · mainnet
               </p>
             </div>
           </div>
@@ -91,7 +91,7 @@ export function KageDashboard(): ReactNode {
               {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : connecting ? "Connecting…" : "Connect Wallet"}
             </button>
             <span className="hidden items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-xs font-semibold text-accent sm:inline-flex">
-              <Eye className="h-3.5 w-3.5" /> Stellar testnet
+              <Eye className="h-3.5 w-3.5" /> Stellar mainnet
             </span>
           </div>
         </div>

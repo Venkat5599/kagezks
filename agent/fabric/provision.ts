@@ -5,7 +5,7 @@
 // user's agent settles through THEIR session (not the shared demo one).
 //
 // Pure @stellar/stellar-sdk (the VPS has no stellar CLI). The relayer (VEIL_FEE_SECRET)
-// pays deploy/tx fees; the owner (the generated wallet's secret, testnet-only) signs the
+// pays deploy/tx fees; the owner (the generated wallet's secret) signs the
 // init + funding auth. Returns { sessionId, token } — the token goes in the agent's
 // Authorization header to route settlement through this session.
 import {
@@ -19,8 +19,7 @@ import { randomBytes } from "node:crypto";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..", "..");
-const RPC_URL = process.env.VEIL_RPC_URL ?? "https://soroban-testnet.stellar.org";
-const PASS = Networks.TESTNET;
+import { RPC_URL, PASSPHRASE as PASS, deployment as netDeployment } from "../../sdk/network.ts";
 const SESSION_WASM = join(ROOT, "contracts", "solvency", "target", "wasm32v1-none", "release", "session_account.wasm");
 const KEYFILE = join(ROOT, "sdk", "build", "agent_keys.json");
 
@@ -61,7 +60,7 @@ function deriveContractId(deployerPub: string, salt: Buffer): string {
 }
 
 function deployment() {
-  const dep = JSON.parse(readFileSync(join(ROOT, "sdk", "build", "veil_deployment.json"), "utf8")) as { contract_id: string; usdc_sac: string };
+  const dep = netDeployment();
   return { POOL: dep.contract_id, USDC: dep.usdc_sac };
 }
 

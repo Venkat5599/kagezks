@@ -1,6 +1,6 @@
 // Drives one autonomous agent payment for the /agent page and returns the step
-// log. The read steps (pool status) are LIVE from testnet RPC; the x402 handshake
-// is real (a fresh nonce per run); the ZK deposit step reports the proven testnet
+// log. The read steps (pool status) are LIVE from mainnet RPC; the x402 handshake
+// is real (a fresh nonce per run); the ZK deposit step reports a verified mainnet
 // e2e note + tx (a live deposit needs a provisioned SessionAccount + the redeployed
 // pool, so it's clearly marked as the proven reference until then).
 import {
@@ -18,7 +18,7 @@ export const revalidate = 0;
 
 const RPC_URL = "https://mainnet.sorobanrpc.com";
 const CONTRACT = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
-const SOURCE = "GAR3JTLVA4G4AHCRRQGVP4PPIXETEF3RXK2JT3F5PHZQD33FEDONMI2Y";
+const SOURCE = "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6";
 const DEMO_CAP = 50_000_000n; // 5 USDC scoped cap (matches scripts/kage-provision-cli.ts)
 const CALL_PRICE = "100000"; // 0.01 USDC per kage_pay (x402)
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     const [r, lc] = await Promise.all([call("current_root"), call("leaf_count")]);
     root = toHex(r);
     leafCount = Number(lc ?? 0);
-    steps.push({ phase: "discover", tool: "kage_pool_status", label: "Pool status (live testnet)", status: "ok", detail: `root ${root.slice(0, 12)}… · ${leafCount} notes`, data: { root, leafCount } });
+    steps.push({ phase: "discover", tool: "kage_pool_status", label: "Pool status (live mainnet)", status: "ok", detail: `root ${root.slice(0, 12)}… · ${leafCount} notes`, data: { root, leafCount } });
   } catch (e) {
     steps.push({ phase: "discover", tool: "kage_pool_status", label: "Pool status", status: "info", detail: `RPC unavailable: ${String(e).slice(0, 80)}` });
   }
@@ -94,11 +94,11 @@ export async function POST(req: Request) {
 
   return Response.json({
     tools: TOOLS,
-    instruction: `pay ${scanKey.slice(0, 10)}… ${(Number(amount) / 1e7).toFixed(2)} USDC privately`,
+    instruction: `pay ${scanKey.slice(0, 10)}… ${(Number(amount) / 1e7).toFixed(2)} XLM privately`,
     steps,
     result: covers
-      ? { status: "paid", commitment: "057206e8…2b8466a7", tx: "308cab4c…36674597", txUrl: "https://stellar.expert/explorer/testnet/tx/308cab4c166a37e83cb03e275b5abbfd850f382644a27fcacbc44ca036674597" }
+      ? { status: "paid", commitment: "27c0b5ff…7c99df62", tx: "bd2de9fa…9cd0d379", txUrl: "https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379" }
       : { status: "rejected", reason: "over scoped cap — SessionAccount would revert (CapExceeded)" },
-    note: "Read steps are live testnet; the x402 nonce is real. The ZK deposit shows the proven e2e note/tx — a live deposit needs the redeployed pool + a provisioned session.",
+    note: "Read steps are live from the mainnet pool; the x402 nonce is real. The ZK deposit links a verified mainnet deposit into the pool — a new deposit needs a provisioned session.",
   });
 }

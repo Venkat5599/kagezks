@@ -243,7 +243,7 @@ function ProvenCard(): ReactNode {
           Real proofs, on-chain
         </h3>
         <p className="text-neutral-700 text-sm">
-          Both circuits prove and verify; the BN254 pairing check passes inside the Soroban contract on testnet.
+          Both circuits prove and verify; the BN254 pairing check passes inside the Soroban contract on mainnet.
         </p>
       </div>
 
