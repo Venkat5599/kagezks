@@ -1,26 +1,39 @@
-# Caddy reverse proxy for the Kage VPS.
-#   caddy run --config deploy/Caddyfile     (or: caddy reload)
+# Caddy block for kageai.me on the Kage VPS (append to /etc/caddy/Caddyfile, then `systemctl reload caddy`).
 #
 # Routes:
-#   /fabric/mcp     -> multi-tenant fabric MCP (kage-fabric, :8403)  ← ZK, DB-driven
-#   everything else -> the Next app            (veil-web,    :3000)
+#   /fabric/mcp, /fabric/health -> agent fabric MCP (pm2: kage-fabric, :8403) — public
+#   /fabric/* (other)           -> same server, only with the X-Kage-Gateway header
+#                                  (provision/run spend relayer XLM; the web app sends it)
+#   everything else             -> the Next.js app on Vercel (owns /mcp/<slug> descriptors)
 #
-# The Next app OWNS /mcp/<slug> (the marketplace descriptor endpoints, e.g.
-# https://kageai.me/mcp/kage) — do NOT route /mcp here or it gets clobbered.
-# handle_path strips /fabric, so /fabric/mcp reaches the fabric server as /mcp
-# (its actual route). Agents connect to https://kageai.me/fabric/mcp.
-# The single-agent demo (:8402) is local-only; expose it here only if you need it.
+# Replace <KAGE_FABRIC_GATEWAY_TOKEN> with the value in deploy/.env and in the Vercel
+# project env (KAGE_FABRIC_GATEWAY_TOKEN). Vercel env: KAGE_FABRIC_URL=https://kageai.me/fabric
 
-kageai.me {
+kageai.me, www.kageai.me {
 	encode gzip
 
-	# Multi-tenant fabric MCP (Streamable HTTP) — the ZK, DB-driven endpoint.
-	handle_path /fabric/* {
+	@fabric_public path /fabric/mcp /fabric/health
+	handle @fabric_public {
+		uri strip_prefix /fabric
 		reverse_proxy localhost:8403
 	}
 
-	# Next app (landing + /agent + /dashboard + /api/* + /mcp/[slug] descriptors).
+	@fabric_gated {
+		path /fabric/*
+		header X-Kage-Gateway <KAGE_FABRIC_GATEWAY_TOKEN>
+	}
+	handle @fabric_gated {
+		uri strip_prefix /fabric
+		reverse_proxy localhost:8403
+	}
+
+	handle /fabric/* {
+		respond "forbidden" 403
+	}
+
 	handle {
-		reverse_proxy localhost:3000
+		reverse_proxy https://kagezks.vercel.app {
+			header_up Host kagezks.vercel.app
+		}
 	}
 }
