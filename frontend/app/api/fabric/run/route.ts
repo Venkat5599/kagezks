@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const FABRIC = (process.env.KAGE_FABRIC_URL || "http://localhost:8403").replace(/\/$/, "");
+// Shared secret the reverse proxy requires on every non-MCP fabric route (provision/run spend relayer XLM).
+const GATEWAY: Record<string, string> = process.env.KAGE_FABRIC_GATEWAY_TOKEN ? { "x-kage-gateway": process.env.KAGE_FABRIC_GATEWAY_TOKEN } : {};
 
 export async function POST(req: Request) {
   let body: { kind?: "workflow" | "api"; slug?: string; input?: unknown; args?: unknown; token?: string };
@@ -20,7 +22,7 @@ export async function POST(req: Request) {
 
   const path = kind === "api" ? "/run/api" : "/run/workflow";
   const payload = kind === "api" ? { slug, args } : { slug, input };
-  const headers: Record<string, string> = { "content-type": "application/json" };
+  const headers: Record<string, string> = { "content-type": "application/json", ...GATEWAY };
   if (token) headers.authorization = `Bearer ${token}`;
 
   try {

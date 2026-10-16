@@ -5,13 +5,15 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const FABRIC = (process.env.KAGE_FABRIC_URL || "http://localhost:8403").replace(/\/$/, "");
+// Shared secret the reverse proxy requires on every non-MCP fabric route (provision/run spend relayer XLM).
+const GATEWAY: Record<string, string> = process.env.KAGE_FABRIC_GATEWAY_TOKEN ? { "x-kage-gateway": process.env.KAGE_FABRIC_GATEWAY_TOKEN } : {};
 
 export async function POST(req: Request) {
   let body: { ownerAddress?: string; ownerSecret?: string; amount?: string };
   try { body = await req.json(); } catch { return Response.json({ ok: false, error: "invalid JSON" }, { status: 400 }); }
   if (!body.ownerAddress || !body.ownerSecret) return Response.json({ ok: false, error: "ownerAddress and ownerSecret required" }, { status: 400 });
   try {
-    const r = await fetch(`${FABRIC}/provision`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const r = await fetch(`${FABRIC}/provision`, { method: "POST", headers: { "content-type": "application/json", ...GATEWAY }, body: JSON.stringify(body) });
     const data = await r.json().catch(() => ({ ok: false, error: `fabric ${r.status}` }));
     return Response.json(data, { status: r.status });
   } catch (e) {

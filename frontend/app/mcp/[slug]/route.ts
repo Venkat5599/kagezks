@@ -18,6 +18,8 @@ export const runtime = "nodejs";
 
 const ORIGIN = process.env.KAGE_ORIGIN || "http://localhost:3000";
 const FABRIC = (process.env.KAGE_FABRIC_URL || "http://localhost:8403").replace(/\/$/, "");
+// Shared secret the reverse proxy requires on every non-MCP fabric route (provision/run spend relayer XLM).
+const GATEWAY: Record<string, string> = process.env.KAGE_FABRIC_GATEWAY_TOKEN ? { "x-kage-gateway": process.env.KAGE_FABRIC_GATEWAY_TOKEN } : {};
 const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] });
 
 type WfRow = { slug: string | null; name: string; description: string | null; input_variables?: { name: string; required?: boolean; description?: string }[] };
@@ -51,7 +53,7 @@ function buildServer(row: McpServerRow, auth: string | null, workflows: WfRow[])
   const runFabric = async (path: string, body: unknown) => {
     const r = await fetch(`${FABRIC}${path}`, {
       method: "POST",
-      headers: { "content-type": "application/json", ...(auth ? { authorization: auth } : {}) },
+      headers: { "content-type": "application/json", ...GATEWAY, ...(auth ? { authorization: auth } : {}) },
       body: JSON.stringify(body),
     });
     return r.json();
