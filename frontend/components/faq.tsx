@@ -28,7 +28,7 @@ const faqs = [
   {
     question: "What's honestly still a demo limitation?",
     answer:
-      "Live on mainnet with native XLM; no third-party audit yet (self-review in docs/security-review.md). v1 stealth uses a single-derived key (no view/spend separation — a documented stretch). Demo tree depth is 10 (1024 notes); the same circuit scales to depth 20. Fixed-denomination notes keep the anonymity set clean. The ZK and every transaction are real; only the parties are ours.",
+      "Live on mainnet with native XLM; no third-party audit yet (maintainer self-review; see the README limitations). v1 stealth uses a single-derived key (no view/spend separation — a documented stretch). Demo tree depth is 10 (1024 notes); the same circuit scales to depth 20. Fixed-denomination notes keep the anonymity set clean. The ZK and every transaction are real; only the parties are ours.",
   },
 ];
 

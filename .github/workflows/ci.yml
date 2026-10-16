@@ -40,7 +40,7 @@ jobs:
         run: npm run build
 
   record-deployment:
-    # The app is served from a VPS (pm2 + nginx, see deploy/README.md), so this job
+    # The app is served from a VPS (fabric on pm2 + Caddy, see deploy/Caddyfile; web on Vercel), so this job
     # does not perform the deploy itself. It records the environment against the
     # commit once tests and the build pass, which is what surfaces the live URL in
     # the repository's Environments panel and the deployment history.

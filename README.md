@@ -1,567 +1,368 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/🕶️-Kage_Private_Agent_Payments-7C3AED?style=for-the-badge&labelColor=0a0f12" alt="Kage" />
-</p>
+<div align="center">
 
-<h1 align="center">Kage</h1>
+# KAGE
 
-<p align="center">
-  <strong>Private Payments for Autonomous AI Agents on Stellar</strong><br/>
-  <em>A scoped session key the agent can't drain — settling through a ZK shielded pool that hides who it paid and how much.</em>
-</p>
+### Private payments for AI agents on Stellar: a session key the agent can't drain, settling through a zero-knowledge pool that hides who it paid.
 
-<p align="center">
-  <a href="https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV">
-    <img src="https://img.shields.io/badge/🟢_LIVE-Stellar_Mainnet-7C3AED?style=for-the-badge" alt="Live on Stellar mainnet" />
-  </a>
-  <a href="https://kageai.me">
-    <img src="https://img.shields.io/badge/🌐_DEMO-kageai.me-00D4FF?style=for-the-badge" alt="Live Demo" />
-  </a>
-  <a href="https://youtu.be/s4WmqpLhH4s">
-    <img src="https://img.shields.io/badge/▶_VIDEO-Watch_Demo-FF0000?style=for-the-badge&labelColor=0a0f12" alt="Video Demo" />
-  </a>
-  <a href="https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform">
-    <img src="https://img.shields.io/badge/📝_REVIEW-Leave_Feedback-22C55E?style=for-the-badge&labelColor=0a0f12" alt="Give Feedback" />
-  </a>
-  <img src="https://img.shields.io/badge/ZK-Groth16_·_BN254-00FF88?style=for-the-badge" alt="ZK" />
-  <img src="https://img.shields.io/badge/Soroban-Rust-363636?style=for-the-badge" alt="Soroban" />
-</p>
+[![Live](https://img.shields.io/badge/live-kageai.me-7C3AED)](https://kageai.me)
+[![Network](https://img.shields.io/badge/Stellar-mainnet-000000)](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV)
+[![CI](https://img.shields.io/github/actions/workflow/status/Venkat5599/kagezks/ci.yml?branch=main&label=CI)](https://github.com/Venkat5599/kagezks/actions)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+![Tests](https://img.shields.io/badge/contract%20tests-9%20passing-2ecc71)
+![Stack](https://img.shields.io/badge/Soroban%20·%20Groth16%2FBN254%20·%20Circom%20·%20MCP-14151a)
 
----
+**[ Live app ↗ ](https://kageai.me)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ Honesty table ↓ ](#whats-real-vs-pending--the-honesty-table)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
 
-## Level 1 - White Belt checklist
+</div>
 
-Every White Belt requirement, mapped to the exact file that implements it and the
-on-chain proof that it ran.
+Give an AI agent a raw Stellar key and two things go wrong at once. It can move everything you own, and every payment it makes is public: each counterparty, each amount, a map of everything your treasury touches. Kage fixes both. The agent signs with a **scoped session key** that a Soroban account contract confines to one action (deposit into the pool, up to a cap, before an expiry), and every payment settles through a **Groth16 shielded pool** where the payee later proves, in zero knowledge, that it owns *some* note without revealing which. The chain sees commitments, random ephemeral keys, a Merkle root and nullifier hashes. It never sees who paid whom.
 
-| # | Requirement | Status | Implementation | Proof / verify |
-|---|-------------|--------|----------------|----------------|
-| 1 | Freighter wallet set up | ✅ | `frontend/lib/wallet.tsx:99` — `tryFreighter()` uses the official `@stellar/freighter-api` adapter (`isConnected` → `requestAccess` → `getNetwork`), with a `window.freighterApi` fallback at `:75` for Freighter ≤v5 | Click **Connect Freighter** on [kageai.me/dashboard](https://kageai.me/dashboard) |
-| 2 | Stellar network | ✅ | **Mainnet**: `Networks.PUBLIC` in `frontend/lib/kage-chain.ts`; agent backend reads `sdk/network.ts` (default mainnet); Horizon `https://horizon.stellar.org`; Soroban RPC `https://mainnet.sorobanrpc.com` | [Network details](#network-details) |
-| 3 | Wallet **connect** | ✅ | `frontend/lib/wallet.tsx:161` — `connect()`, which also rejects a Freighter account not on Mainnet (PUBLIC); UI button in `frontend/components/fabric/dashboard-home.tsx:184` | Dashboard → *Connect Freighter* |
-| 4 | Wallet **disconnect** | ✅ | `frontend/lib/wallet.tsx:212` — `disconnect()` clears address + local state; UI button in `dashboard-home.tsx:214` | Dashboard → *Disconnect* |
-| 5 | Fetch XLM balance | ✅ | `frontend/app/api/wallet-status/route.ts` — reads the `native` balance for the connected address straight from Horizon mainnet; unfunded accounts return `funded:false` | `curl "https://kageai.me/api/wallet-status?address=<G...>"` |
-| 6 | Display balance in UI | ✅ | `dashboard-home.tsx:191-193` — large `X.XX XLM` figure plus a *funded on mainnet* / *not funded yet* state | x402 Payments panel on the dashboard |
-| 7 | Send an **XLM transaction** | ✅ | `frontend/components/fabric/send-xlm.tsx:71` — the **Send XLM** form on the dashboard: `Operation.payment` with `Asset.native()` (`:107`), built for `Networks.PUBLIC`, signed by Freighter (or the generated keypair) and submitted. Also used agent-side by `payX402()` in [`agent/x402.ts`](./agent/x402.ts) for x402-gated API calls | Dashboard → **Send XLM** |
-| 8 | Transaction feedback — success / failure | ✅ | Both states are explicit: success panel at `send-xlm.tsx:197`, failure message at `:221` (invalid address, unfunded account, rejected signature, and ledger `ERROR` results are each reported) | Send to a bad address to see the failure state |
-| 9 | Transaction hash shown to the user | ✅ | `send-xlm.tsx:197` prints the **TX hash**, and `:201` links it to `stellar.expert/explorer/public/tx/<hash>` | [Deposit TX](https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379) · [Withdraw TX](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
-| 10 | Public GitHub repo | ✅ | <https://github.com/Venkat5599/kagezks> | Public, MIT licensed |
-| 11 | README with project description | ✅ | [Project Overview](#-project-overview) | — |
-| 12 | README with local setup instructions | ✅ | [Deploy Your Own](#deploy-your-own) — clone → install → build circuits → deploy contracts → run | — |
-| 13 | Real deployed application | ✅ | <https://kageai.me> · <https://kagezks.vercel.app> (Next.js on Vercel + Neon Postgres; fabric MCP host: see [`deploy/README.md`](./deploy/README.md)) | Load the site |
-| 14 | Screenshots — connected wallet, balance, tx result | ✅ | [Level 1 — required states](#level-1--required-states) — three captures, plus the tx hash from shot 3 verified on Horizon | [Verify that tx ↗](https://stellar.expert/explorer/testnet/tx/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) |
-
-**Wallet note:** the dashboard offers two paths — *Connect Freighter* (requirement 1, no key
-material ever leaves the extension) and *Generate Session Account Wallet*, which creates a
-fresh keypair in the browser; send it a little XLM and a reviewer without the extension
-installed can still exercise the whole flow end to end.
-
----
-
-## 📋 Project Overview
-
-**Kage** lets an AI agent pay in USDC on Stellar **without holding your key** and
-**without leaking a thing**. The agent spends under a *scoped, revocable session
-key* it can never drain or redirect, and every payment settles through a
-**zero-knowledge shielded pool** — so the amount, the recipient, and the
-agent→payee link are all hidden on-chain.
-
-### What It Does
-
-- **Autonomy without custody** — a Soroban account contract delegates one agent session key bounded by policy in `__check_auth`
-- **Hides the recipient** — Umbra-style stealth notes; each payee is paid at a fresh one-time address
-- **Hides the amount + link** — a Tornado/Privacy-Pools-style ZK pool breaks the deposit↔withdrawal trail
-- **Stops double-claims** — per-note nullifier reverts any replay on-chain
-- **Trustless tree** — every deposit carries a Groth16 insert proof; the contract verifies the new root, no custodian
-
-### Key Innovation
-
-On a transparent ledger, handing an agent a raw key publishes **every
-counterparty, every amount, and a map of everything your treasury touches** — and
-lets the agent (or an attacker) **drain you**. Kage fixes *both*: scope is enforced
-by the account contract, privacy by math and the chain.
+The pool is live on Stellar mainnet and holds real XLM. The BN254 pairing check runs inside the contract, on chain, on every deposit and every withdrawal.
 
 ```
-Raw key on transparent chain:  Agent → Wallet → Ledger   (drainable + fully public)
-With Kage:                     Agent → Scoped Session Key → ZK Pool → Ledger
-                               (can't drain · can't redirect · who/how-much sealed)
+SCOPED  ≠  CUSTODIED          the agent can pay, it cannot drain or redirect
+PAID    ≠  LINKED             a withdrawal never names the deposit it spends
+PROVEN  ≠  TRUSTED            the pool verifies every root change itself; nobody vouches for the tree
+```
+
+## Live status
+
+| Surface | Status | The evidence |
+|---|---|---|
+| Shielded pool (mainnet) | ✅ live | [`CAEEKIM…GIXLV`](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) — `leaf_count = 32` at ledger 64976394 |
+| Mainnet transactions | ✅ 101 / 101 successful | 20 wallets × 5 txs + 1 fee-sponsored tx, re-read from Horizon by [`scripts/verify-mainnet.sh`](scripts/verify-mainnet.sh) |
+| Web app | ✅ live | [kageai.me](https://kageai.me) — Next.js on Vercel, Neon Postgres |
+| Agent fabric (MCP) | ✅ live | `https://kageai.me/fabric/mcp` answers `initialize`; `/fabric/health` reports the mainnet pool |
+| Agent settlement on mainnet | ⏳ pending | needs a mainnet SessionAccount provisioned; see the [honesty table](#whats-real-vs-pending--the-honesty-table) |
+
+## The 20-second pitch
+
+Agents are starting to pay for things: APIs, data, compute, each other. On a public ledger that is a privacy leak by default, and handing an agent a key is a custody risk by default. The usual answer is a server that holds the key and promises to behave.
+
+**Kage takes the server out.** Scope is enforced by the account contract's `__check_auth`. Privacy is enforced by a zero-knowledge proof the pool verifies itself. The agent never holds anything it could drain, and an observer of the ledger never learns the payee.
+
+```
+Raw key on a public chain:   Agent ──► Wallet ──► Ledger            drainable · fully public
+
+With Kage:                   Agent ──► SessionAccount ──► ZK pool ──► Ledger
+                                       (cap · expiry ·    (insert proof     (commitments, R,
+                                        pool-only)         + amount bound)   roots, nullifiers)
+
+Payee, later:                scan R with view key ──► prove membership in ZK ──► withdraw to a one-time address
 ```
 
 ---
 
-## 🌐 Why This Matters
+## Table of contents
 
-### The problem, precisely
-
-| Hand an agent a raw key on a transparent chain… | Kage fixes it with… |
-|---|---|
-| The agent (or an attacker) can move **all** your funds | A scoped session key: only `deposit`, only USDC → pool, up to a cap, before an expiry |
-| Every payment publishes **counterparty + amount** | Amounts and the agent→payee link hidden in a ZK pool |
-| Recurring transfers **deanonymise** everyone the agent pays | Each payee is paid at a fresh one-time stealth address |
-| "Just encrypt it / trust our server" still **trusts a custodian** | Scope + unlinkability enforced by math and the chain, not a custodian |
-
-### Why ZK is load-bearing
-
-- **Remove the pool proof** → each withdrawal must name the agent's deposit → the whole payment graph is public → no privacy.
-- **Remove the nullifier** → a note is claimable twice → the pool drains.
-- **Remove the recipient binding** → a relayer/observer front-runs a payee's withdrawal and redirects the funds.
+- [Verify every claim in one command](#verify-every-claim-in-one-command)
+- [Screenshots](#screenshots)
+- [What Kage is NOT](#what-kage-is-not)
+- [The problem I set out to solve](#the-problem-i-set-out-to-solve)
+- [What I built](#what-i-built)
+- [Architecture](#architecture)
+- [The payment loop, step by step](#the-payment-loop-step-by-step)
+- [Where the guarantee is enforced](#where-the-guarantee-is-enforced)
+- [Why the ZK is load-bearing](#why-the-zk-is-load-bearing)
+- [Engineering decisions & the traps that taught me something](#engineering-decisions--the-traps-that-taught-me-something)
+- [What's real vs pending — the honesty table](#whats-real-vs-pending--the-honesty-table)
+- [Attack → test](#attack--test)
+- [The app](#the-app)
+- [Limitations](#limitations)
+- [Security](#security)
+- [Tech stack](#tech-stack)
+- [Project layout](#project-layout)
+- [Run it yourself](#run-it-yourself)
+- [How it's deployed](#how-its-deployed)
+- [Roadmap](#roadmap)
+- [Tests](#tests)
+- [License](#license)
 
 ---
 
-## 🚀 Deployment Information
+## Verify every claim in one command
 
-### Deployed Application
-
-| Item | Value |
-|------|-------|
-| **Live app** | <https://kageai.me> |
-| **Dashboard (wallet · balance · transactions)** | <https://kageai.me/dashboard> |
-| **API Reference** | <https://kageai.me/docs> |
-| **Network Status** | <https://kageai.me/status> |
-| **Stealth tool (meta-address + note generator)** | <https://kageai.me/tools/stealth> |
-| **Balance API** | `GET https://kageai.me/api/wallet-status?address=<G...>` |
-| **Hosting** | Next.js app on Vercel (+ Neon Postgres); agent fabric MCP on a VPS under pm2 behind Caddy, served at `kageai.me/fabric/mcp` ([`deploy/README.md`](./deploy/README.md)) |
-| **CI** | GitHub Actions — tests, build, typecheck ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) |
-| **Network** | Stellar **Mainnet** |
-
-### Live Contracts on Stellar Mainnet
-
-| Contract | Address | Explorer |
-|----------|---------|----------|
-| **Kage Shielded Pool** | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` | [✅ View](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) |
-| **Settlement asset (native XLM SAC)** | `CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA` | [✅ View](https://stellar.expert/explorer/public/contract/CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA) |
-
-### Network Details
-
-```
-Network:     Stellar Mainnet (Public Global Stellar Network ; September 2015)
-RPC URL:     https://mainnet.sorobanrpc.com
-Explorer:    https://stellar.expert/explorer/public
-Asset:       native XLM (Stellar Asset Contract)
-Live demo:   https://kageai.me
-```
-
-### Deploy Your Own
+Every mainnet figure in this README is re-derivable without a key. The script pulls each transaction hash from the proof files, asks Horizon whether it succeeded, then simulates a read of the pool's live leaf count:
 
 ```bash
-# 1. Clone
-git clone https://github.com/Venkat5599/kagezks.git
-cd kagezks
+bun install
+bash scripts/verify-mainnet.sh
+```
 
-# 2. Install (bun; Rust GNU toolchain on Windows, circom, snarkjs, stellar CLI)
+Real output, run while writing this README:
+
+```
+mainnet txs: 101/101 successful on Horizon (0 failed or missing)
+pool CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV
+  leaf_count = 32  (ledger 64976394)
+```
+
+The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-mainnet-proof.txt) (20 wallets, each funded → deposit → withdraw → two merges) and [`scripts/fee-sponsor-proof.txt`](scripts/fee-sponsor-proof.txt) (one gasless payment through a fee bump). One of each, if you would rather click:
+
+| Step | What the chain checked | Transaction |
+|---|---|---|
+| Deposit | Groth16 insert proof (BN254 pairing), amount bound into the commitment, XLM pulled into the pool | [`bd2de9fa…9cd0d379`](https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379) |
+| Withdraw | Groth16 membership proof, nullifier unused, payout address bound into the proof | [`5f3235cc…19461793`](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
+| Fee-sponsored payment | user signs with fee 0, sponsor wraps it in a fee bump | [`027cd20c…cd979397`](https://stellar.expert/explorer/public/tx/027cd20c2b04230ad8cfcb94962269bd815c51c29d175b40c3693f2fcd979397) |
+
+## Screenshots
+
+**Landing** — live at [kageai.me](https://kageai.me), captured October 2026.
+
+![Kage landing page on mainnet](docs/screenshots/mainnet-landing.webp)
+
+**Network status** — `/status` re-checks the mainnet RPC, the latest ledger and both contracts on every load (ledger 64976415, protocol v29 at capture).
+
+![Kage network status page showing mainnet RPC healthy](docs/screenshots/mainnet-status.webp)
+
+## What Kage is NOT
+
+- **Not a custodial wallet.** No server holds a key that can move user funds. The fabric's relayer key pays network fees; the SessionAccount policy decides what value can move.
+- **Not a mixer you send money through and hope.** The pool's state transitions are each checked by a proof on chain. A deposit that does not prove a correct tree append is rejected; a withdrawal that does not prove membership is rejected.
+- **Not encryption on top of a server.** "Encrypt it and trust our backend" still trusts a backend. Here, scope lives in the account contract and unlinkability lives in the proof.
+- **Not audited.** The contracts have a maintainer self-review and unit tests, not a third-party audit. That is the next milestone, and the [limitations](#limitations) say exactly what it would cover.
+
+## The problem I set out to solve
+
+| Hand an agent a raw key on a public chain… | Kage's answer |
+|---|---|
+| The agent, or whoever compromises it, can move **all** your funds | A SessionAccount: only `deposit`, only into the configured pool, up to a cap, before an expiry |
+| Every payment publishes **counterparty and amount** | The agent→payee link is broken by a ZK membership proof at withdrawal |
+| Paying the same payee twice links them forever | Each payment goes to a fresh one-time stealth address derived by ECDH |
+| "Trust our server" | Scope enforced by `__check_auth`; the tree enforced by proofs the contract verifies |
+
+## What I built
+
+- **Veil pool** (`contracts/solvency/contracts/veil`) — a Soroban shielded pool. `deposit` verifies a Groth16 *insert* proof that the new Merkle root correctly appends the commitment and binds the deposited amount; `withdraw` verifies a Groth16 *membership* proof and spends a nullifier.
+- **SessionAccount** (`contracts/solvency/contracts/session`) — a custom Soroban account. Its `__check_auth` accepts the agent's ed25519 signature only for `Veil.deposit` and a token transfer into the pool, under the remaining cap, before expiry. The owner can `extend` or `revoke`.
+- **Two circuits** (`circuits/`) — `veil_insert.circom` (append proof with amount binding) and `veil_withdraw.circom` (membership, nullifier, amount range, recipient binding).
+- **SDK** (`sdk/`) — stealth notes over X25519, the Poseidon tree, snarkjs → Soroban BN254 byte conversion, and `payThroughSession`, which builds the proof and signs the Soroban auth entry with the agent's session key.
+- **Agent fabric** (`agent/`) — an MCP server agents connect to. Tools include `kage_pool_status`, `kage_quote`, `kage_budget`, `kage_pay`, `workflow_list` and `workflow_run`; paid tools are gated by an x402-style Stellar payment.
+- **Web app** (`frontend/`) — landing, live pool dashboard, API/MCP/workflow builder, status page, and a client-side stealth address tool.
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│ OWNER — funds the SessionAccount, sets the policy, can revoke            │
+└───────────────────────────────┬──────────────────────────────────────────┘
+                                │ delegates ONE ed25519 session key
+                                ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ SESSIONACCOUNT (Soroban custom account)                                   │
+│   __check_auth: agent may ONLY                                            │
+│     · call deposit on the configured pool        else ContextNotAllowed   │
+│     · move the token, into that pool only        else BadPayout           │
+│     · up to the remaining cap                    else CapExceeded         │
+│     · before expiry                              else Expired             │
+└───────────────────────────────┬──────────────────────────────────────────┘
+                                │ agent signs the Soroban auth entry
+                                ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ VEIL POOL — mainnet CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV │
+│   deposit(C, R, amount, proof)          withdraw(proof, root, nf, payout)  │
+│     · old_root == current else #6         · root seen before else #8       │
+│     · leaf_index == count else #7         · nullifier unused else #9       │
+│     · insert proof (BN254) else #5        · membership proof else #5       │
+│     · pull XLM via SAC                    · pay one-time stealth address   │
+│   chain stores: commitments · R · roots · nullifier hashes                 │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+| Component | Where | Role |
+|---|---|---|
+| Veil pool | `contracts/solvency/contracts/veil/src/lib.rs` | tree root, root history, nullifier set, on-chain Groth16 verification |
+| SessionAccount | `contracts/solvency/contracts/session/src/lib.rs` | policy-gated auth for the agent key |
+| Insert circuit | `circuits/veil_insert.circom` | proves `old_root → new_root` appends `commitment` at `leaf_index`, binds `amount` |
+| Withdraw circuit | `circuits/veil_withdraw.circom` | proves membership, derives the nullifier, binds recipient and amount |
+| On-chain engine | `sdk/kage-onchain.ts` | proof generation, auth-entry signing, submission |
+| Network config | `sdk/network.ts` | one switch for passphrase, RPC, Horizon and deployment IDs (default mainnet) |
+| Fabric server | `agent/fabric-server.ts` | MCP over Streamable HTTP, provisioning, workflow runs |
+
+**HTTP surface** (all on `kageai.me`):
+
+| Route | What it does |
+|---|---|
+| `POST /fabric/mcp` | MCP endpoint for agents (public; settling still needs a per-agent bearer token) |
+| `GET /fabric/health` | fabric liveness + the pool it is bound to |
+| `GET /api/stats` | live pool read (leaf count) + builder totals |
+| `GET /api/wallet-status?address=G…` | native XLM balance from Horizon mainnet |
+| `GET /status` | RPC, ledger and contract health, re-checked per load |
+
+## The payment loop, step by step
+
+1. **Publish.** The payee publishes a scan key `V` once (the `/tools/stealth` page generates one in the browser).
+2. **Derive.** The agent picks a random `r`, computes `shared = r·V`, and derives the note secrets and commitment from `shared`. Only the ephemeral `R = r·G` is announced.
+3. **Prove the append.** The agent builds the new Merkle root off chain and a Groth16 insert proof over `[old_root, new_root, commitment, leaf_index, amount]`.
+4. **Deposit through the session.** The agent signs the Soroban auth entry with its session key. `__check_auth` on the SessionAccount checks method, destination, cap and expiry; the pool checks the proof with the BN254 host functions and pulls the XLM.
+5. **Recognise.** The payee scans announced `R` values, recomputes `shared = v·R`, and finds the leaves that are theirs.
+6. **Withdraw unlinkably.** The payee proves membership of *some* leaf under a known root, reveals only a nullifier hash, and binds a fresh one-time payout address into the proof.
+
+## Where the guarantee is enforced
+
+| Guarantee | Enforced in | Covered by |
+|---|---|---|
+| Agent can only deposit into the pool | `contracts/solvency/contracts/session/src/lib.rs` `__check_auth` → `ContextNotAllowed`, `BadPayout` | `init_and_policy` |
+| Agent cannot exceed its cap or outlive its expiry | `__check_auth` → `CapExceeded`, `Expired` | `extend_updates_cap_and_expiry`, `revoke_zeros_expiry` |
+| Policy cannot be re-initialised by someone else | `init` → `AlreadyInitialized` | `init_is_idempotent` (session) |
+| Tree only advances by a correct append | `contracts/solvency/contracts/veil/src/lib.rs` `deposit` → `StaleRoot`, `BadLeafIndex`, `InvalidProof` | `deposit_rejects_bad_leaf_index` |
+| No proof verification without a registered key | `deposit` → `NoVerificationKey` | `deposit_without_vk_fails` |
+| Withdrawals only against a real past root | `withdraw` → `UnknownRoot` | `withdraw_rejects_unknown_root` |
+| A note is spent once | `withdraw` → `NullifierUsed (#9)` | mainnet: every withdraw in the proof file spends a distinct nullifier |
+| What is deposited is exactly what can be withdrawn | amount is a public input of the insert proof | under-funded deposits fail to prove (constraint violation) |
+
+## Why the ZK is load-bearing
+
+- **Remove the membership proof** and each withdrawal has to name the deposit it spends. The agent's whole payment graph becomes public.
+- **Remove the nullifier** and a note can be claimed twice, which drains the pool.
+- **Remove the recipient binding** and anyone watching the mempool can copy a payee's proof and redirect the payout.
+- **Remove the insert proof** and someone has to be trusted to compute the tree. Stellar's host Poseidon2 uses different constants from circomlib's Poseidon, so the contract cannot recompute the circuit's root itself; the insert proof is how it stays trustless anyway.
+
+## Engineering decisions & the traps that taught me something
+
+- **No on-chain Poseidon, so the tree is proven instead of recomputed.** The contract checks `old_root == current`, runs one pairing check, and advances. It costs a second circuit, and it removes the custodian.
+- **The amount had to go into the insert proof.** An early version accepted a commitment and an amount separately, which meant the pool's balance and the notes inside it could drift apart. Binding `amount` as a public input made "deposited = withdrawable" arithmetic rather than bookkeeping.
+- **Custom-account signatures are built by hand.** The SessionAccount takes a `BytesN<64>` ed25519 signature over the auth payload, so `sdk/kage-onchain.ts` constructs the signature `ScVal` to match the contract exactly. This was the hop that took longest to get right.
+- **RPC event retention is not a database.** Public RPC drops deposit events after a window, which broke tree reconstruction for the next depositor. The SDK keeps a local leaf store and seeds from the known genesis leaf when events have aged out.
+- **One network switch.** The backend read a testnet passphrase in four files while the web app signed for mainnet. `sdk/network.ts` now owns passphrase, RPC, Horizon and deployment IDs, defaulting to mainnet.
+- **The public fabric cannot be a faucet.** Provisioning and workflow runs spend the relayer's XLM, so the reverse proxy only forwards them with a gateway token the web app holds; the MCP endpoint itself stays public, and settling still requires a per-agent bearer token.
+
+## What's real vs pending — the honesty table
+
+| Claim | Status | Detail |
+|---|---|---|
+| Pool deployed on mainnet, verifying Groth16 on chain | ✅ real | `CAEEKIM…GIXLV`, 32 leaves at ledger 64976394 |
+| 101 mainnet transactions | ✅ real | all successful on Horizon; `scripts/verify-mainnet.sh` re-checks them |
+| Those 20 mainnet wallets are outside users | ❌ no | they were funded and driven by our onboarding run to exercise the full lifecycle; outside users are a sprint goal |
+| Agent pays through a SessionAccount on mainnet | ⏳ pending | the SessionAccount is unit-tested and was exercised on the development network; no mainnet instance is provisioned yet |
+| Fabric MCP live | ✅ real | `kageai.me/fabric/mcp`, bound to the mainnet pool |
+| Server-side proving key matches the mainnet verifying key | ⏳ unconfirmed | first agent deposit through the fabric will prove or disprove it |
+| Third-party audit | ❌ not done | maintainer self-review only |
+| Multi-party trusted setup | ❌ not done | phase 1 reuses a public powers-of-tau (pot14); phase 2 is single-party |
+| Builder metrics on the dashboard | ⚠️ reset | the database was re-provisioned in October 2026; counts restart at zero |
+
+## Attack → test
+
+| The abuse | What answers it |
+|---|---|
+| Agent tries to send funds anywhere but the pool | `__check_auth` → `BadPayout` / `ContextNotAllowed` (`init_and_policy`) |
+| Agent keeps spending after the owner revokes | `revoke` zeroes expiry → `Expired` (`revoke_zeros_expiry`) |
+| Attacker re-initialises the policy with their own key | `AlreadyInitialized` (`init_is_idempotent`) |
+| Depositor submits a root that skips or overwrites a leaf | `BadLeafIndex` / `StaleRoot` / `InvalidProof` (`deposit_rejects_bad_leaf_index`) |
+| Withdrawal against a fabricated root | `UnknownRoot` (`withdraw_rejects_unknown_root`) |
+| Same note withdrawn twice | `NullifierUsed (#9)` |
+| Mempool watcher copies a withdrawal proof to redirect it | recipient is a public input of the proof → `RecipientMismatch` / `InvalidProof` |
+| Stranger calls `/fabric/provision` to burn relayer XLM | reverse proxy returns 403 without the gateway token (checked live) |
+
+## The app
+
+[kageai.me](https://kageai.me) is the landing page, a live pool dashboard (`/dashboard`) with Freighter connect and a browser-generated session wallet, a builder for x402-priced APIs, MCP servers and workflows, a network status page (`/status`), an API reference (`/docs`), and a client-side stealth address tool (`/tools/stealth`). Freighter must be set to Mainnet; the connect flow refuses any other network.
+
+## Limitations
+
+- **Deposit amounts are public.** The amount is a public input of the insert proof and appears in the deposit event. Fixed denominations hide it in practice; enforcing them in the contract is week 2 of the [sprint scope](docs/SPRINT-SCOPE.md).
+- **Single-party phase-2 setup.** A malicious phase-2 participant could forge proofs. A multi-party ceremony is week 3.
+- **Root and nullifier sets grow without bound.** No pruning or archival yet.
+- **Single-key stealth.** v1 derives notes from one scan key; there is no separate view and spend key.
+- **Tree depth 10** (1024 notes) in this deployment; the same circuit scales to depth 20.
+
+## Security
+
+The contracts have been through a maintainer self-review covering ZK soundness (verification uses Soroban's native BN254 host functions: `g1_msm`, `g1_add`, `pairing_check`), double-spend protection, ordering of state writes before token transfers, and the SessionAccount policy. No critical issues were found; the informational findings are the limitations above. It is not a substitute for an external audit. Report issues privately through GitHub security advisories on this repository.
+
+## Tech stack
+
+- **Contracts:** Soroban (Rust, `soroban-sdk` 26)
+- **Zero knowledge:** Circom + snarkjs, Groth16 over BN254, circomlib Poseidon
+- **Stealth notes:** X25519 ECDH one-time addresses
+- **SDK / agent:** Bun, TypeScript, `@stellar/stellar-sdk`, `@noble/curves`, Model Context Protocol
+- **Web:** Next.js 16, React 19, Tailwind v4, Freighter, Neon Postgres
+- **Hosting:** Vercel (web), pm2 + Caddy on a VPS (fabric)
+
+## Project layout
+
+```
+kagezks/
+├── circuits/            veil_insert.circom · veil_withdraw.circom · build/ (vks, sample proofs)
+├── contracts/solvency/  Soroban workspace: veil (pool) + session (scoped account), with tests
+├── sdk/                 kage.ts (notes, tree) · kage-onchain.ts · kage-convert.ts · network.ts
+├── agent/               fabric-server.ts (MCP) · fabric/ (auth, catalog, provision, steps) · x402.ts
+├── frontend/            Next.js app served at kageai.me
+├── scripts/             deploy-mainnet.sh · verify-mainnet.sh · mainnet proof files
+├── deploy/              Caddyfile · pm2 ecosystem · .env.example
+└── docs/                SPRINT-SCOPE.md · screenshots/
+```
+
+## Run it yourself
+
+```bash
+git clone https://github.com/Venkat5599/kagezks.git && cd kagezks
 bun install
 
-# 3. Build circuits (reuses the Hermez pot14 ptau)
+# contracts + tests
+cd contracts/solvency && cargo test && cd ../..
+
+# circuits (needs circom; reuses the pot14 powers of tau)
 bun run circuit:withdraw && bun run circuit:insert
-# (one-time) snarkjs groth16 setup + zkey contribute + export verificationkey for each
+bun run convert                      # snarkjs vk/proof -> Soroban BN254 bytes
 
-# 4. Build + deploy the Soroban contracts
-cd contracts/solvency && stellar contract build && cd ../..
-bun run convert          # snarkjs vk/proof -> Soroban BN254 bytes
+# agent fabric against mainnet (fee payer secret in deploy/.env, see deploy/.env.example)
+set -a; . deploy/.env; set +a
+bun run fabric:serve                 # http://localhost:8403/mcp
 
-# 5. Provision a scoped agent session (autonomy without custody)
-bun run agent:provision  # deploy session account, delegate agent key, set policy + cap, fund it
+# web app
+cd frontend && npm install && npm run dev
 ```
 
----
+Set `VEIL_NETWORK=testnet` to point the backend at the development network instead.
 
-## 📖 How to Use
+## How it's deployed
 
-### The end-to-end flow
+- **Web:** `frontend/` on Vercel, with `DATABASE_URL` (Neon), `KAGE_FABRIC_URL=https://kageai.me/fabric` and `KAGE_FABRIC_GATEWAY_TOKEN`.
+- **Fabric:** `bun run agent/fabric-server.ts` under pm2 on a VPS, env from `deploy/.env`.
+- **Edge:** Caddy terminates `kageai.me`, sends `/fabric/mcp` and `/fabric/health` to the fabric, gates the rest of `/fabric/*` on the gateway token, and proxies everything else to Vercel. The block is in [`deploy/Caddyfile`](deploy/Caddyfile).
 
-```typescript
-// The agent pays a payee — scoped, and ZK-private.
-// payThroughSession drives the whole hop: signs the Soroban auth entry
-// with the agent's session key, then deposits into the shielded pool.
-import { payThroughSession } from './sdk/kage-onchain';
+## Roadmap
 
-await payThroughSession({
-  scanKey: payeeScanKeyV,     // payee's published meta-address (scan pubkey V)
-  amount: 10_000000n,         // 10 USDC (7 decimals) — bound into the ZK commitment
-});
-// On-chain: only a commitment, a random ephemeral R, a new Merkle root.
-// The chain never learns who was paid or how much is tied to them.
-```
-
-### Payee side — recognise & withdraw
-
-```typescript
-// 1. Scan announcements: for each ephemeral R, recompute shared = v·R and
-//    check if the derived commitment is in the tree. Match ⇒ it's yours.
-// 2. Prove membership in zero knowledge + a fresh nullifier, bind a one-time
-//    stealth payout address, and withdraw — no link to the agent's deposit.
-bun run flow   // full off-chain derive -> tree -> recognise -> prove
-```
-
-### Contract surface
-
-| Method | Description | Proof checked |
-|--------|-------------|---------------|
-| `deposit(commitment, R, amount)` | Pull USDC, append commitment to the Merkle tree | Groth16 **insert** proof (old_root→new_root + amount binding), BN254 pairing |
-| `withdraw(proof, root, nullifierHash, payout)` | Pay a stealth address from the pool | Groth16 **membership** proof + nullifier unused |
-| `set_vks(...)` | Register the insert/withdraw verifying keys | Owner only |
-
-Public-input layouts (contract mirrors circuits exactly):
-- **insert:** `[old_root, new_root, commitment, leaf_index, amount]`
-- **withdraw:** `[root, nullifier_hash, recipient, amount]`
-
----
-
-## 🛡️ The Two Privacy Layers
-
-| Layer | Hides | How |
-|-------|-------|-----|
-| **Stealth notes** (Umbra-style) | *which payee* the agent paid | Payee publishes a scan key `V` once. Agent does ECDH (`shared = r·V`), derives note secrets from `shared`, announces only ephemeral `R`. Only `V`'s holder recomputes `shared = v·R` and finds their payment. |
-| **ZK shielded pool** (Tornado/Privacy-Pools-style) | *that two payouts share one agent*, and the amount link | Each deposit inserts a Poseidon commitment into a Merkle tree. A withdrawal proves in ZK it owns *some* unspent leaf — without revealing which — plus a fresh nullifier (no double-claim). |
-
-The chain only ever sees: **commitments, random `R` values, a Merkle root, and
-nullifier hashes.** Never a payee's identity, an amount tied to a person, or a
-link from the agent's deposit to a payee's withdrawal.
-
-### How the tree stays trustless without on-chain Poseidon
-
-Stellar's host Poseidon2 constants don't match circomlib's Poseidon, so the
-contract can't recompute the circuit's root on-chain. Instead, **every deposit
-carries a Groth16 "insert" proof** that `new_root` correctly appends `commitment`
-to the tree at the contract's current root. The contract checks
-`old_root == current`, runs only the BN254 pairing check, and advances the root.
-The insert proof **also binds the deposited `amount`** into the commitment, so
-**what is deposited is exactly what can be withdrawn** — no accounting desync.
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                            OWNER  (holds real key)                        │
-│              delegates ONE scoped session key to the agent                │
-└─────────────────────────────────────────────────────────────────────────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                     SCOPED SESSION ACCOUNT (Soroban)                      │
-│              CB3A5QRRIULWBBADWGYH6QA3XEJHJZJCJ7DV3CE6NBZFQBH5WWLKF636     │
-│                                                                          │
-│   __check_auth policy — agent may ONLY:                                  │
-│   ├── call deposit on the configured pool                                │
-│   ├── move USDC, into that pool only                                     │
-│   ├── up to a spend cap                                                  │
-│   └── before an expiry                                                   │
-│   anything else ⇒ BadPayout / CapExceeded / Expired / ContextNotAllowed  │
-└──────────────────────────────────┬───────────────────────────────────────┘
-                                    │  agent signs the Soroban auth entry
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      KAGE SHIELDED POOL (Soroban)                         │
-│              CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC     │
-│                                                                          │
-│  deposit(C, R, amount)              withdraw(proof, root, nullifier, pay) │
-│  ├── verify INSERT proof (BN254)    ├── verify MEMBERSHIP proof (BN254)   │
-│  ├── amount bound into commitment   ├── nullifier unused? else revert #9  │
-│  ├── pull USDC via SAC              └── pay USDC → one-time STEALTH addr   │
-│  └── advance Merkle root                                                  │
-│                                                                          │
-│  CHAIN SEES: commitments · random R · Merkle root · nullifier hashes     │
-│  NEVER:      who paid whom · amount tied to identity · deposit↔withdraw   │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📁 Project Structure
-
-```
-stellar/
-├── circuits/
-│   ├── veil_withdraw.circom   # membership + nullifier + amount range + recipient bind
-│   └── veil_insert.circom     # old_root -> new_root append proof + amount binding
-├── contracts/                 # Soroban: veil (pool) + session (scoped account)
-├── sdk/
-│   ├── veil.ts                # X25519 ECDH stealth notes, Poseidon Merkle tree
-│   ├── kage-onchain.ts        # payThroughSession: scoped, ZK-private deposit
-│   └── kage-convert.ts        # snarkjs -> Soroban BN254 byte layout
-├── agent/                     # MCP server + agent fabric (proxy tools, workflows)
-├── frontend/                  # Next.js dashboard (kageai.me)
-├── scripts/                   # provision session, flow, gen-insert, e2e
-└── deploy/                    # Caddy, pm2 ecosystem, MCP config
-```
-
----
-
-## 🧪 Proven End-to-End (real mainnet transactions)
-
-| Step | Result | Detail |
-|------|--------|--------|
-| **Deposit** | ✅ verified | On-chain insert proof verified (BN254) with amount binding; XLM pulled into the pool; commitment + ephemeral key announced. [TX](https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379) |
-| **Withdraw** | ✅ verified | Membership proof verified; payout paid to a stealth address bound into the proof. [TX](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
-| **Double-spend** | ❌ rejected | Replaying the same nullifier reverts with `NullifierUsed (#9)` (contract test + development network run). |
-
-Full mainnet cohort with every hash: [`scripts/20-users-mainnet-proof.txt`](./scripts/20-users-mainnet-proof.txt).
-
-### Local (real Groth16)
-
-- **Withdraw circuit:** 3005 constraints — proves + `snarkjs verify` OK.
-- **Insert circuit:** 5238 constraints — proves + `snarkjs verify` OK (binds `amount` into the commitment).
-- Under-funded deposit **fails to prove** (amount ≠ committed value → constraint violation).
-- SDK ⇄ circuit: real X25519 note → SDK Merkle proof → withdraw proof verifies (Poseidon matches in and out of circuit).
-
----
-
-## 🔗 Links
-
-| Resource | URL |
-|----------|-----|
-| **Live Demo** | [kageai.me](https://kageai.me) |
-| **Video Demo** | [Watch on YouTube](https://youtu.be/s4WmqpLhH4s) |
-| **Pool Contract** | [View on Explorer](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) |
-| **Deposit TX** | [View TX](https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379) |
-| **Withdraw TX** | [View TX](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
-| **Give Feedback** | [KAGE Review Google Form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) · [Responses sheet](https://docs.google.com/spreadsheets/d/15ykfAnk4OiueDgqt--TueD5_8Bxp6iP6YsmG8Durn4I/edit?usp=sharing) |
-
----
-
-## 🛠️ Tech Stack
-
-- **Smart Contracts:** Soroban (Rust) — shielded pool + scoped session account
-- **Zero-Knowledge:** Circom + snarkjs, Groth16 over BN254 (alt_bn128), circomlib Poseidon
-- **Stealth crypto:** X25519 ECDH one-time addresses (Umbra-style)
-- **Runtime / SDK:** Bun, TypeScript, `@stellar/stellar-sdk`, `@noble/curves`
-- **Agent layer:** Model Context Protocol (MCP) server + agent fabric
-- **Frontend:** Next.js dashboard (kageai.me)
-- **Trusted setup:** Hermez Perpetual Powers of Tau (pot14)
-
----
-
-## 🧾 Honesty Ledger
-
-- **Mainnet is live** — the pool holds real XLM (native SAC).
-- Stealth v1 = single-derived-key (no view/spend separation — documented stretch; ed25519 clamping blocks the classic dual-key scheme without custom signing).
-- Demo tree depth 10 (1024 notes); identical circuit scales to depth 20.
-- Fixed-denomination notes in the demo for a clean anonymity set (the circuit range-checks any amount < 2^64).
-- Trusted setup reuses the real Hermez Perpetual Powers of Tau.
-- **The ZK and every transaction are real; only the parties are ours.**
-
-See [`KAGE.md`](./KAGE.md) for the full architecture deep-dive.
-
----
-
-## Submission Proof
-
-| Item | Detail |
-|------|--------|
-| **Mainnet Pool Contract** | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` (XLM SAC) |
-| **Deposit TX** | `bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379` |
-| **Withdraw TX** | `5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793` |
-| **Live Demo** | [kageai.me](https://kageai.me) |
-| **Pitch Deck** | [docs/pitch-deck.md](docs/pitch-deck.md) |
-| **CI/CD** | ![CI](https://github.com/Venkat5599/kagezks/actions/workflows/ci.yml/badge.svg) |
-| **License** | MIT |
-
-### Test Results
-
-| Suite | Tests | Status |
-|-------|-------|--------|
-| Veil Pool Contract | 4 | ✅ All passing |
-| Session Account Contract | 4 | ✅ All passing |
-| **Total** | **8** | **Zero warnings** |
-
-### Screenshots
-
-#### Level 1 — required states (captured during development, before the mainnet launch)
-
-**1. Wallet connected (Freighter) + balance displayed**
-
-Freighter connected on Stellar Testnet. The header shows the connected account
-`GB4ONR…EAPF` and a **Stellar testnet** network badge; the *Your wallet* row shows the
-live balance read from Horizon.
-
-![Freighter wallet connected with XLM balance](docs/screenshots/wallet-connected-freighter.png)
-
-**2. Balance displayed — generated session wallet**
-
-The no-extension path: *Generate Session Account Wallet* creates a fresh testnet keypair,
-funds it via Friendbot, and shows `10000.00 XLM`. The secret is revealed once so it can be
-imported into Freighter.
-
-![Session wallet with 10000 XLM balance](docs/screenshots/wallet-balance-session.png)
-
-**3. Transaction result shown to the user**
-
-Settlement confirmation with the transaction hash, recipient, and on-chain status
-surfaced in the UI.
-
-![Transaction success with hash](docs/screenshots/transaction-success.png)
-
-| Field | Value |
-|-------|-------|
-| **Transaction hash** | `e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437` |
-| **Ledger** | 3416312 (Stellar Testnet) |
-| **Verify** | [stellar.expert ↗](https://stellar.expert/explorer/testnet/tx/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) · [Horizon ↗](https://horizon-testnet.stellar.org/transactions/e3edbcb1040bae7950f7e3ca50762a7afab182d2f32efdd10f6a014a65441437) |
-
-> This particular settlement moves **USDC** through the ZK shielded pool — that is what
-> Kage is for. The plain **native XLM payment** required at White Belt has its own UI:
-> the **Send XLM** panel on the dashboard
-> ([`send-xlm.tsx`](./frontend/components/fabric/send-xlm.tsx) — `Operation.payment` with
-> `Asset.native()` on testnet), which renders the same success / failure / tx-hash states.
-
-#### Product
-
-| View | Preview |
-|------|---------|
-| Dashboard | ![Dashboard](kage-dashboard.png) |
-| Landing Page | ![Landing](kage-landing.jpeg) |
-| CI/CD Pipeline | [GitHub Actions](https://github.com/Venkat5599/kagezks/actions) |
-
----
-
-## 👥 50 User On-chain Verification — Blue Belt (development network cohort, pre-mainnet)
-
-All 50 testnet wallet addresses are funded and verifiable on Stellar Explorer. Each wallet received 10,000 XLM via Friendbot and the funding transaction is linked below. Feedback exported to CSV: [docs/user-feedback.csv](docs/user-feedback.csv)
-
-**Average Rating:** 4.4/5
-
-### On-chain Wallet Verification (50/50)
-
-| # | User | Wallet Address | Fund TX |
-|---|------|---------------|---------|
-| 1 | Rahul Sharma | `GCLYKGK6VHJTC65E7PJUTJJF4TDCVGHWRILQ4DTNPIKQ73X7T66HPZZL` | [TX](https://stellar.expert/explorer/testnet/tx/fdeafdf420d377cc0dcabff0d4ac63a35747e4d26d6793586d7b13fc70c56f20) |
-| 2 | Priya Patel | `GCCPNIQCG6SPESCZSP3WZJYROKWJWQCRBHWN7ZCIN5AZU274HEI4MRMN` | [TX](https://stellar.expert/explorer/testnet/tx/f0892448cae541319b82d9b6d374d9f0b9cf2477da31232e2bd39e17871f89e6) |
-| 3 | Amit Kumar | `GDIMDJRDO5YIINQHW3R2EPJSPVYLSICQ67FB6X4Y3WHN3YRGQ2EC75XP` | [TX](https://stellar.expert/explorer/testnet/tx/4ba39c71927ac92733a3ddf54130bc785886bbcbaf0031082e5bc1a3337c3ab6) |
-| 4 | Sneha Reddy | `GAI7TWPAQKD45VTZ63NEOQ4FY73VEKLFEN6U7JHWLQWJTQQ4QCPZZFHI` | [TX](https://stellar.expert/explorer/testnet/tx/c5978d93865b78b8627efaef3b0453d3b55ffcd8c9b7fd467b4679da68386dac) |
-| 5 | Vikram Singh | `GA2RO6WOUXQORZGEFRPG5N6EZJIIK3P63XRWUWHHTP24SELMNFVED4V2` | [TX](https://stellar.expert/explorer/testnet/tx/007b9ac18821005d99f933329bbcf6e2ff1795a8efc2185781a3f43aa9e533b0) |
-| 6 | Ananya Iyer | `GC2QRUPGIE57ZBAUUH2QYJEFXEKGPWHPHJH24ULQQOIFGSHOIY4X2MP2` | [TX](https://stellar.expert/explorer/testnet/tx/010f3e1b076ac2c9b840d959c7c3e986643bf7efb55a823dd9417d9a2822e68f) |
-| 7 | Deepa Rai | `GDDYRYSVVSDQVXJMVJ7RSV6R2QIMUGQJD5UDY3USWTCGPKPX6QRG6QXM` | [TX](https://stellar.expert/explorer/testnet/tx/2a27ad679b2cf9ebce42e6a82b5f1d9653d101ac1b002216c132b6f695bd17fc) |
-| 8 | Raj Thapa | `GCLONOFW562575JUZB6JEISKTSFHHKW4OF4ZIPCBVFUR3SKUJ5ZMFFVX` | [TX](https://stellar.expert/explorer/testnet/tx/6c8a78da380ba9fbe221abe1e84fbcaecb294751e81a0fc3c1b632cab2c7ddda) |
-| 9 | Karan Mehta | `GBV7MIYSIBOSN4JFMAB52IQH45Q3YF3GJ27PIQA7SKB5CBRUFX2GUV35` | [TX](https://stellar.expert/explorer/testnet/tx/44d9300df2b41a142f92f9581f1f5fdda8d9c82973964069ded5f9792f6945f6) |
-| 10 | Meera Nair | `GC54ATGBOWOAFBEMQNEWQ7PWA3LLTUWT3XUFI2UXB655BGWRFGWPNFZW` | [TX](https://stellar.expert/explorer/testnet/tx/29dafe0c3d170ba585dd36aa4c2bb048c302fb5c3bb547e9955ea46a41618111) |
-| 11 | Arjun Chowdhury | `GBZQZZ6RT5RDUHELSU36SL6NQHEKT73APMACCTMVZ4CPJEH7QFRDJVZ7` | [TX](https://stellar.expert/explorer/testnet/tx/f619bea8eeb8d6a97e91217f2017d1e6411a26f22e8fcf4f692805f03b03d56a) |
-| 12 | Kavya Joshi | `GAR63PQSQWIZAT7GEBMXCMCV4Z46EQX36HARVBZOESFMFB2YSANXIW4W` | [TX](https://stellar.expert/explorer/testnet/tx/d6eb78f60670465cb573bec7b48ed7b07492d0bec3e1833bacd590433539f5a2) |
-| 13 | Rohan Das | `GAPC2LEGGH533RBZFVKNYFZVYHDWHPMIOJKKD3CDCXBRYV43CHD6ST35` | [TX](https://stellar.expert/explorer/testnet/tx/dc82d125a90afa5aed57ef4d3bf386849bb45da0e1e8615874474d2306064220) |
-| 14 | Neha Agarwal | `GABE3P6QZ52G4YSVSZW2A3BEHMLB6WCM63BJN2DL2G3UXUI77TRW3UHS` | [TX](https://stellar.expert/explorer/testnet/tx/c80ff5bccb8d1b91cc081514d26c5978c1204f8aca4bf75a8cb15d5742232e20) |
-| 15 | Aditya Bose | `GBSG6IJ5IXFVV2VYZKSGDYZ44LIP5NWWJFKI2TXYIUFFFT6WAC6SHIWY` | [TX](https://stellar.expert/explorer/testnet/tx/7988270c94c793fa457680dddd1d49de0266bf3c7d4421245d239055bfa17323) |
-| 16 | Divya Menon | `GBZCY46Y6ES437LVMAVKRKLBVLQLQW66JGIU4GWXGBS4O6HVPEFEDBWU` | [TX](https://stellar.expert/explorer/testnet/tx/ac6b90879779438a950c72d51a2b980c05d5bbbee828e161ee0f9aa6ccf4e102) |
-| 17 | Sahil Kapoor | `GCIQDQP7XCOC2DDXGX5FXJTID6GMO3SX4SC3WBQQTOOUDVX635TRW4HD` | [TX](https://stellar.expert/explorer/testnet/tx/1220cb6c7dc955df1055f70c51b245b61ca852f4ad464e5b5be8d12b4fe5c09c) |
-| 18 | Tanya Saxena | `GBN3UUD46ANPXD7UXMLPUWHQACPDX5HIVR4KTFNRWN2QR6PEEAIMI7CP` | [TX](https://stellar.expert/explorer/testnet/tx/e8ca5c1e0a6c6da752a10cb6313996b8edd881b62b271fd26676f76a101d683f) |
-| 19 | Varun Pillai | `GDRQAI45S6ZB256VH7UALMQOSYPUQX4RCHNN5VKFJKA7ZZTMZPUPH3TY` | [TX](https://stellar.expert/explorer/testnet/tx/7616b3b8dbdff8219099e90d4c22fa9c349eb940a9a5cbffca02f634eaaaff91) |
-| 20 | Lakshmi Nair | `GDHU4EXM4LLNEUO2OY2SX6GYI4UZDOHKYVRHBMUGMVMFFZ2EJ5ZDJ52M` | [TX](https://stellar.expert/explorer/testnet/tx/f921a26481affa286368b6a341f35856c87049a9e5e6b66f2524153c599db89e) |
-| 21 | Michael Chen | `GAXTBDSEMPUV377T2Q5FSC3HLIYKMDREECDCOGPPEESTMZ2XXXMOPBL5` | [TX](https://stellar.expert/explorer/testnet/tx/6fa80e0cb8380bdce5a23c5bfeaca43c007bc8dfadddff35935cb6f91ab80ad5) |
-| 22 | Sofia Martinez | `GAFFSWCVAO53J5JWBB3O6N25AR3TYWAEPHPMDHMTO6MNDWM7N3HNAZJF` | [TX](https://stellar.expert/explorer/testnet/tx/b2ec3fbae5447575ecd9b805ed228bcb9e8e90c2bb194feff62157fabf7423e6) |
-| 23 | James Wilson | `GAKJMZ2VB53RSP56BKGBVUNHBXRW5EPLSARDZVZ435M7CHMUHXWYG4NA` | [TX](https://stellar.expert/explorer/testnet/tx/a33f85d457b7e2f43b90d7726541c2cb32227832578116fba65d23c88359016c) |
-| 24 | Emma Thompson | `GDTSWKRW6M4KBSVDF6JZI7H4QH77V62KUCPUOL2CGSGTLMZ2UCSRES6R` | [TX](https://stellar.expert/explorer/testnet/tx/261a85d8cb3f83bfab5cc852f9ea9f0c93287531578ebcb3044a765cf84a143f) |
-| 25 | Carlos Rivera | `GBXIZKLO2H7UQUYQOZSWCI3WYDBTRHABPZM5JUHTVRP3GZIYAR5ZUNH2` | [TX](https://stellar.expert/explorer/testnet/tx/7d26c5b96f802223f9e1433adce61df31cf5bae5dabeaf5e1d7fa084035a7545) |
-| 26 | Wei Zhang | `GB3OCDT4BBZRKH6WHLX7KJB5BK5L7GUUOKLJPNWQEMAUQAOHLUP33OBN` | [TX](https://stellar.expert/explorer/testnet/tx/1df0199138a8e2155f30fcd7402a258ad693fefc1c75f3a053e2b092e163a32a) |
-| 27 | Fatima Abubakar | `GDSNDSC5WLUJSAHIQOC5OLI7WFREAFRC2UKIDTJ7CUOQLV3BEMU6SQMM` | [TX](https://stellar.expert/explorer/testnet/tx/af55a6f11e25d634b6710085d1b46f017baaaddfa6a995821a39438438c32d22) |
-| 28 | Alex Petrov | `GCHV7JJGR3QG2FSOPQ2MBZELMLEPKIP6MPZDUVIFANULFJQKDVS6NMYX` | [TX](https://stellar.expert/explorer/testnet/tx/b4c049d0096f43d705585499c2872f456ea4be3686b12f46c2093957cb9e68cb) |
-| 29 | Zara Khan | `GASTEMM5NHPIEP2NPHKP53JF5A5AAKFX4KC3KRKTVERYJMKGYS3S572J` | [TX](https://stellar.expert/explorer/testnet/tx/b642b0929ee5f36bdcaa2305c67c1a0039b50b90a1a23992980f1294afebc517) |
-| 30 | Lucas Silva | `GAFBILSL7DYVYHYRQ4ASG4AHMURYT65MY4AB4SOESGGULTO6E24ET3O3` | [TX](https://stellar.expert/explorer/testnet/tx/79e0159cc16ff99a74ed171990d799b96a5e64a718b895b685f31d1fcf65303c) |
-| 31 | Isabella Rossi | `GBAAXL2RVDALRUJOXXLCIN6EKGQBHW3IA72AGMB5DMI3WKAVIO3Y43IM` | [TX](https://stellar.expert/explorer/testnet/tx/efe846c88ae2e6a6fd7d754fc812c201d2846f00049dde860cccb33f4c99631a) |
-| 32 | Yuki Tanaka | `GDQE3FWU6XWZONGSLD6C4FAWBOHTTRHAFI5TNRAV4AT2SWYRET67ASDX` | [TX](https://stellar.expert/explorer/testnet/tx/1c55e34a2c55779382e8c0a830315abc679837653a5071321ece6c32d054cbae) |
-| 33 | Olga Kovalenko | `GAMLCBABPXPO3I4NC73QUVIMLCZ3QATNE66UCNATWGKAWH32C4MGXFE5` | [TX](https://stellar.expert/explorer/testnet/tx/c42b8b052383bde125c78dc2667ebdbfa7bea38a54f599a3258eace73a5348f8) |
-| 34 | Mohammed Ali | `GDNYHEICC2NAKIXNHDOKSQB242PDD27KOCLFFWCGAYQ5NSAG32T2XRVA` | [TX](https://stellar.expert/explorer/testnet/tx/c789989a2799281f8893270f5fc709a6a36d6d9322c6a3fac9f39a71cd58c1d4) |
-| 35 | Kim Minji | `GAWCAWL3PHBHV5UXK7HWBV4QAHQ7AJ233ZNV3VE332LFWSC6BG3HMNV6` | [TX](https://stellar.expert/explorer/testnet/tx/8f51455193ebf9ef75776d9498784e5e60dbacb1a12e79159f088cbc21b308b4) |
-| 36 | David Park | `GAP6BYYWETCCX53UTRTYHPLL6SACI45FF6V222SZSSTYQZGSCQ4SAX5O` | [TX](https://stellar.expert/explorer/testnet/tx/e8fcfebeb110bfa3729cd4843b893fac03e495692b737fba7ae9520f04d6d84d) |
-| 37 | Nina Petrova | `GAXRDKC5VJLP5OTWLUF4T6N6UZ43N57T6KVYDLDHC46H7TFHFGQXSWJD` | [TX](https://stellar.expert/explorer/testnet/tx/dd402b519b3a5094fe1f9a843daffd035082e49328571e52cd6f5459242dda1c) |
-| 38 | Ahmed Hassan | `GCKGZKEAABIDBDT6Q5CK45MQR2BSVEET4DZBFFLX6IMR2WOYSQ7TFXSG` | [TX](https://stellar.expert/explorer/testnet/tx/209131faa1ebdc81b7ac75936d2ff3477d17661d9d0411d2ea75866221ea90c7) |
-| 39 | Chioma Okafor | `GB3Y6ZFNOYY27QLBSEGUJHMWDMWEN5EQWVKJJ2RST2BL2OCQD7HRBUIU` | [TX](https://stellar.expert/explorer/testnet/tx/3cd1ed485ce63f6780e1eefb2cf3717861667b2df4a553a17c6ba1e0ec2336be) |
-| 40 | Olaf Svensson | `GAVMYWGM2EYZ4SHIECGUAIWNQF5XGCPH4ZIGICZ5VNTABOSUGND7EPFD` | [TX](https://stellar.expert/explorer/testnet/tx/31283913b10bc90a1e8d7268b44136842558f7ecee2567ccc594f96fff59457a) |
-| 41 | Beatriz Costa | `GAMEOJBOCTTU6GMYF4TREW5GSPNC4ZDY52KV7YGUFZAFQJ7FLSOLH6ER` | [TX](https://stellar.expert/explorer/testnet/tx/ec376b26412ecd2ec1443ee96f2cf4a83b2ee9cbb477321bf33d88baab8013bc) |
-| 42 | Tom Bradley | `GASWKNJ6MYHW3ZTR5SDH44RNK2SLSZWZYKPBOHRQSXN34DLGWKCXKAPP` | [TX](https://stellar.expert/explorer/testnet/tx/af7f0c8102502674716aa02309acf3c709a2229f8bd09e87b56fcd2e25c38038) |
-| 43 | Omar Farouk | `GCNFDBWVP2K6QJT3HURN3VVFKIQJQQ3T6WYOEYRSAVJ67CPRDXUZZFGO` | [TX](https://stellar.expert/explorer/testnet/tx/2447eb4e7f3911888bb26e363c7b5aa21a5b57fd49dbbdbcfce35ea75ba08cc0) |
-| 44 | Ingrid Larsen | `GDQCC5JRXVKDT6BXJYEPFZFMJGCAR4FCUIOXNX6IKQIDIFFDT2H5SUH3` | [TX](https://stellar.expert/explorer/testnet/tx/7a964608416712e3d19ceade31d3b01b70a1cd72c62daea0cf335210ae0e4459) |
-| 45 | Ravi Subramanian | `GCTW3NWJBW2ZVGSW33IN3TAI657QLHVOS4XPOX7MCUYF7E3H3KDHIGLL` | [TX](https://stellar.expert/explorer/testnet/tx/ca8709dd412fd773db44f554cb2de25b40e1011d92bca7a9b6250b8b7d409411) |
-| 46 | Anna Kowalski | `GDETT7FBTSJYBAFMAAJKZKRRBSB4VGTK7K2JMAFUER5NQ666DMXVJQDD` | [TX](https://stellar.expert/explorer/testnet/tx/010bfe56f297c67e08859a3459b03d4a88d8171601435c8d14a476d29beb74f8) |
-| 47 | Diego Ramirez | `GDWWNXICOWNSGCUOA4772TKMDZHRD72VAQ5RF27IYTCEIY2S6HUBF3MW` | [TX](https://stellar.expert/explorer/testnet/tx/6b346d953c69f70871c37bbd6f4ac08a9ec0471a0b20e0ca3ad8bb3f8f17c034) |
-| 48 | Mei Ling Chen | `GCPSNH64TKXPHQBARA2ZJFCTZ3NZP7Q2AVKZ5PNPKIIMEZGBXYSIZ6E7` | [TX](https://stellar.expert/explorer/testnet/tx/1151ce36139aeb06b3991afd7cae71a140cf288ecd68237064f412dcbfb46cea) |
-| 49 | Ben Okafor | `GCVB2WKPDN7VQASHCFUZLVC7MNGWHAE4GSGJTFDGRHSHSETWUDSXCRNN` | [TX](https://stellar.expert/explorer/testnet/tx/6381eb7d010c5b5690fc9347edecadcbe52102a6c24a36e9ec2897e39d21c6cb) |
-| 50 | Maria Silva | `GCXTJA4A2T25T3QFVCRXIV7TOR62LO5XRDRR6TPLWSEPPHW6SFG3FXKY` | [TX](https://stellar.expert/explorer/testnet/tx/87f23d1dcad97200738122ea0617df113701b43204db0036ac1b35f0634e0d76) |
-
-**Total: 50/50 wallets verified on Stellar Testnet** — all publicly auditable on Stellar Expert.
-
-### Top Requested Features (from user feedback)
-
-1. Mainnet deployment with security audit (most requested)
-2. Mobile app / PWA version
-3. Multi-token support (EURC, BRL, ARS)
-4. View/spend key separation for production-grade stealth
-5. Batch payments (pay N recipients in one TX)
-
-### Product Improvements Based on Feedback
-
-| Improvement | Status |
-|-------------|--------|
-| **Live API Reference page** (`/docs`) — documents every endpoint | ✅ |
-| **Network Status page** (`/status`) — live RPC + contract health | ✅ |
-| **Stealth Address & Note Generator** (`/tools/stealth`) — local meta-address + note derivation + recognition | ✅ |
-| CI/CD pipeline (contract tests + frontend build + lint) | ✅ |
-| Escrow transaction UI (create/approve/settle/refund/cancel) | ✅ |
-| Admin dashboard settle/cancel controls | ✅ |
-| Better error messages for auth failures | ✅ |
-| Wallet-aware role detection (admin vs user) | ✅ |
-| Token approval flow before escrow creation | ✅ |
-| Full escrow lifecycle in frontend | ✅ |
-
----
-
-## 🥋 Black Belt — Mainnet Launch
-
-Kage is live on **Stellar mainnet**. The shielded pool settles in **native XLM**
-(through its Stellar Asset Contract), so there is no wrapped token, no bridge,
-no custodian — the ZK pool holds real XLM.
-
-### Mainnet Deployment
-
-| Contract | Address | Explorer |
-|----------|---------|----------|
-| **Veil Shielded Pool** | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` | [✅ View](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) |
-| **Native XLM (SAC)** | `CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA` | [✅ View](https://stellar.expert/explorer/public/contract/CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA) |
-
-### 20+ Verified Mainnet Users
-
-20 mainnet users ran the full private-payment lifecycle — fund → deposit
-(Groth16 insert proof, XLM pulled into the pool) → withdraw (membership proof,
-paid to a stealth address) → XLM recycled back. Every transaction hash is
-linked and independently verifiable:
-
-- **[`scripts/20-users-mainnet-proof.txt`](./scripts/20-users-mainnet-proof.txt)** — 20 users × 5 on-chain transactions (100 tx links).
-
-### Advanced Feature — Fee Sponsorship (gasless via fee bump)
-
-A user signs a transaction with base fee **0**, and the sponsor wraps it in a
-fee-bump that pays the network fee. Proof:
-
-- **[`scripts/fee-sponsor-proof.txt`](./scripts/fee-sponsor-proof.txt)** — `fee_account` = sponsor, `source_account` = gasless user (0 fee paid by the user), tx successful.
-
-### Security
-
-- **[`docs/security-review.md`](./docs/security-review.md)** — full review of the
-  Veil pool + SessionAccount: ZK soundness (native BN254 host verification),
-  double-spend protection (nullifier set), reentrancy ordering, session-account
-  policy gating, and an honest list of known limits.
-
-### Black Belt Checklist
-
-| Requirement | Status |
-|-------------|--------|
-| Smart contracts on Stellar mainnet | ✅ Veil `CAEEKI…IXLV` |
-| Public production-ready app live | ✅ [kageai.me](https://kageai.me) |
-| 20+ verified mainnet users + tx proof | ✅ [100 tx links](./scripts/20-users-mainnet-proof.txt) |
-| Security review | ✅ [docs/security-review.md](./docs/security-review.md) (self-review, submitted as the security deliverable) |
-| Advanced feature — fee sponsorship | ✅ [fee-bump proof](./scripts/fee-sponsor-proof.txt) |
-| 30+ meaningful commits | ✅ 83+ |
-| Community contribution (technical blog) | ✅ [dev.to, published](https://dev.to/venkat___/kage-private-payments-for-autonomous-ai-agents-43bj) |
-| Google Form → Excel → README improvement plan | ✅ [KAGE Review form](https://docs.google.com/forms/d/e/1FAIpQLSfGlqirzeCln8Y4MiM33CXwe7CFiUXEQ9NjhQNPNPdUyJumvw/viewform) · [Responses sheet](https://docs.google.com/spreadsheets/d/15ykfAnk4OiueDgqt--TueD5_8Bxp6iP6YsmG8Durn4I/edit?usp=sharing) — 70 responses → `docs/user-feedback.csv` → [improvement plan](#product-improvements-based-on-feedback) |
-
----
-
-## 🗺️ Roadmap
+The next 30 days, each item with a check anyone can run, are in [`docs/SPRINT-SCOPE.md`](docs/SPRINT-SCOPE.md).
 
 | Phase | Focus | Status |
-|-------|-------|--------|
-| Phase 1 | MVP — ZK pool + session account + stealth notes | ✅ Done |
-| Phase 2 | CI/CD, tests, security hardening, user onboarding | ✅ Done |
-| Phase 3 | Mainnet deployment ✅ · external security audit ⬜ | 🟡 In progress |
-| Phase 4 | 10+ tokens, view/spend key separation, anchor SDK | ⬜ Planned |
-| Phase 5 | Institutional dashboard, liquidity optimization, banking integration | ⬜ Planned |
-| Phase 6 | Settlement standard, ZK compliance proofs, funded team | ⬜ Planned |
+|---|---|---|
+| 1 | ZK pool, SessionAccount, stealth notes | ✅ done |
+| 2 | CI, tests, hardening, onboarding | ✅ done |
+| 3 | Mainnet pool ✅ · mainnet agent settlement · fixed denominations · multi-party setup | 🟡 in progress |
+| 4 | External audit, view/spend key split, more assets | ⬜ planned |
+| 5 | One-command agent SDK, outside integrations | ⬜ planned |
 
----
+## Tests
+
+```bash
+cd contracts/solvency && cargo test
+```
+
+| Suite | Tests |
+|---|---|
+| `veil` | `init_and_empty_state`, `init_is_idempotent`, `deposit_rejects_bad_leaf_index`, `deposit_without_vk_fails`, `withdraw_rejects_unknown_root` |
+| `session_account` | `init_and_policy`, `init_is_idempotent`, `revoke_zeros_expiry`, `extend_updates_cap_and_expiry` |
+
+Real output from the last run (October 2026):
+
+```
+test test::init_and_policy ... ok
+test test::extend_updates_cap_and_expiry ... ok
+test test::init_is_idempotent ... ok
+test test::revoke_zeros_expiry ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test test::deposit_without_vk_fails ... ok
+test test::deposit_rejects_bad_leaf_index ... ok
+test test::init_and_empty_state ... ok
+test test::init_is_idempotent ... ok
+test test::withdraw_rejects_unknown_root ... ok
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+```
+
+9 contract tests. CI runs them on every push, then type-checks and builds the web app.
+
+## License
+
+MIT — see [LICENSE](LICENSE). The UI template under `frontend/` ships with its own license file, [`frontend/LICENSE`](frontend/LICENSE).
