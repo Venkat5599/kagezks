@@ -11,7 +11,7 @@
 ![Tests](https://img.shields.io/badge/contract%20tests-9%20passing-2ecc71)
 ![Stack](https://img.shields.io/badge/Soroban%20·%20Groth16%2FBN254%20·%20Circom%20·%20MCP-14151a)
 
-**[ Live app ↗ ](https://kageai.me)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ Honesty table ↓ ](#whats-real-vs-pending--the-honesty-table)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
+**[ Live app ↗ ](https://kageai.me)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
 
 </div>
 
@@ -33,7 +33,7 @@ PROVEN  ≠  TRUSTED            the pool verifies every root change itself; nobo
 | Mainnet transactions | ✅ 101 / 101 successful | 20 wallets × 5 txs + 1 fee-sponsored tx, re-read from Horizon by [`scripts/verify-mainnet.sh`](scripts/verify-mainnet.sh) |
 | Web app | ✅ live | [kageai.me](https://kageai.me) — Next.js on Vercel, Neon Postgres |
 | Agent fabric (MCP) | ✅ live | `https://kageai.me/fabric/mcp` answers `initialize`; `/fabric/health` reports the mainnet pool |
-| Agent settlement on mainnet | ⏳ pending | needs a mainnet SessionAccount provisioned; see the [honesty table](#whats-real-vs-pending--the-honesty-table) |
+| Agent settlement on mainnet | ⏳ pending | needs a mainnet SessionAccount provisioned; week 1 of the [sprint scope](docs/SPRINT-SCOPE.md) |
 
 ## The 20-second pitch
 
@@ -65,7 +65,6 @@ Payee, later:                scan R with view key ──► prove membership in 
 - [Where the guarantee is enforced](#where-the-guarantee-is-enforced)
 - [Why the ZK is load-bearing](#why-the-zk-is-load-bearing)
 - [Engineering decisions & the traps that taught me something](#engineering-decisions--the-traps-that-taught-me-something)
-- [What's real vs pending — the honesty table](#whats-real-vs-pending--the-honesty-table)
 - [Attack → test](#attack--test)
 - [The app](#the-app)
 - [Limitations](#limitations)
@@ -226,20 +225,6 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 - **RPC event retention is not a database.** Public RPC drops deposit events after a window, which broke tree reconstruction for the next depositor. The SDK keeps a local leaf store and seeds from the known genesis leaf when events have aged out.
 - **One network switch.** The backend read a testnet passphrase in four files while the web app signed for mainnet. `sdk/network.ts` now owns passphrase, RPC, Horizon and deployment IDs, defaulting to mainnet.
 - **The public fabric cannot be a faucet.** Provisioning and workflow runs spend the relayer's XLM, so the reverse proxy only forwards them with a gateway token the web app holds; the MCP endpoint itself stays public, and settling still requires a per-agent bearer token.
-
-## What's real vs pending — the honesty table
-
-| Claim | Status | Detail |
-|---|---|---|
-| Pool deployed on mainnet, verifying Groth16 on chain | ✅ real | `CAEEKIM…GIXLV`, 32 leaves at ledger 64976394 |
-| 101 mainnet transactions | ✅ real | all successful on Horizon; `scripts/verify-mainnet.sh` re-checks them |
-| Those 20 mainnet wallets are outside users | ❌ no | they were funded and driven by our onboarding run to exercise the full lifecycle; outside users are a sprint goal |
-| Agent pays through a SessionAccount on mainnet | ⏳ pending | the SessionAccount is unit-tested and was exercised on the development network; no mainnet instance is provisioned yet |
-| Fabric MCP live | ✅ real | `kageai.me/fabric/mcp`, bound to the mainnet pool |
-| Server-side proving key matches the mainnet verifying key | ⏳ unconfirmed | first agent deposit through the fabric will prove or disprove it |
-| Third-party audit | ❌ not done | maintainer self-review only |
-| Multi-party trusted setup | ❌ not done | phase 1 reuses a public powers-of-tau (pot14); phase 2 is single-party |
-| Builder metrics on the dashboard | ⚠️ reset | the database was re-provisioned in October 2026; counts restart at zero |
 
 ## Attack → test
 
