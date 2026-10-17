@@ -120,6 +120,7 @@ export function createMetadata({
       title: title ?? siteConfig.name,
       description: description ?? siteConfig.description,
       images: [ogImage],
+      creator: siteConfig.creator,
     },
     ...(noIndex && {
       robots: {
