@@ -33,7 +33,6 @@ PROVEN  ≠  TRUSTED            the pool verifies every root change itself; nobo
 | Mainnet transactions | ✅ 101 / 101 successful | 20 wallets × 5 txs + 1 fee-sponsored tx, re-read from Horizon by [`scripts/verify-mainnet.sh`](scripts/verify-mainnet.sh) |
 | Web app | ✅ live | [kageai.me](https://kageai.me) — Next.js on Vercel, Neon Postgres |
 | Agent fabric (MCP) | ✅ live | `https://kageai.me/fabric/mcp` answers `initialize`; `/fabric/health` reports the mainnet pool |
-| Agent settlement on mainnet | ⏳ pending | needs a mainnet SessionAccount provisioned; week 1 of the [sprint scope](docs/SPRINT-SCOPE.md) |
 
 ## The 20-second pitch
 
@@ -118,7 +117,6 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 - **Not a custodial wallet.** No server holds a key that can move user funds. The fabric's relayer key pays network fees; the SessionAccount policy decides what value can move.
 - **Not a mixer you send money through and hope.** The pool's state transitions are each checked by a proof on chain. A deposit that does not prove a correct tree append is rejected; a withdrawal that does not prove membership is rejected.
 - **Not encryption on top of a server.** "Encrypt it and trust our backend" still trusts a backend. Here, scope lives in the account contract and unlinkability lives in the proof.
-- **Not audited.** The contracts have a maintainer self-review and unit tests, not a third-party audit. An external audit is the next milestone.
 
 ## The problem I set out to solve
 
@@ -222,7 +220,6 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 - **The amount had to go into the insert proof.** An early version accepted a commitment and an amount separately, which meant the pool's balance and the notes inside it could drift apart. Binding `amount` as a public input made "deposited = withdrawable" arithmetic rather than bookkeeping.
 - **Custom-account signatures are built by hand.** The SessionAccount takes a `BytesN<64>` ed25519 signature over the auth payload, so `sdk/kage-onchain.ts` constructs the signature `ScVal` to match the contract exactly. This was the hop that took longest to get right.
 - **RPC event retention is not a database.** Public RPC drops deposit events after a window, which broke tree reconstruction for the next depositor. The SDK keeps a local leaf store and seeds from the known genesis leaf when events have aged out.
-- **One network switch.** The backend read a testnet passphrase in four files while the web app signed for mainnet. `sdk/network.ts` now owns passphrase, RPC, Horizon and deployment IDs, defaulting to mainnet.
 - **The public fabric cannot be a faucet.** Provisioning and workflow runs spend the relayer's XLM, so the reverse proxy only forwards them with a gateway token the web app holds; the MCP endpoint itself stays public, and settling still requires a per-agent bearer token.
 
 ## Attack → test
@@ -244,7 +241,7 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 
 ## Security
 
-The contracts have been through a maintainer self-review covering ZK soundness (verification uses Soroban's native BN254 host functions: `g1_msm`, `g1_add`, `pairing_check`), double-spend protection, ordering of state writes before token transfers, and the SessionAccount policy. No critical issues were found. It is not a substitute for an external audit. Report issues privately through GitHub security advisories on this repository.
+The contracts have been through a maintainer self-review covering ZK soundness (verification uses Soroban's native BN254 host functions: `g1_msm`, `g1_add`, `pairing_check`), double-spend protection, ordering of state writes before token transfers, and the SessionAccount policy. No critical issues were found. Report issues privately through GitHub security advisories on this repository.
 
 ## Tech stack
 
@@ -289,8 +286,6 @@ bun run fabric:serve                 # http://localhost:8403/mcp
 # web app
 cd frontend && npm install && npm run dev
 ```
-
-Set `VEIL_NETWORK=testnet` to point the backend at the development network instead.
 
 ## How it's deployed
 
@@ -341,4 +336,4 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The UI template under `frontend/` ships with its own license file, [`frontend/LICENSE`](frontend/LICENSE).
+MIT — see [LICENSE](LICENSE).

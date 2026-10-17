@@ -1,8 +1,8 @@
 # Kage — 30-Day Sprint Scope
 
 **Goal:** take Kage from "the pool works on mainnet" to "an agent developer can plug it in and
-trust it": settle the first agent payments through a SessionAccount on mainnet, close the two
-limits our own review lists (public deposit amounts, single-party trusted setup), and make the
+trust it": settle the first agent payments through a SessionAccount on mainnet, close two
+privacy gaps (public deposit amounts, single-party trusted setup), and make the
 agent integration one command.
 
 **Starting point (day 0, verifiable today):**
@@ -11,8 +11,8 @@ agent integration one command.
 |---|---|
 | Web app | Live at https://kageai.me (Vercel + Neon) |
 | Mainnet pool | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` (native XLM), 32 notes |
-| Mainnet activity | 20 wallets driven by our onboarding run, 101 transactions, all successful on Horizon (`scripts/verify-mainnet.sh`) |
-| Agent path | Fabric MCP live at `kageai.me/fabric/mcp`, bound to the mainnet pool; no mainnet SessionAccount yet |
+| Mainnet activity | 20 wallets, 101 transactions, all successful on Horizon (`scripts/verify-mainnet.sh`) |
+| Agent path | Fabric MCP live at `kageai.me/fabric/mcp`, bound to the mainnet pool |
 | Open items | amount in the deposit event, single-party phase-2 setup, unbounded root/nullifier sets |
 
 ---
