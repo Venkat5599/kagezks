@@ -13,7 +13,7 @@ agent integration one command.
 | Mainnet pool | `CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV` (native XLM), 32 notes |
 | Mainnet activity | 20 wallets driven by our onboarding run, 101 transactions, all successful on Horizon (`scripts/verify-mainnet.sh`) |
 | Agent path | Fabric MCP live at `kageai.me/fabric/mcp`, bound to the mainnet pool; no mainnet SessionAccount yet |
-| Known limits | README → Limitations: amount in the deposit event, single-party phase-2 setup, unbounded root/nullifier sets |
+| Open items | amount in the deposit event, single-party phase-2 setup, unbounded root/nullifier sets |
 
 ---
 

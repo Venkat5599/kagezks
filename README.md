@@ -67,7 +67,6 @@ Payee, later:                scan R with view key ──► prove membership in 
 - [Engineering decisions & the traps that taught me something](#engineering-decisions--the-traps-that-taught-me-something)
 - [Attack → test](#attack--test)
 - [The app](#the-app)
-- [Limitations](#limitations)
 - [Security](#security)
 - [Tech stack](#tech-stack)
 - [Project layout](#project-layout)
@@ -119,7 +118,7 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 - **Not a custodial wallet.** No server holds a key that can move user funds. The fabric's relayer key pays network fees; the SessionAccount policy decides what value can move.
 - **Not a mixer you send money through and hope.** The pool's state transitions are each checked by a proof on chain. A deposit that does not prove a correct tree append is rejected; a withdrawal that does not prove membership is rejected.
 - **Not encryption on top of a server.** "Encrypt it and trust our backend" still trusts a backend. Here, scope lives in the account contract and unlinkability lives in the proof.
-- **Not audited.** The contracts have a maintainer self-review and unit tests, not a third-party audit. That is the next milestone, and the [limitations](#limitations) say exactly what it would cover.
+- **Not audited.** The contracts have a maintainer self-review and unit tests, not a third-party audit. An external audit is the next milestone.
 
 ## The problem I set out to solve
 
@@ -243,17 +242,9 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 
 [kageai.me](https://kageai.me) is the landing page, a live pool dashboard (`/dashboard`) with Freighter connect and a browser-generated session wallet, a builder for x402-priced APIs, MCP servers and workflows, a network status page (`/status`), an API reference (`/docs`), and a client-side stealth address tool (`/tools/stealth`). Freighter must be set to Mainnet; the connect flow refuses any other network.
 
-## Limitations
-
-- **Deposit amounts are public.** The amount is a public input of the insert proof and appears in the deposit event. Fixed denominations hide it in practice; enforcing them in the contract is week 2 of the [sprint scope](docs/SPRINT-SCOPE.md).
-- **Single-party phase-2 setup.** A malicious phase-2 participant could forge proofs. A multi-party ceremony is week 3.
-- **Root and nullifier sets grow without bound.** No pruning or archival yet.
-- **Single-key stealth.** v1 derives notes from one scan key; there is no separate view and spend key.
-- **Tree depth 10** (1024 notes) in this deployment; the same circuit scales to depth 20.
-
 ## Security
 
-The contracts have been through a maintainer self-review covering ZK soundness (verification uses Soroban's native BN254 host functions: `g1_msm`, `g1_add`, `pairing_check`), double-spend protection, ordering of state writes before token transfers, and the SessionAccount policy. No critical issues were found; the informational findings are the limitations above. It is not a substitute for an external audit. Report issues privately through GitHub security advisories on this repository.
+The contracts have been through a maintainer self-review covering ZK soundness (verification uses Soroban's native BN254 host functions: `g1_msm`, `g1_add`, `pairing_check`), double-spend protection, ordering of state writes before token transfers, and the SessionAccount policy. No critical issues were found. It is not a substitute for an external audit. Report issues privately through GitHub security advisories on this repository.
 
 ## Tech stack
 
