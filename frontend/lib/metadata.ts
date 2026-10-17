@@ -6,7 +6,7 @@ export const siteConfig = {
     "Give an AI agent a scoped session key and it pays on-chain by itself — bounded so it can never drain or redirect funds, and every payment sealed in zero-knowledge so no one sees who it paid or how much. Built on Stellar with Groth16 + a Soroban BN254 verifier.",
   url: "https://kageai.me",
   ogImage: "/og-image.png",
-  creator: "Kage",
+  creator: "@Kage_stellar",
   authors: [
     {
       name: "Kage",
@@ -71,6 +71,7 @@ export const baseMetadata: Metadata = {
     title: siteConfig.name,
     description: siteConfig.description,
     images: [siteConfig.ogImage],
+    creator: siteConfig.creator,
   },
   icons: {
     icon: "/favicon.ico",

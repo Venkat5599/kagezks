@@ -9,6 +9,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/Venkat5599/kagezks/ci.yml?branch=main&label=CI)](https://github.com/Venkat5599/kagezks/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 ![Tests](https://img.shields.io/badge/contract%20tests-9%20passing-2ecc71)
+[![X](https://img.shields.io/badge/X-%40Kage__stellar-000000?logo=x)](https://x.com/Kage_stellar)
 ![Stack](https://img.shields.io/badge/Soroban%20·%20Groth16%2FBN254%20·%20Circom%20·%20MCP-14151a)
 
 **[ Live app ↗ ](https://kageai.me)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**

@@ -15,6 +15,7 @@ export const siteConfig = {
 
   // URLs
   url: "https://kageai.me",
+  twitter: "@Kage_stellar",
 
   // Navigation
   nav: {
