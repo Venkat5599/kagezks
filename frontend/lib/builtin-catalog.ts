@@ -55,15 +55,15 @@ const need = (args: Record<string, string>, k: string, label = k): string => {
 };
 
 const netArg = (args: Record<string, string>) => NETWORKS[parseNetwork(args.network)];
-const xlmFromStroops = (s: string | number) => Number(s) / 1e7;
+export const xlmFromStroops = (s: string | number) => Number(s) / 1e7;
 
 const networkVar: BuiltinVar = { name: "network", label: "Network", in: "query", required: false, description: "Real money (Mainnet) or the free test network (Testnet).", options: [{ value: "mainnet", label: "Mainnet" }, { value: "testnet", label: "Testnet" }] };
 
 // ---- Stellar tokens ---------------------------------------------------------------
 // Horizon lists every token anyone has issued, including copies with the same name.
 // These are the official issuers (checked against Horizon: holders, supply, stellar.toml).
-type Token = { code: string; issuer: string | null; org: string };
-const TOKENS: Record<"mainnet" | "testnet", Token[]> = {
+export type Token = { code: string; issuer: string | null; org: string };
+export const TOKENS: Record<"mainnet" | "testnet", Token[]> = {
   mainnet: [
     { code: "XLM", issuer: null, org: "Stellar (native)" },
     { code: "USDC", issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN", org: "Circle" },
@@ -79,7 +79,7 @@ const TOKENS: Record<"mainnet" | "testnet", Token[]> = {
 const tokenOptions = TOKENS.mainnet.map((t) => ({ value: t.code, label: t.code }));
 
 // "USDC" → the official USDC; "CODE:GISSUER" → that exact token.
-function resolveToken(input: string, net: "mainnet" | "testnet"): Token {
+export function resolveToken(input: string, net: "mainnet" | "testnet"): Token {
   const raw = input.trim();
   if (raw.includes(":")) {
     const [code, issuer] = raw.split(":");
@@ -90,11 +90,11 @@ function resolveToken(input: string, net: "mainnet" | "testnet"): Token {
   if (!t) throw new CatalogError(400, `unknown token '${raw}' on ${net}. Use one of ${TOKENS[net].map((x) => x.code).join(", ")} or CODE:ISSUER`);
   return t;
 }
-const assetParams = (prefix: string, t: Token) =>
+export const assetParams = (prefix: string, t: Token) =>
   t.issuer
     ? `${prefix}_asset_type=${t.code.length <= 4 ? "credit_alphanum4" : "credit_alphanum12"}&${prefix}_asset_code=${t.code}&${prefix}_asset_issuer=${t.issuer}`
     : `${prefix}_asset_type=native`;
-const assetId = (t: Token) => (t.issuer ? `${t.code}:${t.issuer}` : "native");
+export const assetId = (t: Token) => (t.issuer ? `${t.code}:${t.issuer}` : "native");
 
 type PathRecord = { destination_amount: string; path: { asset_type: string; asset_code?: string }[] };
 async function quote(net: (typeof NETWORKS)["mainnet"], from: Token, to: Token, amount: number): Promise<{ receive: number; via: string[] } | null> {
@@ -107,7 +107,7 @@ async function quote(net: (typeof NETWORKS)["mainnet"], from: Token, to: Token, 
 }
 
 type HorizonBalance = { asset_type: string; asset_code?: string; asset_issuer?: string; balance: string };
-type HorizonOp = {
+export type HorizonOp = {
   type: string;
   created_at: string;
   transaction_successful: boolean;
@@ -130,7 +130,7 @@ type HorizonOp = {
 const assetName = (type?: string, code?: string) => (type === "native" ? "XLM" : (code ?? "?"));
 
 // One Horizon operation → a plain sentence (null for operation types we don't describe).
-function describeOp(op: HorizonOp): { what: string; from: string | null; to: string | null; amount: number | null; token: string | null } | null {
+export function describeOp(op: HorizonOp): { what: string; from: string | null; to: string | null; amount: number | null; token: string | null } | null {
   switch (op.type) {
     case "payment":
       return { what: "payment", from: op.from ?? null, to: op.to ?? null, amount: Number(op.amount), token: assetName(op.asset_type, op.asset_code) };
@@ -199,7 +199,7 @@ export const BUILTIN_APIS: BuiltinApi[] = [
     run: async (args) => {
       const address = need(args, "address", "Wallet address");
       if (!StrKey.isValidEd25519PublicKey(address)) throw new CatalogError(400, "That isn't a valid Stellar wallet address (G…).");
-      const limit = Math.min(20, Math.max(1, Number(args.limit) || 5));
+      const limit = Math.min(20, Math.max(1, Math.floor(Number(args.limit)) || 5));
       const net = netArg(args);
       const { status, body } = await getJson(`${net.horizon}/accounts/${address}/payments?order=desc&limit=${limit}`);
       if (status === 404) return { network: net.name, address, payments: [], note: "This wallet doesn't exist on the network yet." };

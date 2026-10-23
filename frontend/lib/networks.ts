@@ -44,7 +44,8 @@ export const NETWORKS: Record<NetworkName, NetworkConfig> = {
   },
 };
 
-export const parseNetwork = (v: string | null | undefined): NetworkName => (v === "testnet" ? "testnet" : "mainnet");
+// Case and spaces are ignored, so an AI agent typing "Testnet" gets testnet, not mainnet.
+export const parseNetwork = (v: string | null | undefined): NetworkName => (v?.trim().toLowerCase() === "testnet" ? "testnet" : "mainnet");
 
 /** Network for an API route: `?network=testnet`, anything else is mainnet. */
 export const networkFromRequest = (req: Request): NetworkConfig =>
