@@ -4,8 +4,12 @@ import { upstream, on, feeStats, ADMIN } from "./helpers/upstream";
 import { GET as catalogGET } from "@/app/api/catalog/[slug]/route";
 import { GET as flowsGET } from "@/app/api/flows/[slug]/route";
 import { GET as poolGET } from "@/app/api/pool-activity/route";
+import { GET as sessionGET } from "@/app/api/session-account/route";
+import { readContract } from "@/lib/chain-read";
+import { NETWORKS } from "@/lib/networks";
 
 vi.mock("@/lib/chain-read", () => ({ readContract: vi.fn(async () => null) }));
+const read = vi.mocked(readContract);
 const ctx = (slug: string) => ({ params: Promise.resolve({ slug }) });
 
 describe("GET /api/catalog/<api>", () => {
@@ -101,5 +105,49 @@ describe("GET /api/pool-activity", () => {
     const r = await get();
     expect(r.status).toBe(502);
     expect(await r.json()).toEqual({ ok: false, error: "stellar.expert 503" });
+  });
+});
+
+describe("GET /api/session-account", () => {
+  const ID = "CBSIBROGJOBQEV2ABLH4CJBKWH63644IOSPRV762PK7JOBZO6TERCP65";
+  const policy = (o: Partial<{ cap: bigint; spent: bigint; expiry: bigint; pool: string }> = {}) => ({
+    owner: ADMIN, pool: o.pool ?? NETWORKS.testnet.pool, token: NETWORKS.testnet.xlmSac, cap: o.cap ?? 50_000_000n, spent: o.spent ?? 0n, expiry: o.expiry ?? BigInt(Math.floor(Date.now() / 1000) + 30 * 86400),
+  });
+  const get = (q: string) => sessionGET(new Request(`https://kageai.me/api/session-account?${q}`));
+  const mock = (p: unknown, bal: unknown) => read.mockImplementation(async (_n, _c, m) => (m === "policy" ? p : bal));
+
+  it("reads limit, spent, what's left, balance and days left", async () => {
+    mock(policy({ spent: 10_000_000n }), 10_000_000n);
+    const b = await (await get(`network=testnet&id=${ID}`)).json();
+    expect(b).toMatchObject({ ok: true, network: "testnet", cap: "50000000", spent: "10000000", remaining: "40000000", balance: "10000000", daysLeft: 30, active: true, isKagePool: true });
+    expect(b.explorer).toBe(`https://stellar.expert/explorer/testnet/contract/${ID}`);
+  });
+  it("reads the account on the network asked for", async () => {
+    mock(policy(), 0n);
+    await get(`network=testnet&id=${ID}`);
+    expect(read.mock.calls.map((c) => (c[0] as { name: string }).name)).toEqual(["testnet", "testnet"]);
+  });
+  it("an expired account is inactive", async () => {
+    mock(policy({ expiry: 1n }), 0n);
+    expect(await (await get(`id=${ID}`)).json()).toMatchObject({ active: false, daysLeft: 0 });
+  });
+  it("overspent never shows a negative amount left", async () => {
+    mock(policy({ cap: 5n, spent: 9n }), 0n);
+    expect((await (await get(`id=${ID}`)).json()).remaining).toBe("0");
+  });
+  it("an account set up for another pool says so", async () => {
+    mock(policy({ pool: "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV" }), 0n);
+    expect((await (await get(`network=testnet&id=${ID}`)).json()).isKagePool).toBe(false);
+  });
+  it("an unreadable balance is null, not zero", async () => {
+    mock(policy(), null);
+    expect((await (await get(`id=${ID}`)).json()).balance).toBeNull();
+  });
+  it("no account at that address is a 404", async () => {
+    mock(null, null);
+    expect((await get(`network=testnet&id=${ID}`)).status).toBe(404);
+  });
+  it.each(["", "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6", "C123"])("refuses id %j", async (id) => {
+    expect((await get(`id=${id}`)).status).toBe(400);
   });
 });

@@ -113,14 +113,14 @@ describe("forgetting a wallet in this browser", () => {
   const both = () => {
     const k = kp();
     const fr = kp().publicKey();
-    const s = memory({ [KEYS.genPub]: k.publicKey(), [KEYS.genSecret]: k.secret(), [KEYS.freighter]: fr, [KEYS.sessionToken]: "t", [KEYS.sessionId]: "i" });
+    const s = memory({ [KEYS.genPub]: k.publicKey(), [KEYS.genSecret]: k.secret(), [KEYS.freighter]: fr, [KEYS.sessionToken]: "t", [KEYS.sessionId]: "i", [KEYS.sessionNet]: "testnet" });
     return { s, k, fr };
   };
   it("forgetting the active generated wallet switches to Freighter and drops its agent session", () => {
     const { s, fr } = both();
     const next = forgetWallet(s, "generated", { ...loadWallets(s), active: "generated" });
     expect(next).toMatchObject({ genPub: null, genSec: null, freighter: fr, active: "freighter" });
-    expect([s.getItem(KEYS.genSecret), s.getItem(KEYS.sessionToken), s.getItem(KEYS.sessionId)]).toEqual([null, null, null]);
+    expect([s.getItem(KEYS.genSecret), s.getItem(KEYS.sessionToken), s.getItem(KEYS.sessionId), s.getItem(KEYS.sessionNet)]).toEqual([null, null, null, null]);
     expect(s.getItem(KEYS.active)).toBe("freighter");
   });
   it("forgetting the only wallet leaves none active", () => {

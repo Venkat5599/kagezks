@@ -8,7 +8,7 @@
 [![Network](https://img.shields.io/badge/Stellar-mainnet-000000)](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV)
 [![CI](https://img.shields.io/github/actions/workflow/status/Venkat5599/kagezks/ci.yml?branch=main&label=CI)](https://github.com/Venkat5599/kagezks/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-685%20passing-2ecc71)
+![Tests](https://img.shields.io/badge/tests-695%20passing-2ecc71)
 [![X](https://img.shields.io/badge/X-%40Kage__stellar-000000?logo=x)](https://x.com/Kage_stellar)
 ![MCP](https://img.shields.io/badge/MCP%20servers-4%20·%2014%20tools-14151a)
 ![Stack](https://img.shields.io/badge/Soroban%20·%20Groth16%2FBN254%20·%20Circom%20·%20MCP-14151a)
@@ -252,6 +252,7 @@ Connecting takes one step in each client: add the URL as a custom connector (Cla
 | `GET /api/flows/<workflow>?…` | any toolkit workflow: `{ answer, details, steps }` |
 | `GET /api/pool-activity` | the pool's full deposit and withdrawal history |
 | `POST /api/friendbot` | free testnet XLM for a new wallet |
+| `GET /api/session-account?id=C…&network=` | an agent account's live limit, spent, balance and expiry |
 | `POST /api/fabric/provision` | agent account setup in two steps (`prepare` → plan with unsigned approvals, `finish` → signed approvals); refuses any secret key |
 | `GET /status` | RPC, ledger and contract health, re-checked per load |
 
@@ -339,7 +340,7 @@ kagezks/
 ├── contracts/solvency/  Soroban workspace: veil (pool) + session (scoped account), with tests
 ├── sdk/                 kage.ts (notes, tree) · kage-onchain.ts · kage-convert.ts · network.ts
 ├── agent/               fabric-server.ts (MCP) · fabric/ (auth, catalog, provision, steps) · x402.ts
-├── frontend/            Next.js app served at kageai.me · tests/ (657 tests) · tests/live/
+├── frontend/            Next.js app served at kageai.me · tests/ (667 tests) · tests/live/
 ├── scripts/             deploy-mainnet.sh · verify-mainnet.sh · provision-check.ts · mainnet proof files
 ├── deploy/              Caddyfile · pm2 ecosystem · .env.example
 └── docs/                SPRINT-SCOPE.md · screenshots/
@@ -388,7 +389,7 @@ The next 30 days and the product milestone after it, each item with a check anyo
 
 ```bash
 cd contracts/solvency && cargo test      # 28 contract tests
-cd frontend && npm test                  # 657 app tests, no network needed
+cd frontend && npm test                  # 667 app tests, no network needed
 cd frontend && npm run test:live         # every tool against the real networks
 ```
 
@@ -403,7 +404,7 @@ cd frontend && npm run test:live         # every tool against the real networks
 | `frontend/tests/workflows.test.ts` | 41 | each workflow's answer and its step trace |
 | `frontend/tests/networks.test.ts` | 31 | network config, including that each XLM contract is the real native-asset contract |
 | `frontend/tests/session-sign.test.ts` | 27 | the browser refuses every tampered setup plan and signs the honest one |
-| `frontend/tests/http-routes.test.ts`, `humanize.test.ts` | 34 | the plain HTTP routes, the pool history from a real mainnet event, answer labels |
+| `frontend/tests/http-routes.test.ts`, `humanize.test.ts` | 44 | the plain HTTP routes, an agent account's live state, the pool history from a real mainnet event, answer labels |
 
 Real output from this commit:
 
@@ -411,7 +412,7 @@ Real output from this commit:
 test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
  Test Files  10 passed (10)
-      Tests  657 passed (657)
+      Tests  667 passed (667)
 ```
 
 The suites were checked against deliberate bugs: 15 breaks in the app (wrong reserve math, accepting look-alike tokens, overwriting a wallet key, dropping the pool history after one page, and others) and 6 in the session account (no payout check, no cap check, expiry off by one, any pool method allowed, spend not saved, signature not checked). Every one made tests fail. CI runs the contract tests, the app tests, the type-check and the build on every push.

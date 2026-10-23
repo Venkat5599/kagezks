@@ -15,6 +15,7 @@ export const KEYS = {
   active: "kage_active_wallet",
   sessionToken: "kage_session_token",
   sessionId: "kage_session_id",
+  sessionNet: "kage_session_net",
 } as const;
 
 export type WalletState = { genPub: string | null; genSec: string | null; freighter: string | null; active: WalletKind | null };
@@ -91,6 +92,7 @@ export function forgetWallet(store: KeyStore, kind: WalletKind, state: WalletSta
     // The per-user agent session was provisioned by this wallet's key.
     store.removeItem(KEYS.sessionToken);
     store.removeItem(KEYS.sessionId);
+    store.removeItem(KEYS.sessionNet);
     const active = state.active === "generated" ? (state.freighter ? "freighter" : null) : state.active;
     saveActive(store, active);
     return { ...state, genPub: null, genSec: null, active };

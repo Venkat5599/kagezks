@@ -29,6 +29,7 @@ function Stat({ icon: Icon, label, value, sub }: { icon: typeof Layers; label: s
   );
 }
 
+type AgentAccount = { id: string; cap: string; spent: string; remaining: string; balance: string | null; expiry: number; daysLeft: number; active: boolean; isKagePool: boolean; explorer: string };
 type PoolActivity = { ok: boolean; deposits: number; withdrawals: number; recent: { type: "deposit" | "withdraw"; at: string; ref: string; link: string }[] };
 
 const xlm = (raw: string | number | null | undefined) => (raw == null ? "—" : `${(Number(raw) / 1e7).toLocaleString("en-US", { maximumFractionDigits: 2 })} XLM`);
@@ -182,15 +183,100 @@ function WalletSwitcher() {
   );
 }
 
+// The right-hand card: the user's own agent account, read live from its contract.
+function AgentAccountCard({ prov, acct, network, canCreate, hasGenerated, onCreate }: {
+  prov: { sessionId: string; network: string } | null;
+  acct: AgentAccount | null | "loading" | "error";
+  network: string;
+  canCreate: boolean;
+  hasGenerated: boolean;
+  onCreate: () => void;
+}) {
+  const box = "rounded-xl border border-white/[0.08] bg-white/[0.02] p-5";
+  if (!prov) {
+    return (
+      <div className={box}>
+        <p className="text-xs text-neutral-500">Your agent account</p>
+        <p className="mt-0.5 text-2xl font-semibold text-white">None yet</p>
+        <p className="mt-1 text-[11px] text-neutral-500">
+          {canCreate
+            ? "Give your AI agent its own account with a spending limit. It can only pay into the Kage pool."
+            : !hasGenerated
+              ? "Agent accounts are created from a wallet made in this browser. Create one above, then come back here."
+              : network !== FABRIC_NETWORK
+                ? `Agent accounts are created on ${FABRIC_NETWORK} for now. Switch networks to create one.`
+                : "Switch to the wallet made in this browser to create one."}
+        </p>
+        {canCreate && (
+          <button onClick={onCreate} className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-black transition hover:opacity-90">
+            Create an agent account
+          </button>
+        )}
+      </div>
+    );
+  }
+  if (prov.network !== network) {
+    return (
+      <div className={box}>
+        <p className="text-xs text-neutral-500">Your agent account</p>
+        <p className="mt-0.5 text-2xl font-semibold text-white">On {prov.network}</p>
+        <p className="mt-1 text-[11px] text-neutral-500">It lives on {prov.network}. Switch the network toggle to see its balance and limit.</p>
+      </div>
+    );
+  }
+  if (acct === "loading" || acct === null) {
+    return (
+      <div className={box}>
+        <p className="text-xs text-neutral-500">Your agent account</p>
+        <p className="mt-0.5 text-2xl font-semibold text-white">…</p>
+        <p className="mt-1 text-[11px] text-neutral-500">reading it from the chain</p>
+      </div>
+    );
+  }
+  if (acct === "error") {
+    return (
+      <div className={box}>
+        <p className="text-xs text-neutral-500">Your agent account</p>
+        <p className="mt-0.5 text-2xl font-semibold text-white">Unreadable</p>
+        <p className="mt-1 text-[11px] text-neutral-500">Couldn&apos;t read <span className="font-mono">{prov.sessionId.slice(0, 6)}…{prov.sessionId.slice(-4)}</span> on {network} right now. Try again in a moment.</p>
+      </div>
+    );
+  }
+  const cap = Number(acct.cap);
+  const left = Number(acct.remaining);
+  const pct = cap > 0 ? Math.max(0, Math.min(100, (left / cap) * 100)) : 0;
+  const days = acct.daysLeft;
+  return (
+    <div className={box}>
+      <p className="text-xs text-neutral-500">
+        Your agent account{" "}
+        {acct.active ? <span className="text-accent">· active</span> : <span className="text-red-400">· expired</span>}
+      </p>
+      <p className="mt-0.5 text-2xl font-semibold text-white">{xlm(acct.remaining)} left</p>
+      <p className="mt-1 text-[11px] text-neutral-500">
+        of a {xlm(acct.cap)} limit · {xlm(acct.spent)} spent · holds {xlm(acct.balance)}
+      </p>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} /></div>
+      <p className="mt-2 text-[11px] text-neutral-500">
+        {acct.active ? `Can pay for ${days} more day${days === 1 ? "" : "s"}, only into the ${acct.isKagePool ? "Kage pool" : "pool it was set up with"}.` : "It can no longer pay. Create a new one below."}{" "}
+        <a href={acct.explorer} target="_blank" rel="noopener noreferrer" className="text-neutral-400 underline underline-offset-2 hover:text-white">View on explorer</a>
+      </p>
+    </div>
+  );
+}
+
 export function DashboardHome() {
   const [s, setS] = useState<Stats | null>(null);
   const [pool, setPool] = useState<PoolActivity | null>(null);
   const { address, secret, connecting, connect, generate, generated } = useWallet();
   const { network, net } = useNetwork();
   useEffect(() => {
-    fetch(`/api/stats?network=${network}${address ? `&owner=${address}` : ""}`).then((r) => r.json()).then(setS).catch(() => {});
+    let live = true; // ignore answers for a network the page has already left
+    setS(null);
     setPool(null);
-    fetch(`/api/pool-activity?network=${network}`).then((r) => r.json()).then(setPool).catch(() => setPool({ ok: false, deposits: 0, withdrawals: 0, recent: [] }));
+    fetch(`/api/stats?network=${network}${address ? `&owner=${address}` : ""}`).then((r) => r.json()).then((d) => live && setS(d)).catch(() => {});
+    fetch(`/api/pool-activity?network=${network}`).then((r) => r.json()).then((d) => live && setPool(d)).catch(() => live && setPool({ ok: false, deposits: 0, withdrawals: 0, recent: [] }));
+    return () => { live = false; };
   }, [address, network]);
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
   const [showSec, setShowSec] = useState(false);
@@ -198,7 +284,10 @@ export function DashboardHome() {
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     if (!address) return;
-    fetch(`/api/wallet-status?network=${network}&address=${address}`).then((r) => r.json()).then((d) => setWstat(d.ok ? { funded: d.funded, xlm: d.xlm } : null)).catch(() => setWstat(null));
+    let live = true;
+    setWstat(null);
+    fetch(`/api/wallet-status?network=${network}&address=${address}`).then((r) => r.json()).then((d) => live && setWstat(d.ok ? { funded: d.funded, xlm: d.xlm } : null)).catch(() => live && setWstat(null));
+    return () => { live = false; };
   }, [address, network, refresh]);
 
   // Testnet only: free test XLM from friendbot, then re-read the balance.
@@ -215,20 +304,31 @@ export function DashboardHome() {
   };
 
   // Per-user session provisioning (only for generated wallets, whose secret we hold).
-  const [prov, setProv] = useState<{ sessionId: string; token: string } | null>(null);
+  const [prov, setProv] = useState<{ sessionId: string; token: string; network: string } | null>(null);
   const [provBusy, setProvBusy] = useState(false);
   const [capXlm, setCapXlm] = useState("5");
   const [fundXlm, setFundXlm] = useState("1");
   // Step 1 fetches a plan and shows it; step 2 signs it here and sends only the signatures.
   const [plan, setPlan] = useState<{ plan: ProvisionPlan; lines: string[] } | null>(null);
   const [provErr, setProvErr] = useState<string | null>(null);
+  // The agent account belongs to the generated wallet: read it once that wallet has
+  // loaded (it loads after the first render), and drop it when the wallet is forgotten.
   useEffect(() => {
+    if (!generated) { setProv(null); return; }
     const t = localStorage.getItem("kage_session_token"); const sid = localStorage.getItem("kage_session_id");
-    if (t && sid) setProv({ token: t, sessionId: sid });
-  }, []);
-  // The per-user session belongs to the generated wallet; drop it when that wallet goes.
-  useEffect(() => { if (!generated) setProv(null); }, [generated]);
+    // Accounts made before the network switch existed were all on mainnet.
+    setProv(t && sid ? { token: t, sessionId: sid, network: localStorage.getItem("kage_session_net") ?? "mainnet" } : null);
+  }, [generated]);
   useEffect(() => { setPlan(null); setProvErr(null); }, [address, network]);
+  // Live state of the user's own agent account, on the network it was created on.
+  const [acct, setAcct] = useState<AgentAccount | null | "loading" | "error">(null);
+  useEffect(() => {
+    if (!prov || prov.network !== network) { setAcct(null); return; }
+    let live = true;
+    setAcct("loading");
+    fetch(`/api/session-account?network=${prov.network}&id=${prov.sessionId}`).then((r) => r.json()).then((d) => live && setAcct(d.ok ? d : "error")).catch(() => live && setAcct("error"));
+    return () => { live = false; };
+  }, [prov, network, refresh]);
   const toStroops = (v: string) => BigInt(Math.max(0, Math.round(Number(v || "0") * 1e7)));
   const post = async (body: unknown) => {
     const r = await fetch("/api/fabric/provision", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -255,9 +355,10 @@ export function DashboardHome() {
     try {
       const signed = await signPlan(plan.plan, secret, net.passphrase);
       const d = await post({ step: "finish", id: plan.plan.id, signed });
-      setProv({ sessionId: d.sessionId, token: d.token });
+      setProv({ sessionId: d.sessionId, token: d.token, network });
       localStorage.setItem("kage_session_token", d.token);
       localStorage.setItem("kage_session_id", d.sessionId);
+      localStorage.setItem("kage_session_net", network);
       setPlan(null);
     } catch (e) {
       setProvErr(`Setup failed: ${(e as Error).message}`);
@@ -267,13 +368,12 @@ export function DashboardHome() {
   const t = s?.totals;
   const [poolXlm, setPoolXlm] = useState<string | null>(null);
   useEffect(() => {
+    let live = true;
     setPoolXlm(null);
-    fetch(`/api/catalog/kage-pool?network=${network}`).then((r) => r.json()).then((d) => setPoolXlm(d.ok && d.data.xlmInPool != null ? `${d.data.xlmInPool.toLocaleString("en-US", { maximumFractionDigits: 2 })} XLM` : "—")).catch(() => setPoolXlm("—"));
+    fetch(`/api/catalog/kage-pool?network=${network}`).then((r) => r.json()).then((d) => live && setPoolXlm(d.ok && d.data.xlmInPool != null ? `${d.data.xlmInPool.toLocaleString("en-US", { maximumFractionDigits: 2 })} XLM` : "—")).catch(() => live && setPoolXlm("—"));
+    return () => { live = false; };
   }, [network]);
   const sess = s?.session;
-  const cap = sess?.cap ? Number(sess.cap) : null;
-  const remaining = sess?.remaining ? Number(sess.remaining) : null;
-  const pct = cap && remaining != null ? Math.max(0, Math.min(100, (remaining / cap) * 100)) : null;
 
   return (
     <div className="space-y-6">
@@ -284,7 +384,7 @@ export function DashboardHome() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={ShieldCheck} label="Private payments" value={pool?.ok ? pool.deposits : "…"} sub={pool?.ok ? `${pool.withdrawals} paid out · checked on chain` : "reading the pool…"} />
-        <Stat icon={Coins} label="Held in the pool" value={poolXlm ?? "…"} sub={`${sess?.poolLeafCount ?? 0} of 1,024 slots used`} />
+        <Stat icon={Coins} label="Held in the pool" value={poolXlm ?? "…"} sub={sess ? `${sess.poolLeafCount} of 1,024 slots used` : "reading the pool…"} />
         <Stat icon={Server} label="Free Stellar tools" value={TOOL_COUNT} sub={`${BUILTIN_MCPS.length} MCP servers · ${BUILTIN_WORKFLOWS.length} workflows`} />
         <Stat icon={Layers} label="Your APIs" value={t?.apis ?? "…"} sub={t && t.apis > 0 ? `${t.requests} calls · $${t.earnings.toFixed(2)} earned` : "publish one to get paid per call"} />
       </div>
@@ -339,14 +439,14 @@ export function DashboardHome() {
               )}
               {fbMsg && <p className="mt-2 text-[11px] text-neutral-400">{fbMsg}</p>}
             </div>
-            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-              <p className="text-xs text-neutral-500">{network === "mainnet" ? "Shared demo agent account" : "Testnet pool"} {sess?.live && <span className="text-accent">· live</span>}</p>
-              <p className="mt-0.5 text-2xl font-semibold text-white">{network === "mainnet" ? (remaining != null ? `${xlm(remaining)} left` : "—") : `${sess?.poolLeafCount ?? 0} payments`}</p>
-              <p className="mt-1 text-[11px] text-neutral-500">{network === "mainnet" ? `of a ${cap != null ? xlm(cap) : "—"} limit · used by the demo agent` : "the shared demo agent runs on mainnet"}</p>
-              {pct != null && (
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} /></div>
-              )}
-            </div>
+            <AgentAccountCard
+              prov={prov}
+              acct={acct}
+              network={network}
+              canCreate={!!secret && network === FABRIC_NETWORK}
+              hasGenerated={!!generated}
+              onCreate={() => document.getElementById("agent-account")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            />
           </div>
         )}
 
@@ -377,14 +477,14 @@ export function DashboardHome() {
               </div>
               <div className="mt-2"><CopyBtn text={`claude mcp add kage --transport http https://kageai.me/mcp/kage --header "Authorization: Bearer ${prov.token}"`} /></div>
               <button
-                onClick={() => { setProv(null); localStorage.removeItem("kage_session_token"); localStorage.removeItem("kage_session_id"); }}
+                onClick={() => { setProv(null); localStorage.removeItem("kage_session_token"); localStorage.removeItem("kage_session_id"); localStorage.removeItem("kage_session_net"); }}
                 className="mt-3 text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-300"
               >
                 Create a new agent account (different limits)
               </button>
             </div>
           ) : (
-            <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <div id="agent-account" className="mt-4 scroll-mt-28 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
               <p className="text-sm text-neutral-400">Give your AI agent its own spending account, owned by <span className="font-mono text-neutral-300">{shortAddr(address)}</span>. It can only pay into the Kage pool, never more than the limit, and stops after 30 days. Kage pays the network fees.</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="text-xs text-neutral-500">Spending limit (XLM)
