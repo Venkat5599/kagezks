@@ -13,6 +13,7 @@ import { z } from "zod";
 import { sql, type McpServerRow } from "@/lib/db";
 import { builtinMcpRows, findBuiltinApi, runBuiltinApi } from "@/lib/builtin-catalog";
 import { findBuiltinWorkflow, runBuiltinWorkflow } from "@/lib/builtin-workflows";
+import { mcpInfo, mcpInfoHtml } from "@/lib/mcp-info";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -166,8 +167,21 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   const { slug } = await ctx.params;
   return handle(req, slug);
 }
+// A plain visit (a browser, or a chat assistant's web browsing) can't speak MCP, so it
+// gets a page describing the server instead of a protocol error. MCP clients ask for
+// text/event-stream and still reach the transport.
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
+  const accept = req.headers.get("accept") ?? "";
+  if (!accept.includes("text/event-stream") && !req.headers.get("mcp-session-id")) {
+    const url = new URL(req.url);
+    const origin = url.hostname === "localhost" || url.hostname === "127.0.0.1" ? url.origin : "https://kageai.me";
+    const info = mcpInfo(origin, slug);
+    if (!info) return Response.json({ error: `no MCP server '${slug}'` }, { status: 404 });
+    const cache = { "cache-control": "public, max-age=300" };
+    if (accept.includes("text/html")) return new Response(mcpInfoHtml(info), { headers: { "content-type": "text/html; charset=utf-8", ...cache } });
+    return Response.json(info, { headers: { "access-control-allow-origin": "*", ...cache } });
+  }
   return handle(req, slug);
 }
 export async function DELETE(req: Request, ctx: { params: Promise<{ slug: string }> }) {
