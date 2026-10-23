@@ -7,12 +7,14 @@
 // stays closed until asked for. A tester should be able to rate the thing in
 // ten seconds without losing their place.
 import { useState, type FormEvent } from "react";
+import { usePathname } from "next/navigation";
 import { useWallet } from "@/lib/wallet";
 
 const RATINGS = [1, 2, 3, 4, 5] as const;
 
 export function FeedbackWidget() {
   const { address } = useWallet();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState<number | null>(null);
   const [mostUseful, setMostUseful] = useState("");
@@ -36,6 +38,9 @@ export function FeedbackWidget() {
       setState("error");
     }
   };
+
+  // The dashboard is a full app shell; keep it free of floating widgets.
+  if (pathname?.startsWith("/dashboard")) return null;
 
   if (!open) {
     return (

@@ -17,9 +17,9 @@ export const short = (s: string | null | undefined, head = 8, tail = 6) =>
 export const usdc = (raw: string | number | null | undefined) =>
   raw == null ? "—" : `${(Number(raw) / (Number(raw) > 1000 ? 1e7 : 1)).toFixed(2)} USDC`;
 
-export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function Panel({ children, className = "", id }: { children: ReactNode; className?: string; id?: string }) {
   return (
-    <div className={`rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 ${className}`}>{children}</div>
+    <div id={id} className={`rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 ${className}`}>{children}</div>
   );
 }
 

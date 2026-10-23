@@ -2,6 +2,7 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
 import { useSyncExternalStore, type ReactNode } from "react";
 
 function useIsMounted(): boolean {
@@ -15,10 +16,14 @@ function useIsMounted(): boolean {
 export function ThemeSwitch(): ReactNode {
   const mounted = useIsMounted();
   const { setTheme, resolvedTheme } = useTheme();
+  const pathname = usePathname();
 
   const toggleTheme = (): void => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
+
+  // The dashboard is always dark, so a theme toggle there does nothing.
+  if (pathname?.startsWith("/dashboard")) return null;
 
   if (!mounted) {
     return (
