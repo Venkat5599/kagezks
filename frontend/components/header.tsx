@@ -4,7 +4,6 @@ import { ArrowDownRight, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { KageMark } from "@/components/kage-logo";
 
 type MenuItem = { label: string; description: string; href?: string };
 
@@ -174,10 +173,7 @@ export function Header(): ReactNode {
     >
       <div className="h-20 max-[850px]:h-18 flex items-center justify-between px-4 max-[850px]:px-6">
         <a href="#" className="flex items-center gap-2 ml-4 max-[850px]:ml-0">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground text-background">
-            <KageMark className="h-4 w-4" />
-          </span>
-          <span className="text-lg font-semibold text-foreground leading-0 max-[1200px]:hidden max-[850px]:inline">Kage</span>
+          <span className="text-lg font-semibold text-foreground leading-0">Kage</span>
         </a>
 
         <nav className="flex items-center gap-1 max-[1200px]:gap-0 max-[850px]:hidden">

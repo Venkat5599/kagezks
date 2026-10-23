@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, KeyRound, Zap, Play, Trash2 } from "lucide-react";
-import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, short, CopyBtn } from "./ui";
+import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, Trash2 } from "lucide-react";
+import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, short } from "./ui";
 import { useWallet } from "@/lib/wallet";
+import { ApiPage, type ApiVariable } from "./api-page";
 
 type Api = {
   id: string; name: string; slug: string | null; description: string | null; category: string | null;
   tags: string[]; payment_address: string | null; target_url: string; http_method: string;
   content_type?: string; query_params?: string | null; example_response?: string | null;
   price: string; is_public: boolean; request_count: number; success_count?: number; earnings?: string;
+  builtin?: boolean; example_args?: Record<string, string>; ask?: string;
+  servers?: { slug: string; name: string }[];
+  variables?: ApiVariable[];
 };
 
 export function ApisSection() {
@@ -32,7 +36,7 @@ export function ApisSection() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight text-white">APIs</h1>
-          <p className="mt-1 text-neutral-400">Payment-gated API proxies — pay per call over x402, settled on Stellar.</p>
+          <p className="mt-1 text-neutral-400">Live data your app or AI assistant can use. Try any of them right here.</p>
         </div>
         <Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Create API</Button>
       </div>
@@ -53,12 +57,12 @@ export function ApisSection() {
               <Panel className="h-full cursor-pointer transition hover:border-accent/40 hover:bg-white/[0.04]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10"><Store className="h-5 w-5 text-accent" /></div>
-                  <span className="font-mono text-[11px] text-neutral-500">{short(a.payment_address, 6, 4)}</span>
+                  {a.builtin ? <Chip accent>by Kage</Chip> : <span className="font-mono text-[11px] text-neutral-500">{short(a.payment_address, 6, 4)}</span>}
                 </div>
                 <p className="mt-3 text-lg font-semibold text-white">{a.name}</p>
                 <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{a.description}</p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <Chip accent>{a.price} USDC / call</Chip>
+                  <Chip accent>{a.builtin || Number(a.price) === 0 ? "Free" : `$${Number(a.price).toFixed(2)} per call`}</Chip>
                   <Chip>{a.http_method}</Chip>
                   {(a.tags ?? []).slice(0, 2).map((t) => <Chip key={t}>{t}</Chip>)}
                 </div>
@@ -72,118 +76,7 @@ export function ApisSection() {
 }
 
 function ApiDetail({ api, onBack }: { api: Api; onBack: () => void }) {
-  const endpoint = `https://kageai.me/x402/${api.slug ?? api.id}`;
-  const curl = [
-    `# 1. call it — unpaid requests get an x402 quote (HTTP 402)`,
-    `curl -i ${endpoint}`,
-    ``,
-    `# 2. pay ${api.price} USDC to the payment address (memo = the quote nonce),`,
-    `#    then retry with the payment proof:`,
-    `curl ${endpoint} \\`,
-    `  -H 'X-PAYMENT: <base64({ nonce, txHash })>'`,
-    `# -> proxied to ${api.target_url}`,
-  ].join("\n");
-
-  return (
-    <div className="space-y-6">
-      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to APIs</button>
-
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10"><Store className="h-6 w-6 text-accent" /></div>
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-white">{api.name}</h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <Chip accent><Zap className="h-3 w-3" /> {api.price} USDC / call</Chip>
-              <Chip>{api.http_method}</Chip>
-              <Chip>{api.is_public ? "public" : "private"}</Chip>
-              {(api.tags ?? []).map((t) => <Chip key={t}>{t}</Chip>)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Panel>
-        <p className="text-sm text-neutral-300">{api.description}</p>
-        <div className="mt-5 space-y-3">
-          <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
-            <span className="text-xs text-neutral-500">Endpoint</span>
-            <span className="flex-1 truncate font-mono text-xs text-white">{endpoint}</span>
-            <CopyBtn text={endpoint} />
-          </div>
-          <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
-            <KeyRound className="h-3.5 w-3.5 text-accent" />
-            <span className="text-xs text-neutral-500">Pays to</span>
-            <span className="flex-1 truncate font-mono text-xs text-white">{api.payment_address ?? "—"}</span>
-            {api.payment_address && <CopyBtn text={api.payment_address} />}
-          </div>
-        </div>
-      </Panel>
-
-      <Panel>
-        <div className="flex items-center gap-2"><Terminal className="h-4 w-4 text-accent" /><p className="font-semibold text-white">How to use (x402)</p></div>
-        <p className="mt-1 text-sm text-neutral-500">Agents pay per call. Unpaid requests get a <span className="font-mono text-neutral-400">402</span> + quote; pay the USDC fee on Stellar, then retry with the proof. The gateway proxies to your target after payment.</p>
-        <div className="relative mt-4">
-          <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs leading-relaxed text-neutral-200">{curl}</pre>
-          <div className="absolute right-3 top-3"><CopyBtn text={curl} /></div>
-        </div>
-      </Panel>
-
-      <TestApi api={api} />
-
-      {api.example_response && (
-        <Panel>
-          <p className="font-semibold text-white">Example response</p>
-          <pre className="mt-3 overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{api.example_response}</pre>
-        </Panel>
-      )}
-
-      <div className="grid grid-cols-3 gap-4">
-        <Field label="Requests"><span className="text-2xl font-semibold text-white">{api.request_count ?? 0}</span></Field>
-        <Field label="Success"><span className="text-2xl font-semibold text-white">{api.success_count ?? 0}</span></Field>
-        <Field label="Earnings"><span className="text-2xl font-semibold text-white">${Number(api.earnings ?? 0).toFixed(2)}</span></Field>
-      </div>
-    </div>
-  );
-}
-
-// Live proxied call through the fabric (/run/api → real upstream fetch). Not metered
-// here — this is the owner testing their own proxy; agents pay via x402 at the tool.
-function TestApi({ api }: { api: Api }) {
-  const [argsText, setArgsText] = useState("{}");
-  const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<{ ok: boolean; status?: number; body?: unknown; error?: string } | null>(null);
-
-  const run = async () => {
-    setBusy(true); setRes(null);
-    let args: unknown = {};
-    try { args = argsText.trim() ? JSON.parse(argsText) : {}; }
-    catch { setRes({ ok: false, error: "args is not valid JSON" }); setBusy(false); return; }
-    try {
-      const r = await fetch("/api/fabric/run", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "api", slug: api.slug ?? api.id, args }),
-      });
-      setRes(await r.json());
-    } catch (e) { setRes({ ok: false, error: String((e as Error).message) }); } finally { setBusy(false); }
-  };
-
-  return (
-    <Panel>
-      <div className="flex items-center gap-2"><Play className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Test call</p><Chip accent>live</Chip></div>
-      <p className="mt-1 text-sm text-neutral-500">Proxies to <span className="font-mono text-neutral-400">{api.target_url}</span> with your args. Variables substitute <span className="font-mono text-neutral-400">{"{name}"}</span> in the URL / query.</p>
-      <div className="mt-4"><Field label="Args (JSON)"><Textarea rows={3} value={argsText} onChange={(e) => setArgsText(e.target.value)} className="font-mono" /></Field></div>
-      <div className="mt-3"><Button onClick={run} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} Send request</Button></div>
-      {res && (
-        <div className="mt-4">
-          {res.ok
-            ? <p className="text-sm"><span className={res.status && res.status < 400 ? "text-accent" : "text-red-400"}>HTTP {res.status}</span></p>
-            : <p className="text-sm text-red-400">{res.error}</p>}
-          {res.body != null && <pre className="mt-2 max-h-72 overflow-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{typeof res.body === "string" ? res.body : JSON.stringify(res.body, null, 2)}</pre>}
-        </div>
-      )}
-    </Panel>
-  );
+  return <ApiPage api={{ ...api, tags: api.tags ?? [] }} onBack={onBack} />;
 }
 
 function CreateApiForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {

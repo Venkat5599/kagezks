@@ -11,6 +11,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { sql, type McpServerRow } from "@/lib/db";
+import { builtinMcpRows, findBuiltinApi, runBuiltinApi } from "@/lib/builtin-catalog";
+import { findBuiltinWorkflow, runBuiltinWorkflow } from "@/lib/builtin-workflows";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,6 +27,8 @@ const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON
 type WfRow = { slug: string | null; name: string; description: string | null; input_variables?: { name: string; required?: boolean; description?: string }[] };
 
 async function loadServer(slug: string): Promise<McpServerRow | null> {
+  const builtin = builtinMcpRows().find((m) => m.slug === slug);
+  if (builtin) return builtin as McpServerRow;
   try {
     const rows = (await sql`SELECT * FROM mcp_servers WHERE slug = ${slug} LIMIT 1`) as McpServerRow[];
     return rows[0] ?? null;
@@ -85,6 +89,18 @@ function buildServer(row: McpServerRow, auth: string | null, workflows: WfRow[])
   let registered = 0;
   for (const t of tools) {
     if (KNOWN[t]) { KNOWN[t](); registered++; continue; }
+    // Built-in catalog API → runs right here, free, with a typed input schema.
+    const builtin = t.startsWith("api__") ? findBuiltinApi(t.slice("api__".length)) : undefined;
+    if (builtin) {
+      const shape: Record<string, z.ZodTypeAny> = {};
+      for (const v of builtin.variables) shape[v.name] = v.required ? z.string().describe(v.description) : z.string().optional().describe(v.description);
+      server.registerTool(t, { title: builtin.name, description: `${builtin.description} (free)`, inputSchema: shape },
+        async (input: Record<string, unknown>) => {
+          const res = await runBuiltinApi(builtin.slug, input);
+          return res.ok ? json(res.data) : { ...json({ error: res.error, status: res.status }), isError: true };
+        });
+      registered++; continue;
+    }
     // Declared api__<slug> → executable proxy tool via the fabric.
     if (t.startsWith("api__")) {
       const apiSlug = t.slice("api__".length);
@@ -100,6 +116,18 @@ function buildServer(row: McpServerRow, auth: string | null, workflows: WfRow[])
 
   // Declared workflows → executable wf__<slug> tools (typed from input_variables).
   for (const ws of wfSlugs) {
+    // Built-in workflow → runs right here and returns one plain answer.
+    const bw = findBuiltinWorkflow(ws);
+    if (bw) {
+      const shape: Record<string, z.ZodTypeAny> = {};
+      for (const v of bw.inputs) shape[v.name] = v.required ? z.string().describe(v.description) : z.string().optional().describe(v.description);
+      server.registerTool(`wf__${ws}`, { title: bw.name, description: `${bw.description} (free)`, inputSchema: shape },
+        async (input: Record<string, unknown>) => {
+          const res = await runBuiltinWorkflow(ws, input);
+          return res.ok ? json(res.result) : { ...json({ error: res.error, steps: res.steps }), isError: true };
+        });
+      registered++; continue;
+    }
     const wf = workflows.find((w) => w.slug === ws);
     const shape: Record<string, z.ZodTypeAny> = {};
     for (const v of wf?.input_variables ?? []) shape[v.name] = v.required ? z.string() : z.string().optional();

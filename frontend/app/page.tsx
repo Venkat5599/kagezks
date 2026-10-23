@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = createMetadata({
-  title: "Kage — Agent payments, proven in zero-knowledge.",
+  title: "Kage: agent payments, proven in zero-knowledge",
   description: siteConfig.description,
   path: "/",
 });

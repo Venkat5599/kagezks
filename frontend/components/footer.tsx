@@ -2,7 +2,6 @@
 
 import { ArrowRight, Mail } from "lucide-react";
 import type { ReactNode } from "react";
-import { KageMark } from "@/components/kage-logo";
 
 const CONTRACT_URL =
   "https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
@@ -20,6 +19,10 @@ const footerLinks = {
     { label: "Deposit tx", href: `${TX}bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379` },
     { label: "Withdraw tx", href: `${TX}5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793` },
   ],
+  social: [
+    { label: "GitHub", href: "https://github.com/Venkat5599/kagezks" },
+    { label: "X (Twitter)", href: "https://x.com/Kage_stellar" },
+  ],
 };
 
 export function Footer(): ReactNode {
@@ -35,7 +38,7 @@ export function Footer(): ReactNode {
           
           <div className="relative z-10 flex flex-col items-center text-center px-12 py-24 max-[850px]:px-6 max-[850px]:py-6 max-[850px]:pt-12">
             <h2 className="text-6xl max-[850px]:text-3xl text-black font-medium tracking-tight max-w-2xl mb-14 max-[850px]:mb-8">
-              Agent payments you can trust — and no one can read.
+              Agent payments you can trust, and no one can read.
             </h2>
 
             <form className="flex items-center w-full max-w-md bg-background rounded-xl p-1.5 shadow-lg max-[850px]:flex-col max-[850px]:p-3 max-[850px]:gap-3 max-[850px]:max-w-none">
@@ -66,9 +69,6 @@ export function Footer(): ReactNode {
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex items-start justify-between gap-12 max-[850px]:flex-col max-[850px]:gap-10">
             <a href="#" className="flex items-center gap-2" aria-label="Kage home">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-accent">
-                <KageMark className="h-5 w-5" />
-              </span>
               <span className="text-xl font-semibold text-neutral-900 leading-0">Kage</span>
             </a>
 
@@ -98,12 +98,25 @@ export function Footer(): ReactNode {
                   ))}
                 </ul>
               </div>
+
+              <div>
+                <h3 className="text-xs font-medium text-neutral-900/50 uppercase tracking-wider mb-4">Follow</h3>
+                <ul className="space-y-2">
+                  {footerLinks.social.map((link) => (
+                    <li key={link.label}>
+                      <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </nav>
           </div>
 
           <div className="mt-16 pt-6">
             <p className="text-sm text-neutral-900/50 text-center">
-              © {new Date().getFullYear()} Kage · Stellar Hacks · Real-World ZK
+              © {new Date().getFullYear()} Kage
             </p>
           </div>
         </div>

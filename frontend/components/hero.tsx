@@ -1,152 +1,111 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, Radio, ExternalLink, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Radio, ExternalLink, ShieldCheck } from "lucide-react";
 import { motion, useMotionValue, useSpring } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode, type MouseEvent } from "react";
 
-type LivePool = {
-  live: boolean;
-  contract?: string;
-  currentRoot?: string;
-  leafCount?: number;
-  provenNullifierSpent?: boolean;
-};
-type KageNote = {
-  onchainNote: {
-    amount: string;
-    commitment: string;
-    ephemeralPub: string;
-    nullifierHash: string;
-    stealthAddress: string;
-  };
+type LivePool = { live: boolean; contract?: string; currentRoot?: string; leafCount?: number; usdcPooled?: string | null };
+type Activity = {
+  ok: boolean;
+  deposits?: number;
+  withdrawals?: number;
+  recent?: { type: "deposit" | "withdraw"; at: string; ref: string; link: string }[];
 };
 
-const mid = (s: string | undefined, head = 8, tail = 6) =>
-  !s ? "—" : s.length > head + tail ? `${s.slice(0, head)}…${s.slice(-tail)}` : s;
+const mid = (s: string | undefined, head = 8, tail = 6) => (!s ? "" : s.length > head + tail ? `${s.slice(0, head)}…${s.slice(-tail)}` : s);
+const ago = (iso: string) => {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return `${Math.round(s / 86400)} days ago`;
+};
 
-const NAV = ["Pool", "Deposits", "Withdrawals", "Nullifiers", "Circuits"];
-
+// Every number here is read live: the pool contract (notes, root, balance) over Soroban
+// RPC and the full deposit / withdrawal history from Stellar Expert's event index.
 function LivePoolPreview(): ReactNode {
   const [pool, setPool] = useState<LivePool | null>(null);
-  const [note, setNote] = useState<KageNote["onchainNote"] | null>(null);
+  const [act, setAct] = useState<Activity | null>(null);
 
   useEffect(() => {
     fetch("/api/kage").then((r) => r.json()).then(setPool).catch(() => setPool({ live: false }));
-    fetch("/veil.json").then((r) => r.json()).then((d: KageNote) => setNote(d.onchainNote)).catch(() => {});
+    fetch("/api/pool-activity").then((r) => r.json()).then(setAct).catch(() => setAct({ ok: false }));
   }, []);
 
   const live = Boolean(pool?.live);
+  const xlm = pool?.usdcPooled != null ? Number(pool.usdcPooled) / 1e7 : null;
+  const dash = <span className="text-neutral-300">…</span>;
 
-  const tiles = [
-    { label: "Notes in pool", value: pool?.leafCount ?? "—", sub: "leaf_count, on-chain" },
-    { label: "USDC pooled", value: note ? (Number(note.amount) / 1e7).toFixed(2) : "—", sub: "amount hidden per note" },
-    { label: "Spend recorded", value: pool ? (pool.provenNullifierSpent ? "1" : "0") : "—", sub: "nullifiers, no double-spend" },
-    { label: "Tree depth", value: "10", sub: "1024-note anonymity set" },
+  const tiles: { label: string; value: ReactNode; sub: string }[] = [
+    { label: "Deposits", value: act?.deposits ?? dash, sub: "private payments in" },
+    { label: "Withdrawals", value: act?.withdrawals ?? dash, sub: "each note spent once" },
+    { label: "XLM in pool", value: xlm != null ? xlm.toLocaleString("en-US", { maximumFractionDigits: 2 }) : dash, sub: "held by the contract" },
+    { label: "Slots used", value: pool?.leafCount != null ? `${pool.leafCount} / 1,024` : dash, sub: "depth-10 Merkle tree" },
   ];
 
-  const rows = note
-    ? [
-        { k: "commitment", v: note.commitment, tag: "leaf" },
-        { k: "ephemeral R", v: note.ephemeralPub, tag: "announce" },
-        { k: "nullifier hash", v: note.nullifierHash, tag: "spend tag" },
-      ]
-    : [];
-
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl mask-[linear-gradient(to_bottom,black_72%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_72%,transparent_100%)]">
-      {/* top bar */}
+    <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl mask-[linear-gradient(to_bottom,black_80%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)]">
       <div className="flex items-center justify-between gap-4 border-b border-neutral-100 px-5 py-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="h-6 w-6 rounded-full bg-black" />
           <span className="text-sm font-semibold text-black">Kage pool</span>
-          <span className="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 font-mono text-[11px] text-neutral-500">
-            {mid(pool?.contract, 6, 5)}
-          </span>
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-              live ? "bg-accent/15 text-accent" : "bg-neutral-100 text-neutral-400"
-            }`}
+          <a
+            href={pool?.contract ? `https://stellar.expert/explorer/public/contract/${pool.contract}` : undefined}
+            target="_blank"
+            rel="noreferrer"
+            className="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 font-mono text-[11px] text-neutral-500 hover:text-black"
           >
+            {mid(pool?.contract, 6, 5) || "…"}
+          </a>
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${live ? "bg-accent/15 text-accent" : "bg-neutral-100 text-neutral-400"}`}>
             <Radio className={`h-2.5 w-2.5 ${live ? "animate-pulse" : ""}`} />
-            {live ? "live · mainnet" : "connecting"}
+            {live ? "live · mainnet" : pool ? "offline" : "connecting"}
           </span>
         </div>
-        <a
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white"
-        >
+        <a href="/dashboard" className="inline-flex items-center gap-1.5 rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white">
           Open dashboard <ExternalLink className="h-3.5 w-3.5" />
         </a>
       </div>
 
-      <div className="flex">
-        {/* nav rail */}
-        <aside className="hidden w-44 shrink-0 border-r border-neutral-100 p-4 sm:block">
-          <p className="px-2 text-[11px] font-medium uppercase tracking-wider text-neutral-400">Pool</p>
-          <nav className="mt-2 space-y-0.5">
-            {NAV.map((item, i) => (
-              <div
-                key={item}
-                className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm ${
-                  i === 0 ? "bg-neutral-100 font-medium text-black" : "text-neutral-500"
-                }`}
-              >
-                {item}
-              </div>
-            ))}
-          </nav>
-          <div className="mt-5 rounded-lg bg-accent/10 p-3">
-            <p className="text-[11px] font-medium text-neutral-700">ZK is load-bearing</p>
-            <p className="mt-1 text-[11px] leading-snug text-neutral-500">
-              Remove the proof → every agent payment goes public.
-            </p>
-          </div>
-        </aside>
+      <div className="p-5">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-black">What the chain sees</p>
+          <span className="text-[11px] text-neutral-400">read live from Stellar</span>
+        </div>
 
-        {/* main */}
-        <div className="min-w-0 flex-1 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-black">What the chain sees</p>
-            <span className="text-[11px] text-neutral-400">read in real time</span>
-          </div>
+        <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {tiles.map((t) => (
+            <div key={t.label} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5">
+              <p className="text-[11px] text-neutral-500">{t.label}</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-black">{t.value}</p>
+              <p className="mt-0.5 text-[11px] text-neutral-400">{t.sub}</p>
+            </div>
+          ))}
+        </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {tiles.map((t) => (
-              <div key={t.label} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5">
-                <p className="text-[11px] text-neutral-500">{t.label}</p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-black">{t.value}</p>
-                <p className="mt-0.5 text-[11px] text-neutral-400">{t.sub}</p>
-              </div>
+        <div className="mt-4 rounded-xl border border-neutral-200">
+          <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-2.5">
+            <span className="text-xs font-medium text-neutral-600">Latest pool activity (public)</span>
+            {pool?.currentRoot && <span className="font-mono text-[11px] text-neutral-400">root {mid(pool.currentRoot, 10, 8)}</span>}
+          </div>
+          <div className="divide-y divide-neutral-100">
+            {act === null && <div className="px-4 py-6 text-center text-xs text-neutral-400">Loading pool activity…</div>}
+            {act && !act.ok && <div className="px-4 py-6 text-center text-xs text-neutral-400">Couldn&apos;t load pool activity right now.</div>}
+            {act?.recent?.map((r) => (
+              <a key={r.link} href={r.link} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-neutral-50">
+                <span className={`w-20 rounded-full px-2 py-0.5 text-center text-[10px] font-medium ${r.type === "deposit" ? "bg-accent/15 text-accent" : "bg-neutral-100 text-neutral-600"}`}>
+                  {r.type === "deposit" ? "deposit" : "withdrawal"}
+                </span>
+                <span className="flex-1 truncate font-mono text-xs text-neutral-700">
+                  {r.type === "deposit" ? "commitment" : "nullifier"} {mid(r.ref, 10, 8)}
+                </span>
+                <span className="shrink-0 text-[11px] text-neutral-400">{ago(r.at)}</span>
+              </a>
             ))}
           </div>
-
-          <div className="mt-4 rounded-xl border border-neutral-200">
-            <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-2.5">
-              <span className="text-xs font-medium text-neutral-600">Pool ledger (public)</span>
-              <span className="font-mono text-[11px] text-neutral-400">
-                root {mid(pool?.currentRoot ?? note?.commitment, 10, 8)}
-              </span>
-            </div>
-            <div className="divide-y divide-neutral-100">
-              {rows.length === 0 && (
-                <div className="px-4 py-6 text-center text-xs text-neutral-400">reading on-chain…</div>
-              )}
-              {rows.map((r) => (
-                <div key={r.k} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                  <span className="text-xs text-neutral-500">{r.k}</span>
-                  <span className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-neutral-700">{mid(r.v, 12, 10)}</span>
-                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-500">{r.tag}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2 border-t border-neutral-100 bg-accent/5 px-4 py-2.5">
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-accent" />
-              <span className="text-[11px] text-neutral-600">
-                No identities, no amounts, no link from any row back to the agent or who it paid.
-              </span>
-            </div>
+          <div className="flex items-start gap-2 border-t border-neutral-100 bg-accent/5 px-4 py-2.5">
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+            <span className="text-[11px] leading-snug text-neutral-600">
+              No row names the payer or the payee, and no withdrawal says which deposit it spends. Deposit amounts are still public in this version; fixed-size notes that hide them are on the roadmap.
+            </span>
           </div>
         </div>
       </div>
@@ -170,7 +129,7 @@ const PARALLAX_INTENSITY = 20;
 
 const PHRASES = [
   "Groth16 membership proof",
-  "Prove you own a note — not which one",
+  "Prove you own a note, not which one",
   "Poseidon commitments",
   "Nullifiers stop double-spend",
   "BN254 pairing on Soroban",
@@ -235,15 +194,6 @@ export function Hero(): ReactNode {
           animate="visible"
           transition={{ staggerChildren: 0.15, delayChildren: 0.2 }}
         >
-          <motion.div
-            className="inline-flex items-center gap-1.5 pl-4 pr-3 py-1.5 rounded-xl border border-black/10 bg-white text-black text-sm font-medium mb-6"
-            variants={fadeInUp}
-            transition={{ duration: 0.8, ease }}
-          >
-            Real-World ZK · Live on Stellar mainnet
-            <Sparkles className="h-3.5 w-3.5 text-accent" strokeWidth={1.8} />
-          </motion.div>
-
           <h1 className="text-8xl max-[850px]:text-5xl font-medium tracking-tight leading-[1.1] mb-6 text-black">
             <motion.span
               className="block"
@@ -266,7 +216,7 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            Every payment is a Groth16 proof: the payee proves it owns an unspent note in the pool <span className="text-black">without revealing which</span> — so who was paid, how much, and the agent→payee link never touch the chain. Verified on-chain over BN254, enforced by math, not a custodian.
+            Every payment is a Groth16 proof: the payee proves it owns an unspent note in the pool <span className="text-black">without revealing which</span>, so the chain never learns who was paid or links the payee back to the agent. Verified on-chain over BN254 and enforced by math, not a custodian.
           </motion.p>
 
           <motion.div

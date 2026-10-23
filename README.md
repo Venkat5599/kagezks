@@ -296,15 +296,15 @@ cd frontend && npm install && npm run dev
 
 ## Roadmap
 
-The next 30 days, each item with a check anyone can run, are in [`docs/SPRINT-SCOPE.md`](docs/SPRINT-SCOPE.md).
+The next 30 days and the product milestone after it, each item with a check anyone can run, are in [`docs/SPRINT-SCOPE.md`](docs/SPRINT-SCOPE.md).
 
 | Phase | Focus | Status |
 |---|---|---|
 | 1 | ZK pool, SessionAccount, stealth notes | ✅ done |
 | 2 | CI, tests, hardening, onboarding | ✅ done |
 | 3 | Mainnet pool ✅ · mainnet agent settlement · fixed denominations · multi-party setup | 🟡 in progress |
-| 4 | External audit, view/spend key split, more assets | ⬜ planned |
-| 5 | One-command agent SDK, outside integrations | ⬜ planned |
+| 4 | One-command agent SDK, one-click MCP connect, sign-in + mainnet/testnet switch, non-custodial provisioning | ⬜ planned |
+| 5 | Marketplace with real x402 services, private/public MCP servers, USDC pool, external audit, view/spend key split | ⬜ planned |
 
 ## Tests
 

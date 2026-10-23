@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, ArrowLeft, Loader2, Search, Trash2, Globe, Link2, Play, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, CopyBtn, short } from "./ui";
 import { useWallet } from "@/lib/wallet";
+import { WorkflowPage, type WorkflowForPage } from "./workflow-page";
 
 // Shapes match the fabric engine (agent/fabric/*): steps carry `id` + `kind`, output
 // mapping is { name, from }, and templates use {{input.x}} / {{steps.id.output...}}.
@@ -16,6 +17,7 @@ type Wf = {
   input_variables: { name: string; type?: string }[]; steps: WfStep[];
   output_mapping?: { name: string; from: string }[]; allowed_contracts?: string[];
   tags: string[];
+  builtin?: boolean; ask?: string; example_args?: Record<string, string>;
 };
 type Variable = { name: string; type: string; description: string; required: boolean };
 type Output = { name: string; from: string };
@@ -39,7 +41,7 @@ export function WorkflowsSection() {
   useEffect(() => { load(); }, [address]);
 
   if (creating) return <CreateWorkflowForm onDone={() => { setCreating(false); load(); }} onCancel={() => setCreating(false)} />;
-  if (selected) return <WorkflowDetail wf={selected} onBack={() => setSelected(null)} />;
+  if (selected) return selected.builtin ? <WorkflowPage wf={selected as unknown as WorkflowForPage} onBack={() => setSelected(null)} /> : <WorkflowDetail wf={selected} onBack={() => setSelected(null)} />;
   const filtered = (wfs ?? []).filter((w) => !q || (w.name + w.description).toLowerCase().includes(q.toLowerCase()));
 
   return (
@@ -47,7 +49,7 @@ export function WorkflowsSection() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight text-white">Workflows</h1>
-          <p className="mt-1 text-neutral-400">Reusable, composable flows agents run — HTTP calls + on-chain ZK operations.</p>
+          <p className="mt-1 text-neutral-400">Ready-made recipes that do several lookups in a row and give one answer.</p>
         </div>
         <Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Create Workflow</Button>
       </div>
@@ -70,9 +72,10 @@ export function WorkflowsSection() {
                   <p className="text-lg font-semibold text-white">{w.name}</p>
                   {w.is_public && <Globe className="h-3.5 w-3.5 text-neutral-500" />}
                 </div>
-                <p className="mt-0.5 font-mono text-xs text-neutral-500">/{w.slug}</p>
-                <p className="mt-3 line-clamp-2 text-sm text-neutral-500">{w.description}</p>
+                {!w.builtin && <p className="mt-0.5 font-mono text-xs text-neutral-500">/{w.slug}</p>}
+                <p className="mt-2 line-clamp-2 text-sm text-neutral-500">{w.description}</p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {w.builtin && <><Chip accent>Free</Chip><Chip>by Kage</Chip></>}
                   {(w.tags ?? []).map((t) => <Chip key={t} accent={t === "zk" || t === "onchain"}>{t}</Chip>)}
                 </div>
                 <div className="mt-4 flex items-center justify-between text-xs text-neutral-500">

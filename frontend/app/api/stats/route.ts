@@ -1,26 +1,20 @@
 // Dashboard stats: DB aggregates (APIs / requests / earnings) + live on-chain
 // session + pool reads (the scoped-key panel).
 import { sql } from "@/lib/db";
-import {
-  rpc,
-  Contract,
-  TransactionBuilder,
-  Networks,
-  scValToNative,
-  BASE_FEE,
-} from "@stellar/stellar-sdk";
+import { networkFromRequest } from "@/lib/networks";
+import { readContract } from "@/lib/chain-read";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const RPC_URL = "https://mainnet.sorobanrpc.com";
-const POOL = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
-const SESSION = process.env.KAGE_SESSION ?? "";
-const SOURCE = "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6";
+// The demo agent's SessionAccount lives on mainnet only.
+const SESSION_MAINNET = process.env.KAGE_SESSION ?? "";
 
 export async function GET(req: Request) {
   // Per-user aggregates when ?owner is provided (the connected wallet); global otherwise.
   const owner = new URL(req.url).searchParams.get("owner");
+  const net = networkFromRequest(req);
+  const SESSION = net.name === "mainnet" ? SESSION_MAINNET : "";
   let totals = { apis: 0, requests: 0, success: 0, earnings: 0, mcpServers: 0, workflows: 0 };
   try {
     const a = (owner
@@ -40,21 +34,11 @@ export async function GET(req: Request) {
     cap: null, spent: null, remaining: null, expiry: null, poolLeafCount: 0, live: false,
   };
   try {
-    const server = new rpc.Server(RPC_URL);
-    const account = await server.getAccount(SOURCE);
-    const call = async (cid: string, method: string) => {
-      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.PUBLIC })
-        .addOperation(new Contract(cid).call(method))
-        .setTimeout(30)
-        .build();
-      const sim = await server.simulateTransaction(tx);
-      if (!rpc.Api.isSimulationSuccess(sim) || !sim.result?.retval) return null;
-      return scValToNative(sim.result.retval);
-    };
+    const call = (cid: string, method: string) => readContract(net, cid, method);
     const [remaining, policy, leafCount] = await Promise.all([
       SESSION ? call(SESSION, "remaining") : Promise.resolve(null),
       SESSION ? call(SESSION, "policy") : Promise.resolve(null),
-      call(POOL, "leaf_count"),
+      call(net.pool, "leaf_count"),
     ]);
     const p = (policy ?? {}) as Record<string, unknown>;
     session = {
@@ -63,10 +47,10 @@ export async function GET(req: Request) {
       remaining: remaining != null ? String(remaining) : null,
       expiry: p.expiry != null ? Number(p.expiry) : null,
       poolLeafCount: Number(leafCount ?? 0),
-      live: true,
+      live: leafCount != null,
     };
   } catch {}
 
   const successRate = totals.requests > 0 ? Math.round((totals.success / totals.requests) * 100) : 0;
-  return Response.json({ totals: { ...totals, successRate }, session });
+  return Response.json({ network: net.name, totals: { ...totals, successRate }, session });
 }

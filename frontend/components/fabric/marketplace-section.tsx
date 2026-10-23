@@ -1,41 +1,45 @@
 "use client";
 
-// Marketplace — public creations from every user (owner-agnostic). The dashboard
-// sections show only your own items (filtered by connected wallet); this is the shared
-// discovery surface where anyone can find and connect to public MCP servers, APIs and
-// workflows. Read-only: browse + copy the connect command.
-import { useEffect, useState } from "react";
-import { Loader2, Search, Server, Store, Workflow, Wrench, Globe } from "lucide-react";
-import { Panel, Input, Empty, Chip, CopyBtn, short } from "./ui";
+// Marketplace — everything public, from Kage and from every user. Click any card to
+// open its page: try it, see what it does, and how to connect or call it.
+import { useEffect, useState, type ReactNode } from "react";
+import { Loader2, Search, Server, Store, Workflow, ChevronRight } from "lucide-react";
+import { Panel, Input, Empty, Chip, short } from "./ui";
+import { ApiPage, type ApiForPage } from "./api-page";
+import { WorkflowPage, type WorkflowForPage } from "./workflow-page";
+import { BuiltinMcpDetail, type Mcp, type ToolCard } from "./mcp-section";
 
-type Mcp = { id: string; slug: string | null; display_name: string; description: string | null; tools: string[]; workflows: string[]; owner_address: string | null };
-type Api = { id: string; slug: string | null; name: string; description: string | null; price: string; category: string | null };
-type Wf = { id: string; slug: string | null; name: string; description: string | null };
+type McpRow = Mcp & { cards?: ToolCard[] };
+type Open = { kind: "mcp"; item: McpRow } | { kind: "api"; item: ApiForPage } | { kind: "wf"; item: WorkflowForPage } | null;
 
 export function MarketplaceSection() {
-  const [mcps, setMcps] = useState<Mcp[] | null>(null);
-  const [apis, setApis] = useState<Api[] | null>(null);
-  const [wfs, setWfs] = useState<Wf[] | null>(null);
+  const [mcps, setMcps] = useState<McpRow[] | null>(null);
+  const [apis, setApis] = useState<ApiForPage[] | null>(null);
+  const [wfs, setWfs] = useState<WorkflowForPage[] | null>(null);
   const [q, setQ] = useState("");
-  const [token, setToken] = useState<string | null>(null);
+  const [open, setOpen] = useState<Open>(null);
 
   useEffect(() => {
-    setToken(localStorage.getItem("kage_session_token"));
     fetch("/api/mcp-servers?scope=public").then((r) => r.json()).then((d) => setMcps(d.servers ?? [])).catch(() => setMcps([]));
     fetch("/api/apis?scope=public").then((r) => r.json()).then((d) => setApis(d.apis ?? [])).catch(() => setApis([]));
     fetch("/api/workflows?scope=public").then((r) => r.json()).then((d) => setWfs(d.workflows ?? [])).catch(() => setWfs([]));
   }, []);
 
+  const back = () => setOpen(null);
+  if (open?.kind === "mcp") return <BuiltinMcpDetail mcp={open.item} onBack={back} backLabel="Back to Marketplace" />;
+  if (open?.kind === "api") return <ApiPage api={{ ...open.item, tags: open.item.tags ?? [] }} onBack={back} backLabel="Back to Marketplace" />;
+  if (open?.kind === "wf") return <WorkflowPage wf={open.item} onBack={back} backLabel="Back to Marketplace" />;
+
   const match = (s: string) => !q || s.toLowerCase().includes(q.toLowerCase());
-  const fMcps = (mcps ?? []).filter((m) => match(m.display_name + m.description));
-  const fApis = (apis ?? []).filter((a) => match(a.name + a.description));
-  const fWfs = (wfs ?? []).filter((w) => match(w.name + w.description));
+  const fMcps = (mcps ?? []).filter((m) => match(`${m.display_name} ${m.description}`));
+  const fApis = (apis ?? []).filter((a) => match(`${a.name} ${a.description}`));
+  const fWfs = (wfs ?? []).filter((w) => match(`${w.name} ${w.description}`));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-4xl font-semibold tracking-tight text-white">Marketplace</h1>
-        <p className="mt-1 text-neutral-400">Public MCP servers, APIs, and workflows published by everyone — discover and connect.</p>
+        <p className="mt-1 text-neutral-400">Everything public on Kage. Open any card to try it and see how to use it.</p>
       </div>
 
       <div className="relative">
@@ -43,67 +47,92 @@ export function MarketplaceSection() {
         <Input placeholder="Search the marketplace…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-10" />
       </div>
 
-      {/* MCP servers */}
-      <div>
-        <div className="mb-3 flex items-center gap-2"><Server className="h-4 w-4 text-accent" /><p className="text-sm font-semibold uppercase tracking-wider text-neutral-500">MCP Servers</p></div>
-        {mcps === null ? <Empty><Loader2 className="mx-auto h-5 w-5 animate-spin" /></Empty> : fMcps.length === 0 ? <Empty>No public MCP servers yet.</Empty> : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {fMcps.map((m) => {
-              // Append the user's provisioned token so the URL/command is connect-ready.
-              const url = `https://kageai.me/mcp/${m.slug}${token ? `?token=${token}` : ""}`;
-              const cmd = `claude mcp add ${m.slug} --transport http https://kageai.me/mcp/${m.slug}${token ? ` --header "Authorization: Bearer ${token}"` : ""}`;
-              return (
-                <Panel key={m.id}>
-                  <div className="flex items-center gap-2"><Server className="h-4 w-4 text-accent" /><p className="font-semibold text-white">{m.display_name}</p><Globe className="h-3 w-3 text-neutral-600" /></div>
-                  <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{m.description}</p>
-                  <div className="mt-3 flex items-center gap-4 text-xs text-neutral-400">
-                    <span className="inline-flex items-center gap-1"><Wrench className="h-3.5 w-3.5 text-accent" /> {(m.tools ?? []).length} tools</span>
-                    <span className="inline-flex items-center gap-1"><Workflow className="h-3.5 w-3.5 text-accent" /> {(m.workflows ?? []).length} workflows</span>
-                    <span className="font-mono text-[11px] text-neutral-600">{short(m.owner_address, 5, 4)}</span>
-                  </div>
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2">
-                    <span className="flex-1 truncate font-mono text-[11px] text-neutral-300">{url}</span>
-                    <CopyBtn text={cmd} />
-                  </div>
-                  {!token && <p className="mt-1.5 text-[10px] text-neutral-600">Provision a Session Account (Dashboard) to get a connect-ready link with your token.</p>}
-                </Panel>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <Section icon={Server} title="MCP servers" hint="Give your AI assistant new abilities" loading={mcps === null} count={fMcps.length}>
+        {fMcps.map((m) => (
+          <Card
+            key={m.id}
+            onClick={() => setOpen({ kind: "mcp", item: m })}
+            title={m.display_name}
+            body={m.description}
+            chips={
+              <>
+                {m.builtin ? <Chip accent>by Kage</Chip> : <span className="font-mono text-[11px] text-neutral-500">{short(m.owner_address, 5, 4)}</span>}
+                <Chip>{m.cards?.length ?? (m.tools ?? []).length + (m.workflows ?? []).length} abilities</Chip>
+              </>
+            }
+          />
+        ))}
+      </Section>
 
-      {/* APIs */}
-      <div>
-        <div className="mb-3 flex items-center gap-2"><Store className="h-4 w-4 text-accent" /><p className="text-sm font-semibold uppercase tracking-wider text-neutral-500">APIs</p></div>
-        {apis === null ? <Empty><Loader2 className="mx-auto h-5 w-5 animate-spin" /></Empty> : fApis.length === 0 ? <Empty>No public APIs yet.</Empty> : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {fApis.map((a) => (
-              <Panel key={a.id}>
-                <div className="flex items-center justify-between"><p className="font-semibold text-white">{a.name}</p><Chip accent>${Number(a.price).toFixed(4)} / call</Chip></div>
-                <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{a.description}</p>
-                {a.category && <div className="mt-3"><Chip>{a.category}</Chip></div>}
-              </Panel>
-            ))}
-          </div>
-        )}
-      </div>
+      <Section icon={Workflow} title="Workflows" hint="Several lookups in a row, one answer" loading={wfs === null} count={fWfs.length}>
+        {fWfs.map((w) => (
+          <Card
+            key={w.id}
+            onClick={() => setOpen({ kind: "wf", item: w })}
+            title={w.name}
+            body={w.description}
+            chips={
+              <>
+                {w.builtin && <Chip accent>by Kage</Chip>}
+                <Chip>{w.steps?.length ?? 0} steps</Chip>
+              </>
+            }
+          />
+        ))}
+      </Section>
 
-      {/* Workflows */}
-      <div>
-        <div className="mb-3 flex items-center gap-2"><Workflow className="h-4 w-4 text-accent" /><p className="text-sm font-semibold uppercase tracking-wider text-neutral-500">Workflows</p></div>
-        {wfs === null ? <Empty><Loader2 className="mx-auto h-5 w-5 animate-spin" /></Empty> : fWfs.length === 0 ? <Empty>No public workflows yet.</Empty> : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {fWfs.map((w) => (
-              <Panel key={w.id}>
-                <p className="font-semibold text-white">{w.name}</p>
-                <p className="mt-0.5 font-mono text-xs text-neutral-500">/{w.slug}</p>
-                <p className="mt-2 line-clamp-2 text-sm text-neutral-500">{w.description}</p>
-              </Panel>
-            ))}
-          </div>
-        )}
-      </div>
+      <Section icon={Store} title="APIs" hint="Live data for your app or assistant" loading={apis === null} count={fApis.length}>
+        {fApis.map((a) => (
+          <Card
+            key={a.id}
+            onClick={() => setOpen({ kind: "api", item: a })}
+            title={a.name}
+            body={a.description}
+            chips={
+              <>
+                <Chip accent>{a.builtin || Number(a.price) === 0 ? "Free" : `$${Number(a.price).toFixed(2)} per call`}</Chip>
+                {a.category && <Chip>{a.category}</Chip>}
+              </>
+            }
+          />
+        ))}
+      </Section>
     </div>
+  );
+}
+
+function Section({ icon: Icon, title, hint, loading, count, children }: { icon: typeof Server; title: string; hint: string; loading: boolean; count: number; children: ReactNode }) {
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-accent" />
+        <p className="font-semibold text-white">{title}</p>
+        <p className="text-sm text-neutral-500">· {hint}</p>
+      </div>
+      {loading ? (
+        <Empty>
+          <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+        </Empty>
+      ) : count === 0 ? (
+        <Empty>Nothing here matches.</Empty>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+      )}
+    </div>
+  );
+}
+
+function Card({ title, body, chips, onClick }: { title: string; body: string | null; chips: ReactNode; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="group text-left">
+      <Panel className="h-full cursor-pointer transition group-hover:border-accent/40 group-hover:bg-white/[0.04]">
+        <div className="flex items-start justify-between gap-3">
+          <p className="font-semibold text-white">{title}</p>
+          <ChevronRight className="h-4 w-4 shrink-0 text-neutral-600 transition group-hover:translate-x-0.5 group-hover:text-accent" />
+        </div>
+        <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{body}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">{chips}</div>
+      </Panel>
+    </button>
   );
 }

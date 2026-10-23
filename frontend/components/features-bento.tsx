@@ -139,7 +139,7 @@ function PayoutCardContent(): ReactNode {
       <div className="relative z-10 flex items-start justify-between gap-3 h-full">
         <div>
           <p className="text-base font-semibold text-neutral-900">+1,000.00</p>
-          <p className="text-base font-semibold text-neutral-900">USDC</p>
+          <p className="text-base font-semibold text-neutral-900">XLM</p>
         </div>
         <ShieldCheck className="opacity-25 text-black" aria-hidden="true" />
       </div>
@@ -167,7 +167,7 @@ function ChainViewCard(): ReactNode {
           What the chain sees
         </h3>
         <p className="text-card-foreground-muted text-sm">
-          Commitments, random keys, a Merkle root, nullifier hashes — never an identity or an amount.
+          Commitments, random keys, a Merkle root and nullifier hashes. Never an identity.
         </p>
       </div>
 
@@ -225,7 +225,7 @@ function LoadBearingCard(): ReactNode {
       </div>
 
       <p className="text-card-foreground-muted text-sm max-w-xs">
-        Remove the pool proof and the whole agent spend graph goes public. The privacy <span className="text-card-foreground font-medium">is</span> the proof — not a setting you trust us to keep on.
+        Remove the pool proof and the whole agent spend graph goes public. The privacy <span className="text-card-foreground font-medium">is</span> the proof, not a setting you trust us to keep on.
       </p>
     </motion.div>
   );

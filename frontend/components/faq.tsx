@@ -8,7 +8,7 @@ const faqs = [
   {
     question: "Why not just encrypt the payments?",
     answer:
-      "Encryption hides data but trusts whoever holds the key — a server, a custodian, you. Kage makes the agent→payee link unprovable to anyone, enforced by the zk-SNARK and the chain itself. No party holds a secret that could reconstruct who paid whom.",
+      "Encryption hides data but trusts whoever holds the key: a server, a custodian, you. Kage makes the agent→payee link unprovable to anyone, enforced by the zk-SNARK and the chain itself. No party holds a secret that could reconstruct who paid whom.",
   },
   {
     question: "What exactly does the chain see?",
@@ -16,7 +16,7 @@ const faqs = [
       "Only Poseidon commitments, random ephemeral keys, a Merkle root, and nullifier hashes. Never a payee's identity, never an amount tied to a party, and never a link from the agent's deposit to a payee's withdrawal.",
   },
   {
-    question: "Why is ZK load-bearing — couldn't you drop it?",
+    question: "Why is ZK load-bearing? Couldn't you drop it?",
     answer:
       "No. Remove the pool proof and every withdrawal must name the agent's deposit, so the whole agent spend graph goes public. Remove the nullifier and a payment note can be claimed twice, draining the pool. Remove the recipient binding and a relayer can redirect a payee's funds. The privacy is the proof.",
   },
@@ -28,7 +28,7 @@ const faqs = [
   {
     question: "What's honestly still a demo limitation?",
     answer:
-      "Live on mainnet with native XLM; no third-party audit yet (maintainer self-review). v1 stealth uses a single-derived key (no view/spend separation — a documented stretch). Demo tree depth is 10 (1024 notes); the same circuit scales to depth 20. Fixed-denomination notes keep the anonymity set clean. The ZK and every transaction are real; only the parties are ours.",
+      "Live on mainnet with native XLM; no third-party audit yet (maintainer self-review). v1 stealth uses a single-derived key (no view/spend separation yet). The tree depth is 10 (1,024 notes); the same circuit scales to depth 20. Deposit amounts are public in this version; fixed-size notes that hide them are next on the roadmap. The ZK and every transaction are real; only the parties are ours.",
   },
 ];
 
@@ -115,7 +115,7 @@ export function FAQ(): ReactNode {
             The honest version
           </span>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            What judges usually ask
+            Frequently asked questions
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
             Scope, trust assumptions, and why the ZK is the whole point.
@@ -123,7 +123,7 @@ export function FAQ(): ReactNode {
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <motion.a
-              href="https://github.com"
+              href="https://github.com/Venkat5599/kagezks"
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.02 }}
