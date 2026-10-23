@@ -45,24 +45,30 @@ const need = (args: Record<string, string>, k: string, label: string) => {
   return v;
 };
 
-type Account = { active: boolean; balances: { token: string; amount: number }[] };
-type Price = { priceUsd: number | null };
+type Balance = { token: string; amount: number; issuedBy?: string };
+type Account = { active: boolean; balances: Balance[]; spendableXlm?: number; mustKeepXlm?: number };
+type Price = { price: number };
+type Convert = { youGet: string };
 type Fees = { howBusy: string; typicalFeeXlm: number; fastFeeXlm: number };
-type Weather = { place: string; conditions: string; temperatureC: number; feelsLikeC: number; humidityPct: number; windKmh: number };
-type Fx = { from: string; oneUnitEquals: Record<string, number> };
-type Coins = { prices: Record<string, { price: number; dayChangePct: number | null }> };
+type Net = { healthy: boolean; latestBlock: number; transactionsInBlock: number; protocolVersion: number; closedSecondsAgo: number };
+type Pool = { privatePayments: number; xlmInPool: number | null };
+type Tx = { succeeded: boolean; when: string; sentBy: string; feePaidXlm: number; whatItDid: { what: string; from: string | null; to: string | null; amount: number | null; token: string | null }[]; memo: string | null };
+type Payments = { payments: { when: string; direction: "in" | "out"; what: string; amount: number | null; token: string | null; counterparty: string | null }[] };
+
+const short = (a?: string | null) => (a ? `${a.slice(0, 4)}…${a.slice(-4)}` : "someone");
+const OFFICIAL = new Set(["USDC", "EURC", "AQUA", "yXLM"]);
 
 export const BUILTIN_WORKFLOWS: BuiltinWorkflow[] = [
   {
     slug: "wallet-worth",
     name: "What is this wallet worth?",
-    description: "Reads every balance in a Stellar wallet and prices it in US dollars using the live XLM price.",
+    description: "Reads every balance in a Stellar wallet and prices each token in US dollars on Stellar's own exchange.",
     ask: "What is wallet GCNF…TXX6 worth in dollars?",
-    inputs: [{ name: "address", label: "Wallet address", in: "query", required: true, description: "A Stellar wallet address — starts with G.", placeholder: "G…" }, networkInput],
+    inputs: [{ name: "address", label: "Wallet address", in: "query", required: true, description: "A Stellar wallet address. It starts with G.", placeholder: "G…" }, networkInput],
     example: { address: "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6", network: "mainnet" },
     steps: [
       { title: "Read the wallet's balances", api: "stellar-account" },
-      { title: "Get the live XLM price", api: "xlm-usdc-price" },
+      { title: "Price each token in USDC on Stellar's exchange", api: "stellar-convert" },
       { title: "Add it all up in dollars", api: "" },
     ],
     run: async (args, call) => {
@@ -70,23 +76,30 @@ export const BUILTIN_WORKFLOWS: BuiltinWorkflow[] = [
       const network = args.network || "mainnet";
       const acct = await call<Account>("Read the wallet's balances", "stellar-account", { address, network });
       if (!acct.active) return { answer: "This wallet is empty: it has never received any XLM.", details: { totalUsd: 0 } };
-      const price = await call<Price>("Get the live XLM price", "xlm-usdc-price", {});
-      const xlm = acct.balances.find((b) => b.token === "XLM")?.amount ?? 0;
-      const usdc = acct.balances.filter((b) => b.token === "USDC").reduce((s, b) => s + b.amount, 0);
-      const other = acct.balances.filter((b) => b.token !== "XLM" && b.token !== "USDC");
-      const xlmUsd = xlm * (price.priceUsd ?? 0);
-      const total = xlmUsd + usdc;
-      const testnote = network === "testnet" ? " (testnet XLM has no real value; priced at the mainnet rate for reference)" : "";
+      // Prices always come from mainnet: testnet tokens have no real value.
+      const priced: { token: string; amount: number; usd: number | null }[] = [];
+      for (const b of acct.balances) {
+        if (b.amount === 0) continue;
+        if (b.token === "USDC") { priced.push({ token: b.token, amount: b.amount, usd: b.amount }); continue; }
+        const official = b.token === "XLM" || (OFFICIAL.has(b.token) && network === "mainnet");
+        if (!official) { priced.push({ token: b.token, amount: b.amount, usd: null }); continue; }
+        const q = await call<Convert>(`Price ${b.token} in USDC`, "stellar-convert", { amount: String(b.amount), from: b.token, to: "USDC", network: "mainnet" });
+        priced.push({ token: b.token, amount: b.amount, usd: Number(q.youGet.split(" ")[0]) });
+      }
+      const total = priced.reduce((s, p) => s + (p.usd ?? 0), 0);
+      const unpriced = priced.filter((p) => p.usd == null).map((p) => p.token);
+      const parts = priced.filter((p) => p.usd != null).map((p) => `${fmt(p.amount, 4)} ${p.token} ($${fmt(p.usd ?? 0)})`);
+      const testnote = network === "testnet" ? " Testnet tokens have no real value; this uses mainnet prices for reference." : "";
       return {
-        answer: `This wallet holds about $${fmt(total)}: ${fmt(xlm, 4)} XLM ($${fmt(xlmUsd)})${usdc ? ` and ${fmt(usdc)} USDC` : ""}${other.length ? `, plus ${other.length} other token${other.length > 1 ? "s" : ""} not priced here` : ""}${testnote}.`,
-        details: { totalUsd: Number(total.toFixed(2)), xlm, xlmPriceUsd: price.priceUsd, usdc, otherTokens: other.map((o) => o.token) },
+        answer: `This wallet is worth about $${fmt(total)}: ${parts.join(", ") || "nothing priced"}.${unpriced.length ? ` Not priced: ${unpriced.join(", ")}.` : ""}${testnote}`,
+        details: { totalUsd: Number(total.toFixed(2)), holdings: priced },
       };
     },
   },
   {
     slug: "can-i-pay",
     name: "Can this wallet make a payment?",
-    description: "Checks a wallet's balance, today's network fee and Stellar's minimum balance rule, then says yes or no before you try to send.",
+    description: "Checks a wallet's balance, Stellar's minimum-balance rule and today's fee, then says yes or no before you try to send.",
     ask: "Can wallet GCNF…TXX6 send 5 XLM right now?",
     inputs: [
       { name: "address", label: "Wallet address", in: "query", required: true, description: "The wallet that would send the money.", placeholder: "G…" },
@@ -97,7 +110,7 @@ export const BUILTIN_WORKFLOWS: BuiltinWorkflow[] = [
     steps: [
       { title: "Read the wallet's balance", api: "stellar-account" },
       { title: "Check today's network fee", api: "stellar-fees" },
-      { title: "Compare balance with amount + fee + 1 XLM minimum", api: "" },
+      { title: "Compare balance with amount + fee + the minimum it must keep", api: "" },
     ],
     run: async (args, call) => {
       const address = need(args, "address", "Wallet address");
@@ -106,82 +119,110 @@ export const BUILTIN_WORKFLOWS: BuiltinWorkflow[] = [
       const network = args.network || "mainnet";
       const acct = await call<Account>("Read the wallet's balance", "stellar-account", { address, network });
       const fees = await call<Fees>("Check today's network fee", "stellar-fees", { network });
+      if (!acct.active) return { answer: "No. This wallet doesn't exist on the network yet, so it can't send anything.", details: { canPay: false } };
       const xlm = acct.balances.find((b) => b.token === "XLM")?.amount ?? 0;
-      // Every Stellar account must keep a minimum balance (1 XLM base reserve, more per extra token).
-      const reserve = 1 + 0.5 * Math.max(0, acct.balances.length - 1);
-      const needed = amount + fees.fastFeeXlm + reserve;
+      const reserve = acct.mustKeepXlm ?? 1;
       const spendable = Math.max(0, xlm - reserve - fees.fastFeeXlm);
-      const yes = acct.active && xlm >= needed;
+      const yes = spendable >= amount;
       return {
-        answer: !acct.active
-          ? "No. This wallet doesn't exist on the network yet, so it can't send anything."
-          : yes
-            ? `Yes. It holds ${fmt(xlm, 4)} XLM and can send ${fmt(amount, 4)} XLM, keeping the ${fmt(reserve, 1)} XLM Stellar requires every wallet to hold.`
-            : `No. It holds ${fmt(xlm, 4)} XLM but must keep ${fmt(reserve, 1)} XLM, so the most it can send right now is ${fmt(spendable, 4)} XLM.`,
-        details: { canPay: yes, balanceXlm: xlm, mustKeepXlm: reserve, feeXlm: fees.fastFeeXlm, maxYouCanSendXlm: Number(spendable.toFixed(7)), network: fees.howBusy === "Very busy" ? "very busy right now" : "normal" },
+        answer: yes
+          ? `Yes. It holds ${fmt(xlm, 4)} XLM and can send ${fmt(amount, 4)} XLM while keeping the ${fmt(reserve, 1)} XLM Stellar requires it to hold.`
+          : `No. It holds ${fmt(xlm, 4)} XLM but must keep ${fmt(reserve, 1)} XLM, so the most it can send right now is ${fmt(spendable, 4)} XLM.`,
+        details: { canPay: yes, balanceXlm: xlm, mustKeepXlm: reserve, feeXlm: fees.fastFeeXlm, maxYouCanSendXlm: Number(spendable.toFixed(7)) },
       };
     },
   },
   {
-    slug: "market-snapshot",
-    name: "Crypto market snapshot",
-    description: "Bitcoin, Ethereum and Stellar prices with their 24-hour moves, plus how busy the Stellar network is, in one summary.",
-    ask: "Give me a quick crypto market update.",
+    slug: "payment-receipt",
+    name: "Explain this transaction",
+    description: "Turns a Stellar transaction ID into a plain receipt: who paid whom, how much (with the dollar value), when, and the fee.",
+    ask: "Explain transaction 5f3235cc… in plain words.",
+    inputs: [{ name: "hash", label: "Transaction ID", in: "query", required: true, description: "The 64-character ID shown after a transaction.", placeholder: "5f3235cc…" }, networkInput],
+    example: { hash: "5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793", network: "mainnet" },
+    steps: [
+      { title: "Look up the transaction", api: "stellar-transaction" },
+      { title: "Get the XLM price for the dollar value", api: "stellar-price" },
+      { title: "Write the receipt", api: "" },
+    ],
+    run: async (args, call) => {
+      const hash = need(args, "hash", "Transaction ID");
+      const network = args.network || "mainnet";
+      const tx = await call<Tx>("Look up the transaction", "stellar-transaction", { hash, network });
+      const px = await call<Price>("Get the XLM price for the dollar value", "stellar-price", { token: "XLM", in: "USDC", network: "mainnet" });
+      const when = new Date(tx.when).toUTCString().replace(" GMT", " UTC");
+      const lines = tx.whatItDid.map((s) => {
+        const usd = s.amount != null && s.token === "XLM" ? ` (about $${fmt(s.amount * px.price)})` : s.amount != null && s.token === "USDC" ? ` ($${fmt(s.amount)})` : "";
+        if (s.what === "payment" || s.what.startsWith("swap")) return `${short(s.from)} sent ${fmt(s.amount ?? 0, 7)} ${s.token}${usd} to ${short(s.to)}`;
+        if (s.what === "new wallet funded") return `${short(s.from)} opened wallet ${short(s.to)} with ${fmt(s.amount ?? 0, 7)} XLM${usd}`;
+        if (s.what === "wallet closed and merged") return `${short(s.from)} closed and moved everything into ${short(s.to)}`;
+        if (s.what === "smart contract call") return `${short(s.from)} called a smart contract`;
+        return `${short(s.from)}: ${s.what}`;
+      });
+      return {
+        answer: `${tx.succeeded ? "Succeeded" : "Failed"} on ${when}. ${lines.join("; ") || "No actions"}. Fee paid: ${tx.feePaidXlm} XLM.${tx.memo ? ` Memo: "${tx.memo}".` : ""}`,
+        details: { succeeded: tx.succeeded, when: tx.when, sentBy: tx.sentBy, feePaidXlm: tx.feePaidXlm, actions: tx.whatItDid.length },
+      };
+    },
+  },
+  {
+    slug: "wallet-activity",
+    name: "Wallet activity summary",
+    description: "Sums up a wallet's recent payments: how much came in, how much went out, and who it dealt with most.",
+    ask: "Summarise the recent activity of wallet GCNF…TXX6.",
+    inputs: [{ name: "address", label: "Wallet address", in: "query", required: true, description: "A Stellar wallet address. It starts with G.", placeholder: "G…" }, networkInput],
+    example: { address: "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6", network: "mainnet" },
+    steps: [
+      { title: "Read the last 20 payments", api: "stellar-payments" },
+      { title: "Total what came in and went out", api: "" },
+    ],
+    run: async (args, call) => {
+      const address = need(args, "address", "Wallet address");
+      const network = args.network || "mainnet";
+      const p = await call<Payments>("Read the last 20 payments", "stellar-payments", { address, network, limit: "20" });
+      if (p.payments.length === 0) return { answer: "No payments found for this wallet.", details: { payments: 0 } };
+      const tally = (dir: "in" | "out") => {
+        const m: Record<string, number> = {};
+        for (const x of p.payments) if (x.direction === dir && x.amount != null && x.token) m[x.token] = (m[x.token] ?? 0) + x.amount;
+        return m;
+      };
+      const fmtTally = (m: Record<string, number>) => Object.entries(m).map(([t, v]) => `${fmt(v, 4)} ${t}`).join(" and ") || "nothing";
+      const inn = tally("in");
+      const out = tally("out");
+      const mergedIn = p.payments.filter((x) => x.direction === "in" && x.what === "wallet closed and merged").length;
+      const merged = mergedIn ? `the leftover XLM of ${mergedIn} wallet${mergedIn > 1 ? "s" : ""} closed into it` : "";
+      const received = Object.keys(inn).length ? `received ${fmtTally(inn)}${merged ? ` plus ${merged}` : ""}` : merged ? `received ${merged}` : "received nothing";
+      const counts: Record<string, number> = {};
+      for (const x of p.payments) if (x.counterparty) counts[x.counterparty] = (counts[x.counterparty] ?? 0) + 1;
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      const first = p.payments[p.payments.length - 1]!.when;
+      const last = p.payments[0]!.when;
+      return {
+        answer: `In its last ${p.payments.length} payments (${new Date(first).toDateString()} to ${new Date(last).toDateString()}) this wallet ${received}, and sent ${fmtTally(out)}.${top ? ` It dealt most with ${short(top[0])} (${top[1]} times).` : ""}`,
+        details: { payments: p.payments.length, received: inn, walletsMergedIn: mergedIn, sent: out, mostFrequent: top?.[0] ?? null, lastActivity: last },
+      };
+    },
+  },
+  {
+    slug: "stellar-snapshot",
+    name: "Stellar right now",
+    description: "One update on Stellar: XLM's price, network health and fees, and the Kage pool.",
+    ask: "Give me a quick update on Stellar right now.",
     inputs: [],
     example: {},
     steps: [
-      { title: "Get Bitcoin, Ethereum and Stellar prices", api: "crypto-price" },
-      { title: "Get XLM's price on Stellar's own exchange", api: "xlm-usdc-price" },
-      { title: "Check how busy the Stellar network is", api: "stellar-fees" },
+      { title: "Get XLM's price on Stellar's exchange", api: "stellar-price" },
+      { title: "Check network health", api: "stellar-network" },
+      { title: "Check fees", api: "stellar-fees" },
+      { title: "Read the Kage pool", api: "kage-pool" },
     ],
     run: async (_args, call) => {
-      const coins = await call<Coins>("Get Bitcoin, Ethereum and Stellar prices", "crypto-price", { ids: "bitcoin,ethereum,stellar", vs: "usd" });
-      const dex = await call<Price>("Get XLM's price on Stellar's own exchange", "xlm-usdc-price", {});
-      const fees = await call<Fees>("Check how busy the Stellar network is", "stellar-fees", { network: "mainnet" });
-      const line = (id: string, name: string, d = 2) => {
-        const c = coins.prices[id];
-        if (!c) return null;
-        const ch = c.dayChangePct;
-        return `${name} $${fmt(c.price, d)}${ch != null ? ` (${ch >= 0 ? "+" : ""}${ch}% today)` : ""}`;
-      };
-      const parts = [line("bitcoin", "Bitcoin", 0), line("ethereum", "Ethereum", 0), line("stellar", "Stellar", 4)].filter(Boolean);
+      const px = await call<Price>("Get XLM's price on Stellar's exchange", "stellar-price", { token: "XLM", in: "USDC", network: "mainnet" });
+      const net = await call<Net>("Check network health", "stellar-network", { network: "mainnet" });
+      const fees = await call<Fees>("Check fees", "stellar-fees", { network: "mainnet" });
+      const pool = await call<Pool>("Read the Kage pool", "kage-pool", { network: "mainnet" });
       return {
-        answer: `${parts.join(" · ")}. On Stellar's own exchange XLM trades at $${fmt(dex.priceUsd ?? 0, 4)}, and the network is ${fees.howBusy.toLowerCase()}.`,
-        details: {
-          bitcoinUsd: coins.prices.bitcoin?.price,
-          ethereumUsd: coins.prices.ethereum?.price,
-          stellarUsd: coins.prices.stellar?.price,
-          xlmOnStellarExchangeUsd: dex.priceUsd,
-          stellarNetwork: fees.howBusy,
-        },
-      };
-    },
-  },
-  {
-    slug: "travel-brief",
-    name: "Travel brief",
-    description: "Current weather at your destination and what your money is worth there, in one answer.",
-    ask: "I'm going to Tokyo with US dollars — what's the weather and exchange rate?",
-    inputs: [
-      { name: "city", label: "Destination city", in: "query", required: true, description: "Where you're going.", placeholder: "Tokyo" },
-      { name: "from", label: "Your currency", in: "query", required: true, description: "The money you have, as a 3-letter code.", placeholder: "USD" },
-      { name: "to", label: "Local currency", in: "query", required: true, description: "The money used there, as a 3-letter code.", placeholder: "JPY" },
-    ],
-    example: { city: "Tokyo", from: "USD", to: "JPY" },
-    steps: [
-      { title: "Get the weather at the destination", api: "weather" },
-      { title: "Get today's exchange rate", api: "fx-rates" },
-    ],
-    run: async (args, call) => {
-      const city = need(args, "city", "Destination city");
-      const from = need(args, "from", "Your currency").toUpperCase();
-      const to = need(args, "to", "Local currency").toUpperCase();
-      const w = await call<Weather>("Get the weather at the destination", "weather", { city });
-      const fx = await call<Fx>("Get today's exchange rate", "fx-rates", { base: from, symbols: to });
-      const rate = fx.oneUnitEquals[to];
-      return {
-        answer: `${w.place}: ${w.conditions}, ${w.temperatureC}°C (feels like ${w.feelsLikeC}°C). ${rate != null ? `1 ${from} = ${fmt(rate, 4)} ${to}, so 100 ${from} is about ${fmt(rate * 100, 0)} ${to}.` : `No exchange rate found for ${from} → ${to}.`}`,
-        details: { place: w.place, conditions: w.conditions, temperatureC: w.temperatureC, humidityPct: w.humidityPct, windKmh: w.windKmh, rate: rate ?? null },
+        answer: `XLM is $${fmt(px.price, 4)}. Stellar is ${net.healthy ? "running normally" : "slow right now"} (block ${net.latestBlock.toLocaleString("en-US")}, ${net.transactionsInBlock} transactions, protocol ${net.protocolVersion}) and ${fees.howBusy.toLowerCase()}; a typical fee is ${fees.typicalFeeXlm} XLM. The Kage pool holds ${pool.privatePayments} private payments.`,
+        details: { xlmUsd: px.price, healthy: net.healthy, latestBlock: net.latestBlock, howBusy: fees.howBusy, typicalFeeXlm: fees.typicalFeeXlm, kagePayments: pool.privatePayments, kagePoolXlm: pool.xlmInPool },
       };
     },
   },
