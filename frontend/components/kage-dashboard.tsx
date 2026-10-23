@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { LayoutDashboard, Store, Server, Workflow, ExternalLink, ShoppingBag, Wallet, type LucideIcon } from "lucide-react";
 import { DashboardHome } from "@/components/fabric/dashboard-home";
@@ -9,6 +10,7 @@ import { McpSection } from "@/components/fabric/mcp-section";
 import { WorkflowsSection } from "@/components/fabric/workflows-section";
 import { MarketplaceSection } from "@/components/fabric/marketplace-section";
 import { useWallet } from "@/lib/wallet";
+import { useNetwork } from "@/lib/network";
 
 type SectionKey = "dashboard" | "apis" | "mcp" | "workflows" | "marketplace";
 const SECTIONS: { key: SectionKey; label: string; icon: LucideIcon }[] = [
@@ -19,26 +21,19 @@ const SECTIONS: { key: SectionKey; label: string; icon: LucideIcon }[] = [
   { key: "marketplace", label: "Marketplace", icon: ShoppingBag },
 ];
 
-const CONTRACT = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
-const EXPLORER = `https://stellar.expert/explorer/public/contract/${CONTRACT}`;
 const short = (s: string, head = 7, tail = 5) => (s.length > head + tail ? `${s.slice(0, head)}…${s.slice(-tail)}` : s);
 
 export function KageDashboard(): ReactNode {
   const [active, setActive] = useState<SectionKey>("dashboard");
   const { address } = useWallet();
+  const { network, net, setNetwork } = useNetwork();
 
   return (
     <div className="min-h-[100dvh] bg-[#080808] text-white [&_svg]:[stroke-width:1.6] lg:flex" style={{ colorScheme: "dark" }}>
       {/* LEFT DOCK */}
-      <aside className="border-b border-white/[0.06] bg-white/[0.015] lg:sticky lg:top-0 lg:h-[100dvh] lg:w-[17rem] lg:shrink-0 lg:border-b-0 lg:border-r">
+      <aside className="border-b border-white/[0.06] bg-[#0b0b0b] lg:fixed lg:inset-y-0 lg:left-0 lg:z-20 lg:h-[100dvh] lg:w-[17rem] lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col gap-3 p-4">
-          <div className="flex items-center justify-between px-3 pb-1 pt-2">
-            <p className="text-sm font-semibold tracking-tight">Kage</p>
-            <p className="flex items-center gap-1.5 text-[11px] text-neutral-500">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              mainnet
-            </p>
-          </div>
+          <Link href="/" className="rounded-lg px-3 pb-1 pt-2 text-sm font-semibold tracking-tight transition hover:text-accent">Kage</Link>
 
           <nav className="flex gap-1 overflow-x-auto lg:flex-1 lg:flex-col lg:overflow-x-visible">
             {SECTIONS.map((s) => {
@@ -60,16 +55,32 @@ export function KageDashboard(): ReactNode {
             })}
           </nav>
 
-          <a href={EXPLORER} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs text-neutral-400 transition hover:border-accent/40 hover:text-white lg:mt-auto">
-            <span>Pool <span className="font-mono">{short(CONTRACT)}</span></span>
+          <a href={`${net.explorer}/contract/${net.pool}`} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs text-neutral-400 transition hover:border-accent/40 hover:text-white lg:mt-auto">
+            <span>Pool <span className="font-mono">{short(net.pool)}</span></span>
             <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.6} />
           </a>
         </div>
       </aside>
 
       {/* CONTENT */}
-      <div className="min-w-0 flex-1">
-        <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-white/[0.06] bg-[#080808]/70 px-6 py-3 backdrop-blur-xl">
+      <div className="min-w-0 flex-1 lg:pl-[17rem]">
+        <div className="sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b border-white/[0.06] bg-[#080808]/80 px-6 backdrop-blur-xl lg:fixed lg:left-[17rem] lg:right-0">
+          {/* One click flips the whole app between networks. */}
+          <div role="radiogroup" aria-label="Stellar network" className="flex rounded-full border border-white/[0.1] bg-white/[0.03] p-0.5">
+            {(["mainnet", "testnet"] as const).map((n) => (
+              <button
+                key={n}
+                role="radio"
+                aria-checked={network === n}
+                onClick={() => setNetwork(n)}
+                className={`rounded-full px-3.5 py-1 text-xs font-semibold capitalize transition ${
+                  network === n ? (n === "mainnet" ? "bg-accent text-black" : "bg-amber-400 text-black") : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => {
               setActive("dashboard");
@@ -82,7 +93,7 @@ export function KageDashboard(): ReactNode {
           </button>
         </div>
 
-        <div className="mx-auto max-w-5xl px-6 py-8">
+        <div className="mx-auto max-w-5xl px-6 py-8 lg:pt-[5.5rem]">
           <AnimatePresence mode="wait">
             <motion.div
               key={active}

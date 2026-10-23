@@ -1,22 +1,19 @@
 "use client";
 
-// Send XLM on Stellar mainnet — the core White Belt requirement.
+// Send XLM on the active network (mainnet or testnet).
 // Works with both Freighter (real wallet) and generated (browser keypair) wallets.
 import { useState, type FormEvent } from "react";
 import { Send, Loader2, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { useWallet } from "@/lib/wallet";
+import { useNetwork } from "@/lib/network";
 import { Panel } from "./ui";
 import {
-  rpc,
+  Horizon,
   TransactionBuilder,
-  Networks,
-  BASE_FEE,
   Operation,
   Asset,
   Keypair,
 } from "@stellar/stellar-sdk";
-
-const RPC_URL = "https://mainnet.sorobanrpc.com";
 
 type TxResult = { ok: true; hash: string } | { ok: false; error: string };
 
@@ -26,12 +23,10 @@ type SignResult = { ok: true; xdr: string } | { ok: false; error: string };
 // (v6 talks over an extension messaging bridge and injects nothing on the page),
 // and falls back to the legacy `window.freighterApi` object for Freighter <=v5.
 // Imported lazily so the module never evaluates during SSR.
-async function signWithFreighter(xdr: string): Promise<SignResult> {
+async function signWithFreighter(xdr: string, networkPassphrase: string): Promise<SignResult> {
   try {
     const api = await import("@stellar/freighter-api");
-    const res = await api.signTransaction(xdr, {
-      networkPassphrase: Networks.PUBLIC,
-    });
+    const res = await api.signTransaction(xdr, { networkPassphrase });
     if (!res.error && res.signedTxXdr) return { ok: true, xdr: res.signedTxXdr };
   } catch {
     /* fall through to the legacy object */
@@ -49,9 +44,7 @@ async function signWithFreighter(xdr: string): Promise<SignResult> {
       : undefined;
   if (legacy?.signTransaction) {
     try {
-      const r = await legacy.signTransaction(xdr, {
-        networkPassphrase: Networks.PUBLIC,
-      });
+      const r = await legacy.signTransaction(xdr, { networkPassphrase });
       // <=v5 returned the XDR string directly; v6-shaped objects carry signedTxXdr.
       const signed =
         typeof r === "string" ? r : (r as { signedTxXdr?: string })?.signedTxXdr;
@@ -64,12 +57,13 @@ async function signWithFreighter(xdr: string): Promise<SignResult> {
   return {
     ok: false,
     error:
-      "Freighter could not sign. Unlock the extension, make sure it is set to Mainnet, and approve the signing prompt — then try again.",
+      "Freighter could not sign. Unlock the extension, make sure it is on the same network as Kage, and approve the signing prompt — then try again.",
   };
 }
 
 export function SendXlm() {
   const { address, secret, real } = useWallet();
+  const { net } = useNetwork();
   const [dest, setDest] = useState("");
   const [amount, setAmount] = useState("");
   const [sending, setSending] = useState(false);
@@ -96,12 +90,15 @@ export function SendXlm() {
 
       const amountXlm = amount.trim();
 
-      const server = new rpc.Server(RPC_URL);
-      const srcAccount = await server.getAccount(address);
+      // Plain payments are classic operations: build and submit them through Horizon.
+      // (The Soroban RPC only accepts smart-contract transactions and rejects payments.)
+      const horizon = new Horizon.Server(net.horizon);
+      const srcAccount = await horizon.loadAccount(address);
+      const fee = String(await horizon.fetchBaseFee());
 
       const tx = new TransactionBuilder(srcAccount, {
-        fee: BASE_FEE,
-        networkPassphrase: Networks.PUBLIC,
+        fee,
+        networkPassphrase: net.passphrase,
       })
         .addOperation(
           Operation.payment({
@@ -113,14 +110,13 @@ export function SendXlm() {
         .setTimeout(60)
         .build();
 
-      const prepared = await server.prepareTransaction(tx);
       let signedXdr: string;
 
       if (real) {
         // Freighter wallet — sign in the extension. Uses the official adapter:
         // Freighter v6 no longer injects `window.freighterApi`, so probing the
         // window object alone fails on every current install.
-        const signed = await signWithFreighter(prepared.toXDR());
+        const signed = await signWithFreighter(tx.toXDR(), net.passphrase);
         if (!signed.ok) {
           setResult({ ok: false, error: signed.error });
           setSending(false);
@@ -129,30 +125,29 @@ export function SendXlm() {
         signedXdr = signed.xdr;
       } else if (secret) {
         // Generated wallet — sign with stored secret
-        const kp = Keypair.fromSecret(secret);
-        prepared.sign(kp);
-        signedXdr = prepared.toXDR();
+        tx.sign(Keypair.fromSecret(secret));
+        signedXdr = tx.toXDR();
       } else {
         setResult({ ok: false, error: "No signing key available. Reconnect your wallet." });
         setSending(false);
         return;
       }
 
-      const signedTx = TransactionBuilder.fromXDR(signedXdr, Networks.PUBLIC);
-      const sent = await server.sendTransaction(signedTx);
-
-      if (sent.status === "ERROR") {
-        const msg =
-          sent.errorResult && typeof sent.errorResult === "object"
-            ? String(
-                (sent.errorResult as unknown as Record<string, unknown>).result ||
-                  JSON.stringify(sent.errorResult)
-              )
-            : "Transaction failed";
-        setResult({ ok: false, error: msg.substring(0, 200) });
-      } else {
+      const signedTx = TransactionBuilder.fromXDR(signedXdr, net.passphrase);
+      try {
+        const sent = await horizon.submitTransaction(signedTx);
         setResult({ ok: true, hash: sent.hash });
+      } catch (err) {
+        // Horizon returns result codes, e.g. op_no_destination / op_underfunded.
+        const codes = (err as { response?: { data?: { extras?: { result_codes?: { transaction?: string; operations?: string[] } } } } })
+          .response?.data?.extras?.result_codes;
+        const msg = codes
+          ? [codes.transaction, ...(codes.operations ?? [])].filter(Boolean).join(", ")
+          : String((err as Error).message);
+        const hint = msg.includes("op_no_destination") ? " — the destination account doesn't exist on this network yet (send at least 1 XLM with a create-account wallet, or fund it first)." : "";
+        setResult({ ok: false, error: `${msg}${hint}`.substring(0, 240) });
       }
+
     } catch (e) {
       setResult({ ok: false, error: String((e as Error).message).substring(0, 200) });
     } finally {
@@ -171,10 +166,10 @@ export function SendXlm() {
       <div className="flex items-center gap-2">
         <Send className="h-5 w-5 text-accent" />
         <p className="text-lg font-semibold text-white">Send XLM</p>
-        <span className="text-xs text-neutral-500">· Stellar mainnet</span>
+        <span className="text-xs text-neutral-500">· Stellar {net.label.toLowerCase()}</span>
       </div>
       <p className="mt-1 text-sm text-neutral-500">
-        Send XLM to any Stellar mainnet address. Sign with your connected wallet.
+        Send XLM to any Stellar {net.label.toLowerCase()} address. Sign with your connected wallet.
       </p>
 
       {result ? (
@@ -198,7 +193,7 @@ export function SendXlm() {
                 </p>
               </div>
               <a
-                href={`https://stellar.expert/explorer/public/tx/${result.hash}`}
+                href={`${net.explorer}/tx/${result.hash}`}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"

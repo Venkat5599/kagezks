@@ -1,14 +1,16 @@
 // Per-wallet on-chain status for the connected address — real, distinct per user (unlike
 // the shared demo SessionAccount). Reads the address's native XLM balance from Horizon;
 // unfunded accounts return funded:false. Used by the x402 Payments panel.
+import { networkFromRequest } from "@/lib/networks";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const HORIZON = "https://horizon.stellar.org";
 
 export async function GET(req: Request) {
   const address = new URL(req.url).searchParams.get("address");
   if (!address) return Response.json({ ok: false, error: "address required" }, { status: 400 });
+  const HORIZON = networkFromRequest(req).horizon;
   try {
     const r = await fetch(`${HORIZON}/accounts/${address}`, { cache: "no-store" });
     if (r.status === 404) return Response.json({ ok: true, funded: false, xlm: "0" });

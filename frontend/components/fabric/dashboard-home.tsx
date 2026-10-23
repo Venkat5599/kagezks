@@ -5,6 +5,7 @@ import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Clock, Wall
 import { Panel, usdc, CopyBtn } from "./ui";
 import { SendXlm } from "./send-xlm";
 import { useWallet, type WalletKind } from "@/lib/wallet";
+import { useNetwork } from "@/lib/network";
 
 type Stats = {
   totals: { apis: number; requests: number; success: number; earnings: number; mcpServers: number; workflows: number; successRate: number };
@@ -166,18 +167,32 @@ export function DashboardHome() {
   const [s, setS] = useState<Stats | null>(null);
   const [act, setAct] = useState<ActItem[] | null>(null);
   const { address, secret, connecting, connect, generate, generated } = useWallet();
+  const { network, net } = useNetwork();
   useEffect(() => {
-    fetch(`/api/stats${address ? `?owner=${address}` : ""}`).then((r) => r.json()).then(setS).catch(() => {});
+    fetch(`/api/stats?network=${network}${address ? `&owner=${address}` : ""}`).then((r) => r.json()).then(setS).catch(() => {});
     fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
-  }, [address]);
+  }, [address, network]);
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
   const [showSec, setShowSec] = useState(false);
   const [wstat, setWstat] = useState<{ funded: boolean; xlm: string } | null>(null);
+  const [refresh, setRefresh] = useState(0);
   useEffect(() => {
-    if (!address) { setWstat(null); return; }
-    setWstat(null);
-    fetch(`/api/wallet-status?address=${address}`).then((r) => r.json()).then((d) => setWstat(d.ok ? { funded: d.funded, xlm: d.xlm } : null)).catch(() => {});
-  }, [address]);
+    if (!address) return;
+    fetch(`/api/wallet-status?network=${network}&address=${address}`).then((r) => r.json()).then((d) => setWstat(d.ok ? { funded: d.funded, xlm: d.xlm } : null)).catch(() => setWstat(null));
+  }, [address, network, refresh]);
+
+  // Testnet only: free test XLM from friendbot, then re-read the balance.
+  const [fbBusy, setFbBusy] = useState(false);
+  const [fbMsg, setFbMsg] = useState<string | null>(null);
+  const friendbot = async () => {
+    if (!address) return;
+    setFbBusy(true); setFbMsg(null);
+    try {
+      const d = await (await fetch("/api/friendbot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ address }) })).json();
+      setFbMsg(d.ok ? (d.alreadyFunded ? "Already funded on testnet." : "Funded with 10,000 test XLM.") : `Friendbot failed: ${d.error}`);
+      setRefresh((n) => n + 1);
+    } catch (e) { setFbMsg(`Friendbot failed: ${String((e as Error).message)}`); } finally { setFbBusy(false); }
+  };
 
   // Per-user session provisioning (only for generated wallets, whose secret we hold).
   const [prov, setProv] = useState<{ sessionId: string; token: string } | null>(null);
@@ -212,7 +227,7 @@ export function DashboardHome() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight text-white">Dashboard</h1>
-        <p className="mt-1 text-sm text-neutral-500">Your APIs, agent session and payments on Stellar mainnet.</p>
+        <p className="mt-1 text-sm text-neutral-500">Your APIs, agent session and payments on Stellar {network}.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -259,12 +274,18 @@ export function DashboardHome() {
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
               <p className="text-xs text-neutral-500">Your wallet balance</p>
               <p className="mt-0.5 text-2xl font-semibold text-white">{wstat === null ? "—" : `${Number(wstat.xlm).toFixed(2)} XLM`}</p>
-              <p className="mt-1 text-[11px] text-neutral-500">{wstat?.funded ? "funded on mainnet" : "not funded yet"}</p>
+              <p className="mt-1 text-[11px] text-neutral-500">{wstat?.funded ? `funded on ${network}` : `not funded on ${network} yet`}</p>
+              {net.friendbot && wstat && !wstat.funded && (
+                <button onClick={friendbot} disabled={fbBusy} className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
+                  {fbBusy ? "Funding…" : "Get free test XLM"}
+                </button>
+              )}
+              {fbMsg && <p className="mt-2 text-[11px] text-neutral-400">{fbMsg}</p>}
             </div>
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-              <p className="text-xs text-neutral-500">Demo agent session {sess?.live && <span className="text-accent">· live</span>}</p>
-              <p className="mt-0.5 text-2xl font-semibold text-white">{remaining != null ? usdc(remaining) : "—"}</p>
-              <p className="mt-1 text-[11px] text-neutral-500">of {cap != null ? usdc(cap) : "—"} cap · {sess?.poolLeafCount ?? 0} notes · shared demo</p>
+              <p className="text-xs text-neutral-500">{network === "mainnet" ? "Demo agent session" : "Testnet pool"} {sess?.live && <span className="text-accent">· live</span>}</p>
+              <p className="mt-0.5 text-2xl font-semibold text-white">{network === "mainnet" ? (remaining != null ? usdc(remaining) : "—") : `${sess?.poolLeafCount ?? 0} notes`}</p>
+              <p className="mt-1 text-[11px] text-neutral-500">{network === "mainnet" ? `of ${cap != null ? usdc(cap) : "—"} cap · ${sess?.poolLeafCount ?? 0} notes · shared demo` : "the shared demo session runs on mainnet"}</p>
               {pct != null && (
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} /></div>
               )}
@@ -281,8 +302,13 @@ export function DashboardHome() {
           </p>
         )}
 
+        {/* Session provisioning runs through the fabric, which is deployed on mainnet. */}
+        {address && secret && network === "testnet" && (
+          <p className="mt-3 text-xs text-neutral-500">Provisioning a SessionAccount runs on mainnet for now. Switch to Mainnet to provision; on testnet you can fund this wallet and send test XLM.</p>
+        )}
+
         {/* Provision a real per-user SessionAccount (generated wallets only). */}
-        {address && secret && (
+        {address && secret && network === "mainnet" && (
           prov ? (
             <div className="mt-4 rounded-xl border border-accent/25 bg-accent/[0.06] p-5">
               <p className="font-semibold text-white">Your Session Account is live</p>

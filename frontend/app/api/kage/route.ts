@@ -5,33 +5,35 @@ import {
   rpc,
   Contract,
   TransactionBuilder,
-  Networks,
   scValToNative,
   nativeToScVal,
   Address,
+  Account,
+  Keypair,
   BASE_FEE,
 } from "@stellar/stellar-sdk";
+import { networkFromRequest } from "@/lib/networks";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const RPC_URL = "https://mainnet.sorobanrpc.com";
-const CONTRACT = "CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV";
-const XLM_SAC = "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA";
-const SOURCE = "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6";
 const SPENT_NULLIFIER =
   "29ac5fdb4f26ad08cba65991236bb87a88813ebba7d6288101e3635906567b77";
 
 const toHex = (b: unknown): string =>
   b instanceof Uint8Array ? Buffer.from(b).toString("hex") : Buffer.isBuffer(b) ? b.toString("hex") : "";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const net = networkFromRequest(req);
+  const CONTRACT = net.pool;
+  const XLM_SAC = net.xlmSac;
   try {
-    const server = new rpc.Server(RPC_URL);
-    const account = await server.getAccount(SOURCE);
+    const server = new rpc.Server(net.rpc);
+    // Simulation only — a throwaway source works on both networks.
+    const account = new Account(Keypair.random().publicKey(), "0");
 
     const call = async (cid: string, method: string, ...args: ReturnType<typeof nativeToScVal>[]) => {
-      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.PUBLIC })
+      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: net.passphrase })
         .addOperation(new Contract(cid).call(method, ...args))
         .setTimeout(30)
         .build();
@@ -77,6 +79,7 @@ export async function GET() {
 
     return Response.json({
       live: true,
+      network: net.name,
       contract: CONTRACT,
       currentRoot: toHex(root),
       leafCount: Number(leafCount ?? 0),
@@ -85,7 +88,7 @@ export async function GET() {
       commitment,
       ephemeralPub,
       amount,
-      nullifierHash: nullifierHash || SPENT_NULLIFIER,
+      nullifierHash: nullifierHash || (net.name === "mainnet" ? SPENT_NULLIFIER : ""),
     });
   } catch (e) {
     return Response.json({ live: false, error: String(e) });

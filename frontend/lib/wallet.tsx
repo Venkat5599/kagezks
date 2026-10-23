@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { Keypair } from "@stellar/stellar-sdk";
+import { useNetwork } from "./network";
 
 export type WalletKind = "generated" | "freighter";
 
@@ -170,6 +171,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [freighter, setFreighter] = useState<string | null>(null);
   const [active, setActive] = useState<WalletKind | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const { net } = useNetwork();
 
   useEffect(() => {
     // One-time migration from the single-slot layout (kage_owner*), so a wallet created
@@ -227,11 +229,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         alert(res.reason);
         return;
       }
-      // Kage runs on Stellar mainnet; connecting a TESTNET account would sign
-      // against contracts that don't exist there.
-      if (res.network && res.network.toUpperCase() !== "PUBLIC") {
+      // Freighter must sign on the same network the app is showing, or every
+      // transaction would target contracts that don't exist there.
+      if (res.network && res.network.toUpperCase() !== net.freighter) {
         alert(
-          `Freighter is set to ${res.network}. Kage runs on Stellar MAINNET — switch Freighter to Mainnet (PUBLIC), then connect again.`
+          `Freighter is set to ${res.network}, but Kage is on ${net.label}. Switch Freighter to ${net.freighter} (or flip the network toggle), then connect again.`
         );
         return;
       }
