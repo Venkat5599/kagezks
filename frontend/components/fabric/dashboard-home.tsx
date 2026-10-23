@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Clock, Wallet, Eye, EyeOff } from "lucide-react";
 import { Panel, usdc, CopyBtn } from "./ui";
 import { SendXlm } from "./send-xlm";
+import { canForgetGenerated } from "@/lib/wallet-store";
 import { useWallet, type WalletKind } from "@/lib/wallet";
 import { useNetwork } from "@/lib/network";
 
@@ -91,8 +92,7 @@ function WalletSwitcher() {
   const genSecret = active === "generated" ? secret : null;
   // Forgetting the generated wallet deletes its only copy in this browser, so the user
   // must type the last 4 characters of the secret — proof they saved it somewhere.
-  const need = genSecret ? genSecret.slice(-4) : "";
-  const canForgetGen = confirming === "generated" && !!need && typed.trim().toUpperCase() === need.toUpperCase();
+  const canForgetGen = confirming === "generated" && canForgetGenerated(genSecret, typed);
 
   const row = (kind: WalletKind, label: string, addr: string | null) => {
     const isActive = active === kind;
