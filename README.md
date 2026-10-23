@@ -8,12 +8,12 @@
 [![Network](https://img.shields.io/badge/Stellar-mainnet-000000)](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV)
 [![CI](https://img.shields.io/github/actions/workflow/status/Venkat5599/kagezks/ci.yml?branch=main&label=CI)](https://github.com/Venkat5599/kagezks/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
-![Tests](https://img.shields.io/badge/contract%20tests-9%20passing-2ecc71)
+![Tests](https://img.shields.io/badge/tests-685%20passing-2ecc71)
 [![X](https://img.shields.io/badge/X-%40Kage__stellar-000000?logo=x)](https://x.com/Kage_stellar)
 ![MCP](https://img.shields.io/badge/MCP%20servers-4%20·%2014%20tools-14151a)
 ![Stack](https://img.shields.io/badge/Soroban%20·%20Groth16%2FBN254%20·%20Circom%20·%20MCP-14151a)
 
-**[ Live app ↗ ](https://kageai.me)** · **[ Agent tools ↓ ](#the-stellar-agent-toolkit)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
+**[ Live app ↗ ](https://kageai.me)** · **[ Developer tooling ↓ ](#developer-tooling)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
 
 </div>
 
@@ -38,6 +38,8 @@ READ    ≠  GUESSED            the assistant answers from live ledger data thro
 |---|---|---|
 | Shielded pool (mainnet) | ✅ live | [`CAEEKIM…GIXLV`](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) — `leaf_count = 32` at ledger 65093036; 32 deposits, 30 withdrawals in its event history |
 | Shielded pool (testnet) | ✅ live | [`CCQWGM…GJXC`](https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC) — `leaf_count = 8`; the dashboard switches to it in one click |
+| Agent payments (testnet) | ✅ 7 payments | 7 pool deposits each authorised by an agent's SessionAccount, not a person: `CB3A5Q…F636` ([`62902ef7…29a95851`](https://stellar.expert/explorer/testnet/tx/62902ef7121b75ac3a9bed1e5013f7508daf56dc1811378487d1a92629a95851)), `CC7RGS…RYO7` ([`b80cc005…3e3b60a6`](https://stellar.expert/explorer/testnet/tx/b80cc0054674aa827b2edd960dd00d470e583bd83079290d91cc62b23e3b60a6)), `CBHD6A…CQB7` ([`380ae45d…c2772f1b`](https://stellar.expert/explorer/testnet/tx/380ae45d40ef1fd94512732639bd5218933209b61e2622902d62d93bc2772f1b)); each account's on-chain `spent` counter moved |
+| Agent account setup | ✅ testnet | the owner signs in the browser and the server never sees the key; sessions `CBSIBR…CP65` and `CA4CN3…YOHX` created this way, 11 attack checks refused ([`scripts/provision-check.ts`](scripts/provision-check.ts)) |
 | Stellar MCP servers | ✅ live | `kageai.me/mcp/stellar-tools` answers `tools/list` with 14 tools; three focused servers alongside it |
 | Mainnet transactions | ✅ 101 / 101 successful | 20 wallets × 5 txs + 1 fee-sponsored tx, re-read from Horizon by [`scripts/verify-mainnet.sh`](scripts/verify-mainnet.sh) |
 | Web app | ✅ live | [kageai.me](https://kageai.me) — Next.js on Vercel, Neon Postgres |
@@ -64,7 +66,7 @@ Payee, later:                scan R with view key ──► prove membership in 
 ## Table of contents
 
 - [Verify every claim in one command](#verify-every-claim-in-one-command)
-- [The Stellar agent toolkit](#the-stellar-agent-toolkit)
+- [Developer tooling](#developer-tooling)
 - [Screenshots](#screenshots)
 - [What Kage is NOT](#what-kage-is-not)
 - [The problem I set out to solve](#the-problem-i-set-out-to-solve)
@@ -112,7 +114,21 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 | Withdraw | Groth16 membership proof, nullifier unused, payout address bound into the proof | [`5f3235cc…19461793`](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
 | Fee-sponsored payment | user signs with fee 0, sponsor wraps it in a fee bump | [`027cd20c…cd979397`](https://stellar.expert/explorer/public/tx/027cd20c2b04230ad8cfcb94962269bd815c51c29d175b40c3693f2fcd979397) |
 
-## The Stellar agent toolkit
+## Developer tooling
+
+Kage is also a toolkit for anyone building on Stellar with AI agents: live chain data any assistant can call, a sandbox for agent payments on testnet, and the checks we run against our own code, all usable without an account.
+
+| Tool | What it gives a developer | Where |
+|---|---|---|
+| 4 MCP servers, 14 tools | wallets, payments, transactions, fees, network health, DEX prices and swap quotes, token facts, the Kage pool; mainnet or testnet per call | `https://kageai.me/mcp/<server>`, [below](#stellar-mcp-servers-and-apis) |
+| 9 HTTP APIs + 5 workflows | the same tools as plain JSON, for code that isn't an assistant | `GET /api/catalog/<api>`, `GET /api/flows/<workflow>` |
+| Readable server pages | opening an MCP URL in a browser lists every tool with a working example link | `https://kageai.me/mcp/stellar-tools` |
+| Agent payment sandbox | one-click testnet switch, free test XLM, then an agent account created and signed in the browser that pays only into the testnet pool | `/dashboard` → Testnet |
+| Live test suite | every API, workflow and MCP server against mainnet and testnet through a running deployment | `KAGE_URL=https://kageai.me npm run test:live` (in `frontend/`) |
+| Setup attack checks | 11 ways to abuse agent-account setup (stolen-key signatures, inflated transfers, reordered or replayed approvals), each must be refused before any fee is spent | `FABRIC=<fabric url> bun run scripts/provision-check.ts` |
+| Mainnet receipts check | re-reads every recorded mainnet transaction and the pool counter without a key | `bash scripts/verify-mainnet.sh` |
+
+### Stellar MCP servers and APIs
 
 Four MCP servers, all reading Stellar through Horizon and Soroban RPC with nothing to sign up for. Each tool takes `network: mainnet | testnet`.
 
@@ -139,11 +155,23 @@ Connecting takes one step in each client: add the URL as a custom connector (Cla
 
 ## Screenshots
 
-**Landing** — live at [kageai.me](https://kageai.me), captured October 2026.
+**Landing**: live at [kageai.me](https://kageai.me).
 
-![Kage landing page on mainnet](docs/screenshots/mainnet-landing.webp)
+![Kage landing page](docs/screenshots/landing.webp)
 
-**Network status** — `/status` re-checks the mainnet RPC, the latest ledger and both contracts on every load (ledger 64976415, protocol v29 at capture).
+**What the chain sees**: the landing preview reads the pool's full event history: 32 payments in, 30 paid out, 2 XLM held, 32 of 1,024 slots used, and the latest events with explorer links.
+
+![Live pool preview on the landing page](docs/screenshots/pool-preview.webp)
+
+**Dashboard**: the same numbers, the free tools, and the latest pool activity, switching with the mainnet/testnet toggle.
+
+![Kage dashboard on mainnet](docs/screenshots/dashboard.webp)
+
+**Agent tools**: the MCP servers any assistant can connect to, with example questions for each.
+
+![Agent tools section](docs/screenshots/agent-tools.webp)
+
+**Network status**: `/status` re-checks the mainnet RPC, the latest ledger and both contracts on every load.
 
 ![Kage network status page showing mainnet RPC healthy](docs/screenshots/mainnet-status.webp)
 
@@ -224,6 +252,7 @@ Connecting takes one step in each client: add the URL as a custom connector (Cla
 | `GET /api/flows/<workflow>?…` | any toolkit workflow: `{ answer, details, steps }` |
 | `GET /api/pool-activity` | the pool's full deposit and withdrawal history |
 | `POST /api/friendbot` | free testnet XLM for a new wallet |
+| `POST /api/fabric/provision` | agent account setup in two steps (`prepare` → plan with unsigned approvals, `finish` → signed approvals); refuses any secret key |
 | `GET /status` | RPC, ledger and contract health, re-checked per load |
 
 ## The payment loop, step by step
@@ -239,14 +268,18 @@ Connecting takes one step in each client: add the URL as a custom connector (Cla
 
 | Guarantee | Enforced in | Covered by |
 |---|---|---|
-| Agent can only deposit into the pool | `contracts/solvency/contracts/session/src/lib.rs` `__check_auth` → `ContextNotAllowed`, `BadPayout` | `init_and_policy` |
-| Agent cannot exceed its cap or outlive its expiry | `__check_auth` → `CapExceeded`, `Expired` | `extend_updates_cap_and_expiry`, `revoke_zeros_expiry` |
+| Agent can only deposit into the pool | `contracts/solvency/contracts/session/src/lib.rs` `__check_auth` → `ContextNotAllowed`, `BadPayout` | `payout_anywhere_but_the_pool_is_bad_payout`, `calling_withdraw_on_the_pool_is_refused`, `calling_any_other_contract_is_refused`, `token_methods_other_than_transfer_are_refused` |
+| Agent cannot exceed its cap | `__check_auth` → `CapExceeded`, spend persisted per call | `one_payment_over_the_cap_is_refused`, `spending_adds_up_across_payments_until_the_cap`, `several_transfers_in_one_call_count_together` |
+| Agent cannot outlive its expiry or a revoke | `__check_auth` → `Expired` | `session_after_expiry_is_refused`, `session_works_up_to_and_including_expiry`, `revoked_session_cannot_pay` |
+| Only the agent's key can sign | `ed25519_verify` over the auth payload | `a_different_key_cannot_sign_for_the_agent`, `a_signature_over_another_payload_is_refused` |
+| One bad call voids the whole batch | `__check_auth` checks every context before saving | `one_bad_call_rejects_the_whole_batch` |
 | Policy cannot be re-initialised by someone else | `init` → `AlreadyInitialized` | `init_is_idempotent` (session) |
 | Tree only advances by a correct append | `contracts/solvency/contracts/veil/src/lib.rs` `deposit` → `StaleRoot`, `BadLeafIndex`, `InvalidProof` | `deposit_rejects_bad_leaf_index` |
 | No proof verification without a registered key | `deposit` → `NoVerificationKey` | `deposit_without_vk_fails` |
 | Withdrawals only against a real past root | `withdraw` → `UnknownRoot` | `withdraw_rejects_unknown_root` |
 | A note is spent once | `withdraw` → `NullifierUsed (#9)` | mainnet: every withdraw in the proof file spends a distinct nullifier |
 | What is deposited is exactly what can be withdrawn | amount is a public input of the insert proof | under-funded deposits fail to prove (constraint violation) |
+| The server never holds the owner's key | `frontend/lib/session-sign.ts` signs in the browser; `agent/fabric/provision.ts` verifies the signatures | `frontend/tests/session-sign.test.ts`, [`scripts/provision-check.ts`](scripts/provision-check.ts) |
 
 ## Why the ZK is load-bearing
 
@@ -267,14 +300,19 @@ Connecting takes one step in each client: add the URL as a custom connector (Cla
 
 | The abuse | What answers it |
 |---|---|
-| Agent tries to send funds anywhere but the pool | `__check_auth` → `BadPayout` / `ContextNotAllowed` (`init_and_policy`) |
-| Agent keeps spending after the owner revokes | `revoke` zeroes expiry → `Expired` (`revoke_zeros_expiry`) |
+| Agent tries to send funds anywhere but the pool | `BadPayout` (`payout_anywhere_but_the_pool_is_bad_payout`) |
+| Agent calls `withdraw` or any other contract with its session | `ContextNotAllowed` (`calling_withdraw_on_the_pool_is_refused`, `calling_any_other_contract_is_refused`) |
+| Agent splits an overspend into small payments, or several transfers in one call | `CapExceeded` (`spending_adds_up_across_payments_until_the_cap`, `several_transfers_in_one_call_count_together`) |
+| Agent keeps spending after the owner revokes | `Expired` (`revoked_session_cannot_pay`) |
+| A stolen or different key signs for the agent | signature check fails (`a_different_key_cannot_sign_for_the_agent`) |
 | Attacker re-initialises the policy with their own key | `AlreadyInitialized` (`init_is_idempotent`) |
 | Depositor submits a root that skips or overwrites a leaf | `BadLeafIndex` / `StaleRoot` / `InvalidProof` (`deposit_rejects_bad_leaf_index`) |
 | Withdrawal against a fabricated root | `UnknownRoot` (`withdraw_rejects_unknown_root`) |
 | Same note withdrawn twice | `NullifierUsed (#9)` |
 | Mempool watcher copies a withdrawal proof to redirect it | recipient is a public input of the proof → `RecipientMismatch` / `InvalidProof` |
-| Stranger calls `/fabric/provision` to burn relayer XLM | reverse proxy returns 403 without the gateway token (checked live) |
+| A tampered server asks the browser to sign a bigger transfer or a different pool | the browser refuses before signing (24 refusal cases in `frontend/tests/session-sign.test.ts`) |
+| Someone posts a wallet's secret key to the setup endpoint | refused outright, by the web route and the fabric (`scripts/provision-check.ts`) |
+| Stranger calls `/fabric/provision/*` to burn relayer XLM | reverse proxy returns 403 without the gateway token; `finish` verifies the owner's signatures and balance before any fee is spent |
 
 ## The app
 
@@ -282,7 +320,7 @@ Connecting takes one step in each client: add the URL as a custom connector (Cla
 
 ## Security
 
-The contracts have been through a maintainer self-review covering ZK soundness (verification uses Soroban's native BN254 host functions: `g1_msm`, `g1_add`, `pairing_check`), double-spend protection, ordering of state writes before token transfers, and the SessionAccount policy. No critical issues were found. Report issues privately through GitHub security advisories on this repository.
+Setting up an agent account never sends the owner's secret key anywhere: the server prepares two approvals, the browser checks that they say exactly what the user asked for, signs them locally and returns only the signatures, and the server verifies each signature before spending a fee. The contracts have been through a maintainer self-review covering ZK soundness (verification uses Soroban's native BN254 host functions: `g1_msm`, `g1_add`, `pairing_check`), double-spend protection, ordering of state writes before token transfers, and the SessionAccount policy. No critical issues were found. Report issues privately through GitHub security advisories on this repository.
 
 ## Tech stack
 
@@ -301,8 +339,8 @@ kagezks/
 ├── contracts/solvency/  Soroban workspace: veil (pool) + session (scoped account), with tests
 ├── sdk/                 kage.ts (notes, tree) · kage-onchain.ts · kage-convert.ts · network.ts
 ├── agent/               fabric-server.ts (MCP) · fabric/ (auth, catalog, provision, steps) · x402.ts
-├── frontend/            Next.js app served at kageai.me
-├── scripts/             deploy-mainnet.sh · verify-mainnet.sh · mainnet proof files
+├── frontend/            Next.js app served at kageai.me · tests/ (657 tests) · tests/live/
+├── scripts/             deploy-mainnet.sh · verify-mainnet.sh · provision-check.ts · mainnet proof files
 ├── deploy/              Caddyfile · pm2 ecosystem · .env.example
 └── docs/                SPRINT-SCOPE.md · screenshots/
 ```
@@ -349,32 +387,35 @@ The next 30 days and the product milestone after it, each item with a check anyo
 ## Tests
 
 ```bash
-cd contracts/solvency && cargo test
+cd contracts/solvency && cargo test      # 28 contract tests
+cd frontend && npm test                  # 657 app tests, no network needed
+cd frontend && npm run test:live         # every tool against the real networks
 ```
 
-| Suite | Tests |
-|---|---|
-| `veil` | `init_and_empty_state`, `init_is_idempotent`, `deposit_rejects_bad_leaf_index`, `deposit_without_vk_fails`, `withdraw_rejects_unknown_root` |
-| `session_account` | `init_and_policy`, `init_is_idempotent`, `revoke_zeros_expiry`, `extend_updates_cap_and_expiry` |
+| Suite | Tests | What it covers |
+|---|---|---|
+| `session_account` | 23 | `__check_auth` with real ed25519 signatures: pool-only payouts, cap across payments and within one call, expiry, revoke and extend, foreign keys and payloads |
+| `veil` | 5 | init, leaf-index and root checks, missing verifying key, unknown root |
+| `frontend/tests/catalog-*.test.ts` | 329 | every API's inputs, outputs and failures against canned Horizon answers; catalog consistency |
+| `frontend/tests/mcp-route.test.ts` | 56 | the MCP endpoint driven like an assistant: handshake, tool lists and schemas per server, calls, errors |
+| `frontend/tests/tokens.test.ts` | 86 | official token issuers, look-alike rejection, asset encoding, operation descriptions |
+| `frontend/tests/wallet-store.test.ts` | 53 | the browser never loses or overwrites a wallet key; the 4-character check before forgetting one |
+| `frontend/tests/workflows.test.ts` | 41 | each workflow's answer and its step trace |
+| `frontend/tests/networks.test.ts` | 31 | network config, including that each XLM contract is the real native-asset contract |
+| `frontend/tests/session-sign.test.ts` | 27 | the browser refuses every tampered setup plan and signs the honest one |
+| `frontend/tests/http-routes.test.ts`, `humanize.test.ts` | 34 | the plain HTTP routes, the pool history from a real mainnet event, answer labels |
 
-Real output from the last run (October 2026):
+Real output from this commit:
 
 ```
-test test::init_and_policy ... ok
-test test::extend_updates_cap_and_expiry ... ok
-test test::init_is_idempotent ... ok
-test test::revoke_zeros_expiry ... ok
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
-test test::deposit_without_vk_fails ... ok
-test test::deposit_rejects_bad_leaf_index ... ok
-test test::init_and_empty_state ... ok
-test test::init_is_idempotent ... ok
-test test::withdraw_rejects_unknown_root ... ok
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+ Test Files  10 passed (10)
+      Tests  657 passed (657)
 ```
 
-9 contract tests. CI runs them on every push, then type-checks and builds the web app.
+The suites were checked against deliberate bugs: 15 breaks in the app (wrong reserve math, accepting look-alike tokens, overwriting a wallet key, dropping the pool history after one page, and others) and 6 in the session account (no payout check, no cap check, expiry off by one, any pool method allowed, spend not saved, signature not checked). Every one made tests fail. CI runs the contract tests, the app tests, the type-check and the build on every push.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
