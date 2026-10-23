@@ -12,9 +12,9 @@ import {
   Coins,
   Unlink,
   type LucideIcon,
+  ShieldCheck,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { KageMark } from "@/components/kage-logo";
 
 const ease = [0.23, 1, 0.32, 1] as const;
 
@@ -45,7 +45,7 @@ const GROUPS: Group[] = [
     icon: Coins,
     nodes: [
       { icon: KeySquare, label: "Stealth address" },
-      { icon: Coins, label: "USDC" },
+      { icon: Coins, label: "XLM" },
       { icon: Unlink, label: "Unlinkable" },
     ],
   },
@@ -168,7 +168,7 @@ export function Convergence(): ReactNode {
         >
           <div className="relative rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-1.5 shadow-[0_0_60px_-12px_color-mix(in_srgb,var(--accent)_60%,transparent)]">
             <div className="flex h-16 w-16 items-center justify-center rounded-[1.1rem] bg-[#16210f] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-              <KageMark className="h-9 w-9 text-accent" />
+              <ShieldCheck className="h-9 w-9 text-accent" strokeWidth={1.6} />
             </div>
           </div>
           <span className="mt-3 text-sm font-medium text-neutral-400">The Kage shielded pool</span>

@@ -11,7 +11,7 @@ export const siteConfig = {
   name: "Kage",
   tagline: "Agent payments, proven in zero-knowledge.",
   description:
-    "Zero-knowledge payments for autonomous agents on Stellar. Every payment is a Groth16 proof (Poseidon commitments, Merkle membership, nullifiers, BN254 verifier) — who was paid, how much, and the agent→payee link never touch the chain. The agent pays under a scoped key it can't drain.",
+    "Zero-knowledge payments for autonomous agents on Stellar. Every payment is a Groth16 proof (Poseidon commitments, Merkle membership, nullifiers, BN254 verifier), so who was paid and the agent→payee link never touch the chain. The agent pays under a scoped key it can't drain.",
 
   // URLs
   url: "https://kageai.me",
@@ -25,20 +25,20 @@ export const siteConfig = {
     },
     signIn: {
       text: "GitHub",
-      href: "#",
+      href: "https://github.com/Venkat5599/kagezks",
     },
   },
 };
 
 export const heroConfig = {
-  badge: "Real-World ZK · Live on Stellar mainnet",
+  badge: "Live on Stellar mainnet",
   headline: {
     line1: "Agent payments,",
     line2: "proven in",
     accent: "zero-knowledge.",
   },
   subheadline:
-    "Every payment is a Groth16 proof: the payee proves it owns an unspent note in the pool without revealing which — so who was paid, how much, and the agent→payee link never touch the chain. Verified on-chain over BN254, enforced by math, not a custodian.",
+    "Every payment is a Groth16 proof: the payee proves it owns an unspent note in the pool without revealing which, so the chain never learns who was paid or links the payee back to the agent. Verified on-chain over BN254 and enforced by math, not a custodian.",
   cta: {
     text: "See how it works",
     href: "#how-it-works",
@@ -46,7 +46,7 @@ export const heroConfig = {
 };
 
 export const blurHeadlineConfig = {
-  text: "Let an AI agent pay on a transparent chain and you publish its every counterparty, every amount, and a map of everything your treasury touches. Kage seals all of it — and bounds the agent so it can never drain you — enforced by math and the chain, not by trusting a custodian.",
+  text: "Let an AI agent pay on a transparent chain and you publish its every counterparty, every amount, and a map of everything your treasury touches. Kage hides who paid whom and bounds the agent so it can never drain you, enforced by math and the chain rather than a custodian.",
 };
 
 export const howItWorksConfig = {
@@ -55,17 +55,17 @@ export const howItWorksConfig = {
     "A payee shares a scan key once. The agent pays into a shielded pool under a scoped key; the payee withdraws to a fresh stealth address. The chain never links the two.",
   cta: {
     text: "Read the architecture",
-    href: "https://github.com",
+    href: "https://github.com/Venkat5599/kagezks",
   },
 };
 
 export const faqConfig = {
-  title: "What judges usually ask",
-  description: "The honest version — scope, trust assumptions, and why ZK is load-bearing.",
+  title: "Frequently asked questions",
+  description: "The honest version: scope, trust assumptions, and why ZK is load-bearing.",
   cta: {
     primary: {
       text: "View on GitHub",
-      href: "#",
+      href: "https://github.com/Venkat5599/kagezks",
     },
     secondary: {
       text: "View the contract",
@@ -76,11 +76,11 @@ export const faqConfig = {
 
 export const footerConfig = {
   cta: {
-    headline: "Agent payments you can trust — and no one can read.",
+    headline: "Agent payments you can trust, and no one can read.",
     placeholder: "you@company.com",
     button: "Get early access",
   },
-  copyright: `© ${new Date().getFullYear()} Kage. Stellar Hacks · Real-World ZK.`,
+  copyright: `© ${new Date().getFullYear()} Kage`,
 };
 
 /**

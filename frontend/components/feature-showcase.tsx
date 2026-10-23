@@ -192,7 +192,7 @@ export function FeatureShowcase(): ReactNode {
                   <div>
                     <p className="text-[11px] text-neutral-400">Paid out</p>
                     <p className="text-2xl font-semibold tracking-tight text-white">
-                      1.00 <span className="text-base font-medium text-neutral-400">USDC</span>
+                      1.00 <span className="text-base font-medium text-neutral-400">XLM</span>
                     </p>
                   </div>
                   <ArrowRight className="h-5 w-5 shrink-0 text-neutral-300" />

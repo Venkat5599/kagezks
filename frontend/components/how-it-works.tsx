@@ -10,19 +10,19 @@ const steps = [
     icon: KeyRound,
     title: "Owner delegates a scoped key",
     description:
-      "The owner deploys a session account and hands the agent one capped, expiring key that may only pay into the Kage pool. Never the owner's key, never a way to drain or redirect funds — anything off-policy reverts on-chain.",
+      "The owner deploys a session account and hands the agent one capped, expiring key that may only pay into the Kage pool. Never the owner's key, never a way to drain or redirect funds. Anything off-policy reverts on-chain.",
   },
   {
     icon: Landmark,
     title: "Agent pays into the pool",
     description:
-      "Acting on its own, the agent does ECDH against the payee's scan key, derives a private note, and deposits USDC as a Poseidon commitment in the shielded Merkle pool. The chain sees a commitment and a random ephemeral key — nothing else.",
+      "Acting on its own, the agent does ECDH against the payee's scan key, derives a private note, and deposits XLM as a Poseidon commitment in the shielded Merkle pool. The chain sees a commitment, a random ephemeral key and the amount, but not who it is for.",
   },
   {
     icon: Banknote,
     title: "Payee withdraws the funds",
     description:
-      "The payee recognises their note, proves in zero-knowledge they own some unspent leaf — without revealing which — and is paid at a fresh stealth address. No one links the payout back to the agent.",
+      "The payee recognises their note, proves in zero-knowledge they own some unspent leaf without revealing which, and is paid at a fresh stealth address. No one links the payout back to the agent.",
   },
 ];
 
@@ -77,7 +77,7 @@ export function HowItWorks(): ReactNode {
           <p className="mt-6 max-w-md text-lg leading-relaxed text-foreground/60">
             Three steps. The agent→payee link{" "}
             <span className="font-medium text-foreground">never touches the chain</span>
-            {" "}— it&apos;s broken by a zero-knowledge proof, not by a promise.
+            . It&apos;s broken by a zero-knowledge proof, not by a promise.
           </p>
           <motion.a
             href="https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV"
