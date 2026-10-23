@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
       "react/jsx-no-target-blank": ["error", { enforceDynamicLinks: "always" }],
     },
   },
+  // Tests read untyped JSON responses (Horizon, MCP) and assert on them directly.
+  { files: ["tests/**/*.ts"], rules: { "@typescript-eslint/no-explicit-any": "off" } },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
