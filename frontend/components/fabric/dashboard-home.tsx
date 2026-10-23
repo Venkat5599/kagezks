@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Layers, Activity, CheckCircle2, DollarSign, KeyRound, Lock, Clock, Wallet, Eye, EyeOff } from "lucide-react";
-import { Panel, usdc, CopyBtn } from "./ui";
+import { Layers, Activity, KeyRound, Lock, Clock, Wallet, Eye, EyeOff, ShieldCheck, Coins, Server, ExternalLink } from "lucide-react";
+import { Panel, CopyBtn } from "./ui";
+import { checkPlan, signPlan, PlanRejected, type ProvisionPlan } from "@/lib/session-sign";
+import { BUILTIN_MCPS } from "@/lib/builtin-catalog";
+import { BUILTIN_WORKFLOWS } from "@/lib/builtin-workflows";
 import { SendXlm } from "./send-xlm";
 import { canForgetGenerated } from "@/lib/wallet-store";
 import { useWallet, type WalletKind } from "@/lib/wallet";
@@ -26,7 +29,16 @@ function Stat({ icon: Icon, label, value, sub }: { icon: typeof Layers; label: s
   );
 }
 
-type ActItem = { kind: "api" | "workflow" | "mcp"; name: string; slug: string | null; created_at: string };
+type PoolActivity = { ok: boolean; deposits: number; withdrawals: number; recent: { type: "deposit" | "withdraw"; at: string; ref: string; link: string }[] };
+
+const xlm = (raw: string | number | null | undefined) => (raw == null ? "—" : `${(Number(raw) / 1e7).toLocaleString("en-US", { maximumFractionDigits: 2 })} XLM`);
+// The network the agent fabric (which creates agent accounts) runs on.
+const FABRIC_NETWORK = process.env.NEXT_PUBLIC_FABRIC_NETWORK === "testnet" ? "testnet" : "mainnet";
+const TOOL_COUNT = new Set(BUILTIN_MCPS.flatMap((m) => [...m.tools, ...m.workflows])).size;
+const ago = (iso: string) => {
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  return d <= 0 ? "today" : d === 1 ? "1 day ago" : `${d} days ago`;
+};
 type LogRow = { id: string; api_name: string | null; api_slug: string | null; status: number | null; ok: boolean; paid: boolean; price: number; created_at: string };
 type LogStats = { total: number; ok: number; paid: number; revenue: number };
 
@@ -44,7 +56,7 @@ function RequestLogs() {
   return (
     <Panel>
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Recent requests</p></div>
+        <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Paid API calls</p></div>
         <div className="flex gap-1 rounded-lg border border-white/[0.08] p-0.5">
           {PERIODS.map((p) => (
             <button key={p.k} onClick={() => setPeriod(p.k)} className={`rounded-md px-2.5 py-1 text-xs transition ${period === p.k ? "bg-accent/15 text-accent" : "text-neutral-500 hover:text-neutral-300"}`}>{p.label}</button>
@@ -64,7 +76,7 @@ function RequestLogs() {
         {logs === null ? (
           <p className="py-3 text-sm text-neutral-500">loading…</p>
         ) : logs.length === 0 ? (
-          <p className="py-3 text-sm text-neutral-500">No requests in this window yet. Calls to any <span className="font-mono">api__*</span> tool land here.</p>
+          <p className="py-3 text-sm text-neutral-500">No paid calls in this window. When an AI agent pays to use an API you published, the call shows up here.</p>
         ) : (
           logs.map((l) => (
             <div key={l.id} className="flex items-center gap-3 py-2 text-sm">
@@ -144,7 +156,7 @@ function WalletSwitcher() {
         <div className="rounded-xl border border-red-400/30 bg-red-400/[0.05] p-4">
           <p className="text-sm font-semibold text-red-200">Remove the generated wallet from this browser?</p>
           <p className="mt-1 text-xs text-neutral-400">
-            This does not touch the chain — any XLM stays at <span className="font-mono text-neutral-300">{short(generated)}</span>. But this browser holds the only copy of its key, so without your saved secret the funds are unreachable. To confirm you saved it, type the <span className="text-neutral-200">last 4 characters</span> of the secret key.
+            This does not touch the chain: any XLM stays at <span className="font-mono text-neutral-300">{short(generated)}</span>. But this browser holds the only copy of its key, so without your saved secret the funds are unreachable. To confirm you saved it, type the <span className="text-neutral-200">last 4 characters</span> of the secret key.
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <input
@@ -172,12 +184,13 @@ function WalletSwitcher() {
 
 export function DashboardHome() {
   const [s, setS] = useState<Stats | null>(null);
-  const [act, setAct] = useState<ActItem[] | null>(null);
+  const [pool, setPool] = useState<PoolActivity | null>(null);
   const { address, secret, connecting, connect, generate, generated } = useWallet();
   const { network, net } = useNetwork();
   useEffect(() => {
     fetch(`/api/stats?network=${network}${address ? `&owner=${address}` : ""}`).then((r) => r.json()).then(setS).catch(() => {});
-    fetch("/api/activity").then((r) => r.json()).then((d) => setAct(d.activity ?? [])).catch(() => setAct([]));
+    setPool(null);
+    fetch(`/api/pool-activity?network=${network}`).then((r) => r.json()).then(setPool).catch(() => setPool({ ok: false, deposits: 0, withdrawals: 0, recent: [] }));
   }, [address, network]);
   const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
   const [showSec, setShowSec] = useState(false);
@@ -204,27 +217,59 @@ export function DashboardHome() {
   // Per-user session provisioning (only for generated wallets, whose secret we hold).
   const [prov, setProv] = useState<{ sessionId: string; token: string } | null>(null);
   const [provBusy, setProvBusy] = useState(false);
-  const [capUsdc, setCapUsdc] = useState("5");
-  const [fundUsdc, setFundUsdc] = useState("1");
+  const [capXlm, setCapXlm] = useState("5");
+  const [fundXlm, setFundXlm] = useState("1");
+  // Step 1 fetches a plan and shows it; step 2 signs it here and sends only the signatures.
+  const [plan, setPlan] = useState<{ plan: ProvisionPlan; lines: string[] } | null>(null);
+  const [provErr, setProvErr] = useState<string | null>(null);
   useEffect(() => {
     const t = localStorage.getItem("kage_session_token"); const sid = localStorage.getItem("kage_session_id");
     if (t && sid) setProv({ token: t, sessionId: sid });
   }, []);
   // The per-user session belongs to the generated wallet; drop it when that wallet goes.
   useEffect(() => { if (!generated) setProv(null); }, [generated]);
-  const provision = async () => {
-    if (!address || !secret) return;
-    setProvBusy(true);
+  useEffect(() => { setPlan(null); setProvErr(null); }, [address, network]);
+  const toStroops = (v: string) => BigInt(Math.max(0, Math.round(Number(v || "0") * 1e7)));
+  const post = async (body: unknown) => {
+    const r = await fetch("/api/fabric/provision", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+    return d;
+  };
+  const prepare = async () => {
+    if (!address) return;
+    setProvBusy(true); setProvErr(null); setPlan(null);
     try {
-      const toRaw = (v: string) => String(Math.max(0, Math.round(Number(v || "0") * 1e7)));
-      const r = await fetch("/api/fabric/provision", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ownerAddress: address, ownerSecret: secret, cap: toRaw(capUsdc), amount: toRaw(fundUsdc) }) });
-      const d = await r.json();
-      if (d.ok) { setProv({ sessionId: d.sessionId, token: d.token }); localStorage.setItem("kage_session_token", d.token); localStorage.setItem("kage_session_id", d.sessionId); }
-      else alert(`Provision failed: ${d.error}`);
-    } catch (e) { alert(`Provision failed: ${String((e as Error).message)}`); } finally { setProvBusy(false); }
+      const cap = toStroops(capXlm);
+      const fund = toStroops(fundXlm);
+      const d = await post({ step: "prepare", ownerAddress: address, cap: cap.toString(), amount: fund.toString() });
+      const lines = checkPlan(d.plan, { owner: address, pool: net.pool, token: net.xlmSac, cap, fund, network });
+      setPlan({ plan: d.plan, lines });
+    } catch (e) {
+      setProvErr(e instanceof PlanRejected ? `Refused to sign: ${e.message}` : `Setup failed: ${(e as Error).message}`);
+    } finally { setProvBusy(false); }
+  };
+  const approve = async () => {
+    if (!plan || !secret) return;
+    setProvBusy(true); setProvErr(null);
+    try {
+      const signed = await signPlan(plan.plan, secret, net.passphrase);
+      const d = await post({ step: "finish", id: plan.plan.id, signed });
+      setProv({ sessionId: d.sessionId, token: d.token });
+      localStorage.setItem("kage_session_token", d.token);
+      localStorage.setItem("kage_session_id", d.sessionId);
+      setPlan(null);
+    } catch (e) {
+      setProvErr(`Setup failed: ${(e as Error).message}`);
+    } finally { setProvBusy(false); }
   };
 
   const t = s?.totals;
+  const [poolXlm, setPoolXlm] = useState<string | null>(null);
+  useEffect(() => {
+    setPoolXlm(null);
+    fetch(`/api/catalog/kage-pool?network=${network}`).then((r) => r.json()).then((d) => setPoolXlm(d.ok && d.data.xlmInPool != null ? `${d.data.xlmInPool.toLocaleString("en-US", { maximumFractionDigits: 2 })} XLM` : "—")).catch(() => setPoolXlm("—"));
+  }, [network]);
   const sess = s?.session;
   const cap = sess?.cap ? Number(sess.cap) : null;
   const remaining = sess?.remaining ? Number(sess.remaining) : null;
@@ -234,30 +279,30 @@ export function DashboardHome() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight text-white">Dashboard</h1>
-        <p className="mt-1 text-sm text-neutral-500">Your APIs, agent session and payments on Stellar {network}.</p>
+        <p className="mt-1 text-sm text-neutral-500">Your wallet, your AI agent&apos;s spending account, and the Kage pool on Stellar {network}.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={Layers} label="Total APIs" value={t?.apis ?? "—"} sub="x402 payment-gated proxies" />
-        <Stat icon={Activity} label="Total Requests" value={t?.requests ?? "—"} sub="all-time API calls" />
-        <Stat icon={CheckCircle2} label="Success Rate" value={t ? `${t.successRate}%` : "—"} sub={`${t?.success ?? 0} successful`} />
-        <Stat icon={DollarSign} label="Total Earnings" value={t ? `$${t.earnings.toFixed(2)}` : "—"} sub="USDC earned" />
+        <Stat icon={ShieldCheck} label="Private payments" value={pool?.ok ? pool.deposits : "…"} sub={pool?.ok ? `${pool.withdrawals} paid out · checked on chain` : "reading the pool…"} />
+        <Stat icon={Coins} label="Held in the pool" value={poolXlm ?? "…"} sub={`${sess?.poolLeafCount ?? 0} of 1,024 slots used`} />
+        <Stat icon={Server} label="Free Stellar tools" value={TOOL_COUNT} sub={`${BUILTIN_MCPS.length} MCP servers · ${BUILTIN_WORKFLOWS.length} workflows`} />
+        <Stat icon={Layers} label="Your APIs" value={t?.apis ?? "…"} sub={t && t.apis > 0 ? `${t.requests} calls · $${t.earnings.toFixed(2)} earned` : "publish one to get paid per call"} />
       </div>
 
-      {/* x402 Payments — Kage's scoped SessionAccount (the ZK equivalent of a smart account) */}
+      {/* Wallet + the agent's scoped SessionAccount */}
       <Panel className="scroll-mt-20" id="wallet">
         <div className="flex items-center gap-2">
           <KeyRound className="h-5 w-5 text-accent" />
-          <p className="text-lg font-semibold text-white">Wallet &amp; agent session</p>
+          <p className="text-lg font-semibold text-white">Wallet &amp; agent account</p>
           {sess?.live && <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">live</span>}
         </div>
         <p className="mt-1 text-sm text-neutral-500">
-          Your agent pays through a scoped SessionAccount — only into the ZK pool, up to a cap, before an expiry. <span className="inline-flex items-center gap-1 text-accent"><Lock className="h-3 w-3" /> zero custody</span>
+          Your AI agent pays from its own limited account: only into the Kage pool, up to a limit you set, until a date you set. Your secret key never leaves this browser. <span className="inline-flex items-center gap-1 text-accent"><Lock className="h-3 w-3" /> you keep the key</span>
         </p>
         {/* One-time secret reveal for a freshly generated wallet */}
         {secret && (
           <div className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] p-4">
-            <p className="text-xs font-semibold text-amber-300">Save your secret key. This browser holds the only copy — import it into Freighter to keep control of this wallet.</p>
+            <p className="text-xs font-semibold text-amber-300">Save your secret key. This browser holds the only copy, so import it into Freighter or write it down to keep control of this wallet.</p>
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-black/40 px-3 py-2">
               <span className="flex-1 truncate font-mono text-[11px] text-neutral-200">{showSec ? secret : "•".repeat(56)}</span>
               <button onClick={() => setShowSec((v) => !v)} className="text-neutral-400 hover:text-white" title={showSec ? "Hide" : "Reveal"}>{showSec ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
@@ -270,7 +315,7 @@ export function DashboardHome() {
         {!address ? (
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button onClick={generate} disabled={connecting} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
-              <Wallet className="h-4 w-4" /> {connecting ? "Generating…" : "Generate Session Account Wallet"}
+              <Wallet className="h-4 w-4" /> {connecting ? "Generating…" : "Create a wallet in this browser"}
             </button>
             <button onClick={connect} disabled={connecting} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.12] px-4 py-3 text-sm font-semibold text-neutral-300 transition hover:border-accent/40 hover:text-white">
               Connect Freighter
@@ -284,7 +329,7 @@ export function DashboardHome() {
                 <span className="flex-1 truncate font-mono text-[11px] text-neutral-300" title={address}>{address}</span>
                 <CopyBtn text={address} />
               </div>
-              <p className="mt-1 text-[10px] text-neutral-600">Your public address — share it or send XLM here to fund this wallet.</p>
+              <p className="mt-1 text-[10px] text-neutral-600">Your public address. Share it, or send XLM here to fund this wallet.</p>
               <p className="mt-0.5 text-2xl font-semibold text-white">{wstat === null ? "—" : `${Number(wstat.xlm).toFixed(2)} XLM`}</p>
               <p className="mt-1 text-[11px] text-neutral-500">{wstat?.funded ? `funded on ${network}` : `not funded on ${network} yet`}</p>
               {net.friendbot && wstat && !wstat.funded && (
@@ -295,9 +340,9 @@ export function DashboardHome() {
               {fbMsg && <p className="mt-2 text-[11px] text-neutral-400">{fbMsg}</p>}
             </div>
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-              <p className="text-xs text-neutral-500">{network === "mainnet" ? "Demo agent session" : "Testnet pool"} {sess?.live && <span className="text-accent">· live</span>}</p>
-              <p className="mt-0.5 text-2xl font-semibold text-white">{network === "mainnet" ? (remaining != null ? usdc(remaining) : "—") : `${sess?.poolLeafCount ?? 0} notes`}</p>
-              <p className="mt-1 text-[11px] text-neutral-500">{network === "mainnet" ? `of ${cap != null ? usdc(cap) : "—"} cap · ${sess?.poolLeafCount ?? 0} notes · shared demo` : "the shared demo session runs on mainnet"}</p>
+              <p className="text-xs text-neutral-500">{network === "mainnet" ? "Shared demo agent account" : "Testnet pool"} {sess?.live && <span className="text-accent">· live</span>}</p>
+              <p className="mt-0.5 text-2xl font-semibold text-white">{network === "mainnet" ? (remaining != null ? `${xlm(remaining)} left` : "—") : `${sess?.poolLeafCount ?? 0} payments`}</p>
+              <p className="mt-1 text-[11px] text-neutral-500">{network === "mainnet" ? `of a ${cap != null ? xlm(cap) : "—"} limit · used by the demo agent` : "the shared demo agent runs on mainnet"}</p>
               {pct != null && (
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} /></div>
               )}
@@ -310,22 +355,22 @@ export function DashboardHome() {
         {/* Freighter keeps its key in the extension, so provisioning runs from the generated wallet. */}
         {address && !secret && !prov && (
           <p className="mt-3 text-xs text-neutral-500">
-            Provisioning your own SessionAccount runs from the generated session wallet. {generated ? "Switch to it above to provision." : "Generate one above to deploy a scoped SessionAccount."}
+            Agent accounts are created from the wallet generated in this browser. {generated ? "Switch to it above to create one." : "Generate one above to create an agent account."}
           </p>
         )}
 
         {/* Session provisioning runs through the fabric, which is deployed on mainnet. */}
-        {address && secret && network === "testnet" && (
-          <p className="mt-3 text-xs text-neutral-500">Provisioning a SessionAccount runs on mainnet for now. Switch to Mainnet to provision; on testnet you can fund this wallet and send test XLM.</p>
+        {address && secret && network !== FABRIC_NETWORK && (
+          <p className="mt-3 text-xs text-neutral-500">Agent accounts are created on {FABRIC_NETWORK} for now. Switch networks to create one; here you can fund this wallet and send test XLM.</p>
         )}
 
         {/* Provision a real per-user SessionAccount (generated wallets only). */}
-        {address && secret && network === "mainnet" && (
+        {address && secret && network === FABRIC_NETWORK && (
           prov ? (
             <div className="mt-4 rounded-xl border border-accent/25 bg-accent/[0.06] p-5">
-              <p className="font-semibold text-white">Your Session Account is live</p>
+              <p className="font-semibold text-white">Your agent account is live</p>
               <p className="mt-1 font-mono text-[11px] text-neutral-400">{prov.sessionId}</p>
-              <p className="mt-3 text-xs text-neutral-400">Personal agent token — use as the Bearer to settle through <span className="text-neutral-200">your</span> session:</p>
+              <p className="mt-3 text-xs text-neutral-400">Your agent&apos;s token. Give it to your AI assistant so it pays from <span className="text-neutral-200">your</span> agent account:</p>
               <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-black/40 px-3 py-2">
                 <span className="flex-1 truncate font-mono text-[11px] text-accent">{prov.token}</span>
                 <CopyBtn text={prov.token} />
@@ -335,58 +380,76 @@ export function DashboardHome() {
                 onClick={() => { setProv(null); localStorage.removeItem("kage_session_token"); localStorage.removeItem("kage_session_id"); }}
                 className="mt-3 text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-300"
               >
-                Provision a new session (different limits)
+                Create a new agent account (different limits)
               </button>
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-              <p className="text-sm text-neutral-400">Deploy a scoped SessionAccount owned by <span className="font-mono text-neutral-300">{shortAddr(address)}</span> — only Kage.deposit into the ZK pool, capped. Your agent settles through your own session, not the shared demo.</p>
+              <p className="text-sm text-neutral-400">Give your AI agent its own spending account, owned by <span className="font-mono text-neutral-300">{shortAddr(address)}</span>. It can only pay into the Kage pool, never more than the limit, and stops after 30 days. Kage pays the network fees.</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <label className="text-xs text-neutral-500">Spend cap (USDC)
-                  <input type="number" min="0" step="1" value={capUsdc} onChange={(e) => setCapUsdc(e.target.value)} className="mt-1 w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-sm text-white outline-none focus:border-accent/60" />
+                <label className="text-xs text-neutral-500">Spending limit (XLM)
+                  <input type="number" min="0" step="1" value={capXlm} onChange={(e) => { setCapXlm(e.target.value); setPlan(null); }} className="mt-1 w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-sm text-white outline-none focus:border-accent/60" />
                 </label>
-                <label className="text-xs text-neutral-500">Fund with (USDC)
-                  <input type="number" min="0" step="0.5" value={fundUsdc} onChange={(e) => setFundUsdc(e.target.value)} className="mt-1 w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-sm text-white outline-none focus:border-accent/60" />
+                <label className="text-xs text-neutral-500">Starting balance (XLM)
+                  <input type="number" min="0" step="0.5" value={fundXlm} onChange={(e) => { setFundXlm(e.target.value); setPlan(null); }} className="mt-1 w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-sm text-white outline-none focus:border-accent/60" />
                 </label>
               </div>
-              <button onClick={provision} disabled={provBusy} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
-                <KeyRound className="h-4 w-4" /> {provBusy ? "Provisioning on-chain… (~30s)" : "Provision Session Account"}
-              </button>
+              {!plan ? (
+                <button onClick={prepare} disabled={provBusy} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
+                  <KeyRound className="h-4 w-4" /> {provBusy ? "Preparing…" : "Review agent account"}
+                </button>
+              ) : (
+                <div className="mt-3 rounded-xl border border-accent/25 bg-accent/[0.05] p-4">
+                  <p className="text-xs font-semibold text-white">You&apos;re about to approve, with your key, in this browser:</p>
+                  <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-neutral-300">
+                    {plan.lines.map((l) => <li key={l}>{l}</li>)}
+                  </ol>
+                  <p className="mt-2 text-[11px] text-neutral-500">Only these two signed approvals are sent. Your secret key is not.</p>
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={approve} disabled={provBusy} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-60">
+                      {provBusy ? "Setting up on chain… (~30s)" : "Approve and create"}
+                    </button>
+                    <button onClick={() => setPlan(null)} disabled={provBusy} className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 hover:text-white">Cancel</button>
+                  </div>
+                </div>
+              )}
+              {provErr && <p className="mt-2 text-xs text-red-400">{provErr}</p>}
             </div>
           )
         )}
       </Panel>
 
-      {/* White Belt: Send XLM — simple mainnet transaction with success/failure feedback */}
+      {/* Send XLM from the active wallet */}
       <SendXlm />
 
       <RequestLogs />
 
-      {/* Recent activity — real rows from the fabric catalog */}
+      {/* Latest pool activity, read from the chain's event history */}
       <Panel>
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-accent" />
-          <p className="font-semibold text-white">Recent activity</p>
+          <p className="font-semibold text-white">Latest pool activity</p>
+          <span className="text-xs text-neutral-500">public on {network}</span>
         </div>
         <div className="mt-4 divide-y divide-white/[0.06]">
-          {act === null ? (
-            <p className="py-3 text-sm text-neutral-500">loading…</p>
-          ) : act.length === 0 ? (
-            <p className="py-3 text-sm text-neutral-500">Nothing published yet — create an API, workflow, or MCP server.</p>
+          {pool === null ? (
+            <p className="py-3 text-sm text-neutral-500">Reading the chain…</p>
+          ) : !pool.ok ? (
+            <p className="py-3 text-sm text-neutral-500">The event index is unreachable right now.</p>
+          ) : pool.recent.length === 0 ? (
+            <p className="py-3 text-sm text-neutral-500">No payments in this pool yet.</p>
           ) : (
-            act.map((a, i) => {
-              const tint = a.kind === "workflow" ? "text-accent" : a.kind === "mcp" ? "text-sky-400" : "text-amber-400";
-              return (
-                <div key={i} className="flex items-center gap-3 py-2.5 text-sm">
-                  <span className={`w-20 shrink-0 font-mono text-[11px] uppercase ${tint}`}>{a.kind}</span>
-                  <span className="flex-1 truncate text-neutral-200">{a.name}</span>
-                  <span className="hidden font-mono text-xs text-neutral-600 sm:block">/{a.slug}</span>
-                  <span className="w-24 shrink-0 text-right text-xs text-neutral-500">{new Date(a.created_at).toLocaleDateString()}</span>
-                </div>
-              );
-            })
+            pool.recent.map((a) => (
+              <a key={a.link + a.ref} href={a.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-2.5 text-sm hover:bg-white/[0.02]">
+                <span className={`w-24 shrink-0 text-xs font-medium ${a.type === "deposit" ? "text-accent" : "text-sky-400"}`}>{a.type === "deposit" ? "Paid in" : "Paid out"}</span>
+                <span className="flex-1 truncate font-mono text-xs text-neutral-400">{a.type === "deposit" ? "note" : "spent note"} {a.ref ? `${a.ref.slice(0, 10)}…${a.ref.slice(-8)}` : ""}</span>
+                <span className="w-24 shrink-0 text-right text-xs text-neutral-500">{ago(a.at)}</span>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-neutral-600" />
+              </a>
+            ))
           )}
         </div>
+        <p className="mt-3 text-[11px] text-neutral-600">Anyone can see that a payment went in or out. No row says who paid whom, and no payout says which payment it spends.</p>
       </Panel>
     </div>
   );

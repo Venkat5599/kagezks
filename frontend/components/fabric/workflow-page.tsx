@@ -113,7 +113,7 @@ export function WorkflowPage({ wf, onBack, backLabel = "Back to Workflows" }: { 
                     {s.ok ? <CheckCircle2 className="h-3.5 w-3.5 text-accent" /> : <XCircle className="h-3.5 w-3.5 text-red-400" />}
                     <span>{s.title}</span>
                     <span className="text-neutral-600">{(s.ms / 1000).toFixed(1)}s</span>
-                    {s.error && <span className="text-red-300">— {s.error}</span>}
+                    {s.error && <span className="text-red-300">: {s.error}</span>}
                   </div>
                 ))}
               </div>

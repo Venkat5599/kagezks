@@ -57,7 +57,7 @@ async function signWithFreighter(xdr: string, networkPassphrase: string): Promis
   return {
     ok: false,
     error:
-      "Freighter could not sign. Unlock the extension, make sure it is on the same network as Kage, and approve the signing prompt — then try again.",
+      "Freighter could not sign. Unlock the extension, make sure it is on the same network as Kage, and approve the signing prompt, then try again.",
   };
 }
 
@@ -144,7 +144,7 @@ export function SendXlm() {
         const msg = codes
           ? [codes.transaction, ...(codes.operations ?? [])].filter(Boolean).join(", ")
           : String((err as Error).message);
-        const hint = msg.includes("op_no_destination") ? " — the destination account doesn't exist on this network yet (send at least 1 XLM with a create-account wallet, or fund it first)." : "";
+        const hint = msg.includes("op_no_destination") ? ". The destination account doesn't exist on this network yet (send at least 1 XLM with a create-account wallet, or fund it first)." : "";
         setResult({ ok: false, error: `${msg}${hint}`.substring(0, 240) });
       }
 
