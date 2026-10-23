@@ -26,6 +26,10 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const KEYFILE = join(HERE, "..", "..", "sdk", "build", "agent_keys.json");
 
 let _map: Record<string, AgentScope> | null = null;
+/** Forget the cached token map so the next request re-reads it (after provisioning adds a token). */
+export function reloadAgentKeys(): void {
+  _map = null;
+}
 function keyMap(): Record<string, AgentScope> {
   if (_map) return _map;
   _map = {};

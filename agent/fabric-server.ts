@@ -20,7 +20,7 @@ import { resolveScope, withScope } from "./fabric/auth.ts";
 import { findWorkflow, findApi } from "./fabric/catalog.ts";
 import { runWorkflow } from "./fabric/engine.ts";
 import { proxyCall } from "./fabric/proxy-tool.ts";
-import { provisionSession } from "./fabric/provision.ts";
+import { prepareProvision, finishProvision, ProvisionError } from "./fabric/provision.ts";
 import { config } from "../sdk/kage-onchain.ts";
 
 // Dedicated port env — must NOT reuse VEIL_MCP_PORT (that's the single-agent demo's
@@ -68,14 +68,28 @@ app.post("/run/workflow", async (req, res) => {
 
 // Provision a per-user scoped SessionAccount for a generated wallet. Deploys + inits +
 // funds a real SessionAccount and returns a personal bearer token to settle through it.
-app.post("/provision", async (req, res) => {
-  const { ownerAddress, ownerSecret, amount, cap } = (req.body ?? {}) as { ownerAddress?: string; ownerSecret?: string; amount?: string; cap?: string };
-  if (!ownerAddress || !ownerSecret) return res.status(400).json({ ok: false, error: "ownerAddress and ownerSecret required" });
+// Two-step provisioning: the owner's secret key never reaches this server (see
+// fabric/provision.ts). A request that carries a secret is refused outright.
+const refuseSecret = (body: Record<string, unknown>) =>
+  Object.entries(body).some(([k, v]) => /secret/i.test(k) || (typeof v === "string" && /^S[A-Z2-7]{55}$/.test(v)));
+
+app.post("/provision/prepare", async (req, res) => {
+  const body = (req.body ?? {}) as { ownerAddress?: string; amount?: string; cap?: string };
+  if (refuseSecret(body)) return res.status(400).json({ ok: false, error: "secret keys are never accepted; sign the approvals in your browser" });
   try {
-    const r = await provisionSession(ownerAddress, ownerSecret, amount, cap);
-    res.json({ ok: true, ...r });
+    res.json({ ok: true, plan: await prepareProvision(body.ownerAddress ?? "", body.amount, body.cap) });
   } catch (e) {
-    res.status(500).json({ ok: false, error: (e as Error).message });
+    res.status(e instanceof ProvisionError ? e.status : 500).json({ ok: false, error: (e as Error).message });
+  }
+});
+
+app.post("/provision/finish", async (req, res) => {
+  const body = (req.body ?? {}) as { id?: string; signed?: string[] };
+  if (refuseSecret(body)) return res.status(400).json({ ok: false, error: "secret keys are never accepted" });
+  try {
+    res.json({ ok: true, ...(await finishProvision(body.id ?? "", body.signed ?? [])) });
+  } catch (e) {
+    res.status(e instanceof ProvisionError ? e.status : 500).json({ ok: false, error: (e as Error).message });
   }
 });
 
