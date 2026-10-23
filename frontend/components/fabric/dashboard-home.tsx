@@ -101,7 +101,14 @@ function WalletSwitcher() {
         <span className={`h-2 w-2 shrink-0 rounded-full ${isActive ? "bg-accent" : addr ? "bg-neutral-500" : "bg-neutral-700"}`} />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-white">{label}{isActive && <span className="ml-2 text-[11px] font-medium text-accent">active</span>}</p>
-          <p className="font-mono text-[11px] text-neutral-500">{addr ? short(addr) : "not added"}</p>
+          {addr ? (
+            <p className="flex items-center gap-1.5 font-mono text-[11px] text-neutral-500">
+              <span title={addr}>{short(addr)}</span>
+              <CopyBtn text={addr} />
+            </p>
+          ) : (
+            <p className="font-mono text-[11px] text-neutral-500">not added</p>
+          )}
         </div>
         {addr ? (
           <div className="flex items-center gap-2">
@@ -273,6 +280,11 @@ export function DashboardHome() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
               <p className="text-xs text-neutral-500">Your wallet balance</p>
+              <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/30 px-2.5 py-1.5">
+                <span className="flex-1 truncate font-mono text-[11px] text-neutral-300" title={address}>{address}</span>
+                <CopyBtn text={address} />
+              </div>
+              <p className="mt-1 text-[10px] text-neutral-600">Your public address — share it or send XLM here to fund this wallet.</p>
               <p className="mt-0.5 text-2xl font-semibold text-white">{wstat === null ? "—" : `${Number(wstat.xlm).toFixed(2)} XLM`}</p>
               <p className="mt-1 text-[11px] text-neutral-500">{wstat?.funded ? `funded on ${network}` : `not funded on ${network} yet`}</p>
               {net.friendbot && wstat && !wstat.funded && (
