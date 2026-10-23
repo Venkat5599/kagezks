@@ -51,6 +51,26 @@ agent integration one command.
 | 3 agent setups from outside the team settle at least one private payment each | Their SessionAccount IDs + tx hashes listed in the README |
 | Stretch: bounded storage for seen roots + spent nullifiers | Contract test over 10k inserts shows bounded growth |
 
+## Frontend upgrade (runs alongside weeks 1–4)
+
+The protocol work above only matters if someone who has never used a crypto wallet can
+give their AI agent a Stellar account and see what it did. This track makes the website
+that path. Rows marked ✅ are already live or verified; the rest land inside the 30 days.
+
+| Week | Deliverable | Acceptance (how anyone can check it) |
+|---|---|---|
+| ✅ | **Dashboard shows the chain, not empty counters**: private payments in and out, XLM held, slots used, free tools, and the latest pool events with explorer links | `/dashboard` reads 32 payments in / 30 out on mainnet and switches with the network toggle |
+| ✅ | **Plain-language pages for every API, workflow and MCP server**, each with a form that runs it and a readable answer | Marketplace cards open a page; "Run" returns a live answer on mainnet and testnet |
+| ✅ | **Agent account setup signed in the browser**: the page shows what the user is approving in plain words, checks it, signs it locally, and sends only the signatures | 11 refusal checks + 1 honest setup pass on testnet (`scripts/provision-check.ts`); 24 browser-side refusal tests in `frontend/tests/session-sign.test.ts` (27 tests in the file) |
+| ✅ | **MCP server URLs open as a readable page** with connect steps and a direct link per tool | `https://kageai.me/mcp/stellar-tools` in a browser shows 14 tools |
+| 1 | **Agent account page**: the live limit, amount spent and expiry read from the contract, with Revoke and Extend buttons signed in the browser | A revoke tx hash; the agent's next payment fails with `Expired` |
+| 1 | **Freighter creates agent accounts too**, by signing the same two approvals in the extension | A provision made from a Freighter wallet, with its tx hash |
+| 2 | **Secret key encrypted at rest in the browser** with a passphrase (WebCrypto AES-GCM); removed only after the 4-character check | A test shows local storage holds no plaintext secret; unlocking with a wrong passphrase fails |
+| 2 | **First-run guide on testnet**: generate a wallet, get free test XLM, create an agent account, watch one private payment land | A new user finishes it without reading docs; a screen recording linked in the README |
+| 3 | **Mobile layout pass** for the landing page and dashboard | Screenshots at 390 px wide with no horizontal scroll; every button reachable |
+| 3 | **Accessibility and speed** | Lighthouse ≥ 90 for accessibility and performance on `/` and `/dashboard`, report committed |
+| 4 | **Activity per agent**: each agent account lists its own payments with plain receipts (who, how much in XLM and dollars, when) | The receipt for a real mainnet agent payment matches stellar.expert |
+
 ---
 
 ## Next milestone — product track
@@ -61,7 +81,7 @@ nothing is done without a link, a tx hash, or a test name.
 
 | Deliverable | Acceptance (how anyone can check it) |
 |---|---|
-| **Non-custodial provisioning** — the owner signs the SessionAccount deploy in the browser; the server never receives an owner secret | `/api/fabric/provision` rejects any request body carrying a secret (route test); a mainnet provision tx signed client-side |
+| **Non-custodial provisioning** ✅ built — the owner signs both setup approvals in the browser; the server never receives an owner secret | Verified on testnet: a request carrying a secret is refused, 11 attack checks refused (`scripts/provision-check.ts`). Still to show: a mainnet provision signed client-side |
 | **Accounts** — Google sign-in that stores only the public address and SessionAccount ID; the key stays encrypted on the user's device | DB schema has no key column; signing in on a second device restores the dashboard without exposing a key |
 | **Network switch** ✅ shipped — one-click mainnet / testnet toggle across the dashboard | Testnet pool `CCQWGM…GJXC` in the README; testnet payment `f2255956…3786a2d` sent from the dashboard |
 | **Stellar agent toolkit** ✅ shipped — 4 MCP servers, 9 read APIs, 5 workflows | `kageai.me/mcp/stellar-tools` lists 14 tools; README shows real output |
