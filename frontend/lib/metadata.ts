@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const siteConfig = {
-  name: "Kage: private payments for autonomous agents on Stellar",
+  name: "Kage: Stellar tools and private payments for AI agents",
   description:
-    "Give an AI agent a scoped session key and it pays on-chain by itself, bounded so it can never drain or redirect funds, with every payment sealed in zero-knowledge so no one sees who it paid. Built on Stellar with Groth16 + a Soroban BN254 verifier.",
+    "Stellar tools and private payments for AI agents: MCP servers that read wallets, prices and transactions, and a scoped session key that pays through a zero-knowledge pool without revealing who it paid. Built on Stellar with Groth16 + a Soroban BN254 verifier.",
   url: "https://kageai.me",
   ogImage: "/og-image.png",
   creator: "@Kage_stellar",
@@ -22,6 +22,8 @@ export const siteConfig = {
     "Stellar",
     "Soroban",
     "Groth16",
+    "MCP",
+    "AI agents",
   ],
 } as const;
 

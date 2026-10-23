@@ -9,6 +9,7 @@ type MenuItem = { label: string; description: string; href?: string };
 
 const menus: Record<"products" | "resources", MenuItem[]> = {
   products: [
+    { label: "Stellar MCP servers", description: "14 live Stellar tools for any AI assistant", href: "#agent-tools" },
     { label: "Stealth notes", description: "Hide which payee is paid (X25519 ECDH)" },
     { label: "Shielded pool", description: "Break the agent→payee link in ZK" },
     { label: "Nullifiers", description: "One payment note, claimable once" },
@@ -16,6 +17,7 @@ const menus: Record<"products" | "resources", MenuItem[]> = {
   ],
   resources: [
     { label: "How it works", description: "The three-step agent payment flow" },
+    { label: "Marketplace", description: "Try every API, workflow and MCP server", href: "/dashboard" },
     { label: "API reference", description: "Every endpoint the product exposes", href: "/docs" },
     { label: "Network status", description: "Live RPC + contract health", href: "/status" },
     { label: "Stealth tool", description: "Generate a stealth address + note locally", href: "/tools/stealth" },

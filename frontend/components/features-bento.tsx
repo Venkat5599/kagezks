@@ -8,7 +8,7 @@ const EASE = [0.23, 1, 0.32, 1] as const;
 
 const PROOF_STATS: { icon: LucideIcon; label: string; change: string }[] = [
   { icon: Lock, label: "Withdraw circuit", change: "3005 constraints" },
-  { icon: Trees, label: "Insert circuit", change: "4910 constraints" },
+  { icon: Trees, label: "Insert circuit", change: "5238 constraints" },
 ];
 
 const cardAnimation = {

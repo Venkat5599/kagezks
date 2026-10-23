@@ -13,8 +13,9 @@ import {
 } from "react";
 import { Keypair } from "@stellar/stellar-sdk";
 import { useNetwork } from "./network";
+import { loadWallets, saveActive, saveFreighter, saveGenerated, forgetWallet, type WalletKind } from "./wallet-store";
 
-export type WalletKind = "generated" | "freighter";
+export type { WalletKind };
 
 type WalletCtx = {
   // The ACTIVE wallet — what every page uses for ownership and signing.
@@ -50,14 +51,7 @@ const Ctx = createContext<WalletCtx>({
   disconnect: () => {},
 });
 
-const KEY = "kage_owner";
-const SECKEY = "kage_owner_secret";
-const REALKEY = "kage_owner_real";
 // Per-wallet storage so a generated wallet and a Freighter wallet can coexist.
-const GEN_PUB = "kage_gen_pub";
-const GEN_SEC = "kage_gen_secret";
-const FREIGHTER = "kage_freighter_addr";
-const ACTIVE = "kage_active_wallet";
 
 // Record the wallet against the onboarding table. Fire-and-forget on purpose:
 // tracking must never block or fail a connect, so a dead endpoint or an offline
@@ -174,49 +168,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const { net } = useNetwork();
 
   useEffect(() => {
-    // One-time migration from the single-slot layout (kage_owner*), so a wallet created
-    // before this change is never lost.
-    const legacy = localStorage.getItem(KEY);
-    if (legacy && !localStorage.getItem(ACTIVE)) {
-      const legacySec = localStorage.getItem(SECKEY);
-      if (localStorage.getItem(REALKEY) === "1") {
-        localStorage.setItem(FREIGHTER, legacy);
-        localStorage.setItem(ACTIVE, "freighter");
-      } else if (legacySec) {
-        localStorage.setItem(GEN_PUB, legacy);
-        localStorage.setItem(GEN_SEC, legacySec);
-        localStorage.setItem(ACTIVE, "generated");
-      }
-    }
-    localStorage.removeItem(KEY);
-    localStorage.removeItem(SECKEY);
-    localStorage.removeItem(REALKEY);
-
-    const gp = localStorage.getItem(GEN_PUB);
-    const gs = localStorage.getItem(GEN_SEC);
-    const fr = localStorage.getItem(FREIGHTER);
-    const hasGen = !!(gp && gs);
-    setGenPub(hasGen ? gp : null);
-    setGenSec(hasGen ? gs : null);
-    setFreighter(fr);
-    const want = localStorage.getItem(ACTIVE) as WalletKind | null;
-    const pick: WalletKind | null =
-      want === "generated" && hasGen
-        ? "generated"
-        : want === "freighter" && fr
-          ? "freighter"
-          : hasGen
-            ? "generated"
-            : fr
-              ? "freighter"
-              : null;
-    setActive(pick);
+    const w = loadWallets(localStorage);
+    setGenPub(w.genPub);
+    setGenSec(w.genSec);
+    setFreighter(w.freighter);
+    setActive(w.active);
   }, []);
 
   const activate = (kind: WalletKind | null) => {
     setActive(kind);
-    if (kind) localStorage.setItem(ACTIVE, kind);
-    else localStorage.removeItem(ACTIVE);
+    saveActive(localStorage, kind);
   };
 
   // Connect an existing Freighter wallet (no key material leaves the extension).
@@ -238,8 +199,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         return;
       }
       setFreighter(res.address);
-      localStorage.setItem(FREIGHTER, res.address);
-      activate("freighter");
+      saveFreighter(localStorage, res.address);
+      setActive("freighter");
       registerUser(res.address, "freighter");
     } finally {
       setConnecting(false);
@@ -258,11 +219,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const kp = Keypair.random();
       const pub = kp.publicKey();
       const sec = kp.secret();
+      if (!saveGenerated(localStorage, pub, sec)) {
+        const w = loadWallets(localStorage);
+        setGenPub(w.genPub);
+        setGenSec(w.genSec);
+        activate("generated");
+        return;
+      }
       setGenPub(pub);
       setGenSec(sec);
-      localStorage.setItem(GEN_PUB, pub);
-      localStorage.setItem(GEN_SEC, sec);
-      activate("generated");
+      setActive("generated");
       registerUser(pub, "generated");
     } finally {
       setConnecting(false);
@@ -275,20 +241,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   };
 
   const forget = (kind: WalletKind) => {
-    if (kind === "generated") {
-      setGenPub(null);
-      setGenSec(null);
-      localStorage.removeItem(GEN_PUB);
-      localStorage.removeItem(GEN_SEC);
-      // The per-user session was provisioned by this wallet's key.
-      localStorage.removeItem("kage_session_token");
-      localStorage.removeItem("kage_session_id");
-      if (active === "generated") activate(freighter ? "freighter" : null);
-    } else {
-      setFreighter(null);
-      localStorage.removeItem(FREIGHTER);
-      if (active === "freighter") activate(genPub ? "generated" : null);
-    }
+    const next = forgetWallet(localStorage, kind, { genPub, genSec, freighter, active });
+    setGenPub(next.genPub);
+    setGenSec(next.genSec);
+    setFreighter(next.freighter);
+    setActive(next.active);
   };
 
   const disconnect = () => {

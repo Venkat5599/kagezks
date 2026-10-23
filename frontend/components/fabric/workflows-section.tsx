@@ -150,7 +150,7 @@ function WorkflowDetail({ wf, onBack }: { wf: Wf; onBack: () => void }) {
       {(wf.allowed_contracts ?? []).length > 0 && (
         <Panel>
           <div className="flex items-center gap-2"><Link2 className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Scope (allowed contracts)</p></div>
-          <p className="mt-1 text-sm text-neutral-500">The on-chain step may settle only through these — checked before any proof is built.</p>
+          <p className="mt-1 text-sm text-neutral-500">The on-chain step may settle only through these, checked before any proof is built.</p>
           <div className="mt-3 space-y-2">
             {(wf.allowed_contracts ?? []).map((c, i) => (
               <div key={i} className="flex items-center gap-2 rounded-xl border border-white/[0.08] px-4 py-2"><span className="flex-1 truncate font-mono text-xs text-white">{c}</span><span className="font-mono text-[11px] text-neutral-500">{short(c, 6, 5)}</span></div>
@@ -301,7 +301,7 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
 
       <Panel className="space-y-5">
         <Field label="Workflow Name"><Input placeholder="My Private Payment" value={meta.name} onChange={(e) => setMeta((s) => ({ ...s, name: e.target.value }))} /></Field>
-        <Field label="URL Slug" hint="lowercase, hyphens — becomes the wf__slug MCP tool"><Input placeholder="my-private-payment" value={meta.slug} onChange={(e) => setMeta((s) => ({ ...s, slug: e.target.value }))} /></Field>
+        <Field label="URL Slug" hint="lowercase and hyphens; becomes the wf__slug MCP tool"><Input placeholder="my-private-payment" value={meta.slug} onChange={(e) => setMeta((s) => ({ ...s, slug: e.target.value }))} /></Field>
         <Field label="Description" hint="(optional)"><Textarea rows={2} placeholder="Describe what this workflow does…" value={meta.description} onChange={(e) => setMeta((s) => ({ ...s, description: e.target.value }))} /></Field>
         <Toggle on={meta.is_public} onChange={(v) => setMeta((s) => ({ ...s, is_public: v }))} label="Make Workflow Public" desc="List it as a wf__ tool other agents can discover" />
       </Panel>
@@ -418,7 +418,7 @@ function CreateWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel
         </div>
         <div className="flex items-start gap-2 rounded-xl border border-accent/25 bg-accent/[0.06] p-4">
           <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-          <p className="text-sm text-accent/90">The engine refuses to run the on-chain step if the pool isn&apos;t in this list — and the SessionAccount policy still caps spend on-chain, so the agent can never drain or redirect funds.</p>
+          <p className="text-sm text-accent/90">The engine refuses to run the on-chain step if the pool isn&apos;t in this list, and the SessionAccount policy still caps spend on-chain, so the agent can never drain or redirect funds.</p>
         </div>
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-white">Allowed Contract Addresses</p>

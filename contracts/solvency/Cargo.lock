@@ -1282,6 +1282,7 @@ dependencies = [
 name = "session_account"
 version = "0.0.0"
 dependencies = [
+ "ed25519-dalek",
  "soroban-sdk",
 ]
 

@@ -6,12 +6,13 @@ import { FeatureShowcase } from "@/components/feature-showcase";
 import { Footer } from "@/components/footer";
 import { Hero } from "@/components/hero";
 import { HowItWorks } from "@/components/how-it-works";
+import { AgentToolkit } from "@/components/agent-toolkit";
 import { createMetadata, siteConfig } from "@/lib/metadata";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = createMetadata({
-  title: "Kage: agent payments, proven in zero-knowledge",
+  title: "Kage: Stellar tools and private payments for AI agents",
   description: siteConfig.description,
   path: "/",
 });
@@ -24,6 +25,7 @@ export default function HomePage(): ReactNode {
       <FeaturesBento />
       <FeatureShowcase />
       <HowItWorks />
+      <AgentToolkit />
       <Convergence />
       <FAQ />
       <Footer />

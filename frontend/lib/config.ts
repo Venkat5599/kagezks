@@ -11,7 +11,7 @@ export const siteConfig = {
   name: "Kage",
   tagline: "Agent payments, proven in zero-knowledge.",
   description:
-    "Zero-knowledge payments for autonomous agents on Stellar. Every payment is a Groth16 proof (Poseidon commitments, Merkle membership, nullifiers, BN254 verifier), so who was paid and the agent→payee link never touch the chain. The agent pays under a scoped key it can't drain.",
+    "Stellar tools and private payments for AI agents. Assistants read wallets, prices and transactions through Kage's MCP servers, and pay through a scoped key they can't drain into a Groth16 pool that hides who they paid.",
 
   // URLs
   url: "https://kageai.me",
@@ -38,7 +38,7 @@ export const heroConfig = {
     accent: "zero-knowledge.",
   },
   subheadline:
-    "Every payment is a Groth16 proof: the payee proves it owns an unspent note in the pool without revealing which, so the chain never learns who was paid or links the payee back to the agent. Verified on-chain over BN254 and enforced by math, not a custodian.",
+    "Kage gives AI agents what they need on Stellar: live tools to read wallets, prices and transactions, and a way to pay through a key they can't drain. Each payment settles through a zero-knowledge pool, so the chain never learns who the agent paid.",
   cta: {
     text: "See how it works",
     href: "#how-it-works",
