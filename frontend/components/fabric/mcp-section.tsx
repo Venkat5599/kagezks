@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { Plus, ArrowLeft, Server, Loader2, Search, Wrench, Workflow, Check, X } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Empty, short, Chip, CopyBtn } from "./ui";
 import { useWallet } from "@/lib/wallet";
+import { useNetwork } from "@/lib/network";
 
 type Mcp = {
   id: string; slug: string | null; display_name: string; description: string | null;
   is_public: boolean; tools: string[]; workflows: string[]; owner_address: string | null; created_at: string;
+  builtin?: boolean;
 };
 
 export function McpSection() {
@@ -49,7 +51,7 @@ export function McpSection() {
               <Panel className="h-full cursor-pointer transition hover:border-accent/40 hover:bg-white/[0.04]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10"><Server className="h-5 w-5 text-accent" /></div>
-                  <span className="font-mono text-[11px] text-neutral-500">{short(s.owner_address, 6, 4)}</span>
+                  {s.builtin ? <Chip accent>by Kage</Chip> : <span className="font-mono text-[11px] text-neutral-500">{short(s.owner_address, 6, 4)}</span>}
                 </div>
                 <p className="mt-3 text-lg font-semibold text-white">{s.display_name}</p>
                 <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{s.description}</p>
@@ -57,7 +59,7 @@ export function McpSection() {
                   <span className="inline-flex items-center gap-1.5"><Wrench className="h-3.5 w-3.5 text-accent" /> {(s.tools ?? []).length} tools</span>
                   <span className="inline-flex items-center gap-1.5"><Workflow className="h-3.5 w-3.5 text-accent" /> {(s.workflows ?? []).length} workflows</span>
                 </div>
-                <p className="mt-3 text-[11px] text-neutral-600">Created {new Date(s.created_at).toLocaleDateString()}</p>
+                <p className="mt-3 text-[11px] text-neutral-600">{s.builtin ? "Built-in · free · works with any MCP client" : `Created ${new Date(s.created_at).toLocaleDateString()}`}</p>
               </Panel>
             </button>
           ))}
@@ -71,6 +73,134 @@ type ApiLite = { id: string; slug: string | null; name: string; description: str
 type WfLite = { id: string; slug: string | null; name: string; description: string | null };
 
 function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
+  if (mcp.builtin) return <BuiltinMcpDetail mcp={mcp} onBack={onBack} />;
+  return <EditableMcpDetail mcp={mcp} onBack={onBack} />;
+}
+
+type ToolInfo = { name: string; description?: string; inputSchema?: { properties?: Record<string, { description?: string }>; required?: string[] } };
+
+// Call the live MCP endpoint over JSON-RPC (Streamable HTTP, JSON responses) — the same
+// path an agent uses, so the panel proves the server works.
+async function mcpRpc(slug: string, method: string, params: Record<string, unknown> = {}): Promise<unknown> {
+  const r = await fetch(`/mcp/${slug}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }),
+  });
+  const d = (await r.json()) as { result?: unknown; error?: { message: string } };
+  if (d.error) throw new Error(d.error.message);
+  return d.result;
+}
+
+function BuiltinMcpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
+  const { network } = useNetwork();
+  const slug = mcp.slug ?? "";
+  const url = `https://kageai.me/mcp/${slug}`;
+  const claudeCmd = `claude mcp add ${slug} --transport http ${url}`;
+  const config = JSON.stringify({ mcpServers: { [slug]: { type: "http", url } } }, null, 2);
+
+  const [tools, setTools] = useState<ToolInfo[] | null>(null);
+  const [pick, setPick] = useState<string>("");
+  const [argsText, setArgsText] = useState("{}");
+  const [busy, setBusy] = useState(false);
+  const [out, setOut] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    mcpRpc(slug, "tools/list")
+      .then((r) => {
+        const list = ((r as { tools?: ToolInfo[] }).tools ?? []);
+        setTools(list);
+        if (list[0]) setPick(list[0].name);
+      })
+      .catch(() => setTools([]));
+  }, [slug]);
+
+  // Prefill args from the tool's schema; network-aware tools follow the toggle.
+  useEffect(() => {
+    const t = tools?.find((x) => x.name === pick);
+    if (!t) return;
+    const props = Object.keys(t.inputSchema?.properties ?? {});
+    const ex: Record<string, string> = {};
+    for (const p of props) ex[p] = p === "network" ? network : (EXAMPLES[p] ?? "");
+    setArgsText(JSON.stringify(ex, null, 2));
+    setOut(null);
+  }, [pick, tools, network]);
+
+  const run = async () => {
+    setBusy(true); setOut(null);
+    try {
+      const args = argsText.trim() ? JSON.parse(argsText) : {};
+      const r = (await mcpRpc(slug, "tools/call", { name: pick, arguments: args })) as { content?: { text?: string }[]; isError?: boolean };
+      setOut({ ok: !r.isError, text: r.content?.[0]?.text ?? JSON.stringify(r) });
+    } catch (e) {
+      setOut({ ok: false, text: String((e as Error).message) });
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-6">
+      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to MCP Servers</button>
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10"><Server className="h-6 w-6 text-accent" /></div>
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-white">{mcp.display_name}</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2"><Chip accent>by Kage</Chip><Chip>free</Chip><Chip>{(mcp.tools ?? []).length} tools</Chip></div>
+        </div>
+      </div>
+
+      <Panel><p className="text-sm text-neutral-300">{mcp.description}</p></Panel>
+
+      <Panel>
+        <p className="font-semibold text-white">Connect</p>
+        <p className="mt-1 text-sm text-neutral-500">No token needed — every tool here is free and read-only.</p>
+        <div className="mt-4 space-y-2">
+          {[["URL", url], ["Claude Code", claudeCmd]].map(([k, v]) => (
+            <div key={k} className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
+              <span className="w-20 shrink-0 text-xs text-neutral-500">{k}</span>
+              <span className="flex-1 truncate font-mono text-xs text-white">{v}</span>
+              <CopyBtn text={v ?? ""} />
+            </div>
+          ))}
+          <div className="relative">
+            <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{config}</pre>
+            <div className="absolute right-3 top-3"><CopyBtn text={config} /></div>
+          </div>
+        </div>
+      </Panel>
+
+      <Panel>
+        <div className="flex items-center gap-2"><Wrench className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Try a tool</p><Chip accent>live</Chip></div>
+        <p className="mt-1 text-sm text-neutral-500">Calls this server over MCP, exactly like an agent would.</p>
+        {tools === null ? <Empty><Loader2 className="mx-auto h-5 w-5 animate-spin" /></Empty> : (
+          <>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tools.map((t) => (
+                <button key={t.name} onClick={() => setPick(t.name)} className={`rounded-full border px-3 py-1 font-mono text-xs transition ${pick === t.name ? "border-accent/50 bg-accent/15 text-accent" : "border-white/[0.1] text-neutral-400 hover:text-white"}`}>{t.name}</button>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-neutral-500">{tools.find((t) => t.name === pick)?.description}</p>
+            <div className="mt-3"><Field label="Arguments (JSON)"><Textarea rows={4} value={argsText} onChange={(e) => setArgsText(e.target.value)} className="font-mono" /></Field></div>
+            <div className="mt-3"><Button onClick={run} disabled={busy || !pick}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />} Call {pick}</Button></div>
+            {out && <pre className={`mt-4 max-h-80 overflow-auto rounded-xl border bg-black/60 p-4 font-mono text-xs ${out.ok ? "border-white/[0.08] text-neutral-200" : "border-red-400/30 text-red-300"}`}>{out.text}</pre>}
+          </>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+const EXAMPLES: Record<string, string> = {
+  address: "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6",
+  hash: "bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379",
+  ids: "stellar,bitcoin",
+  vs: "usd",
+  base: "USD",
+  symbols: "EUR,INR,GBP",
+  city: "Hyderabad",
+  title: "Zero-knowledge proof",
+};
+
+function EditableMcpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
   const url = `https://kageai.me/mcp/${mcp.slug ?? ""}`;
   const config = JSON.stringify({ mcpServers: { [mcp.slug ?? "server"]: { type: "http", url } } }, null, 2);
 

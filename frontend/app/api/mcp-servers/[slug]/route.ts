@@ -1,12 +1,15 @@
 // Update an MCP server's exposed tools / workflows (post-create management, like
 // the Available Tools + Workflow Tools sections on the detail page).
 import { sql, type McpServerRow } from "@/lib/db";
+import { builtinMcpRows, findBuiltinMcp } from "@/lib/builtin-catalog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
+  const builtin = builtinMcpRows().find((m) => m.slug === slug);
+  if (builtin) return Response.json({ ok: true, server: builtin });
   try {
     const rows = (await sql`SELECT * FROM mcp_servers WHERE slug = ${slug} LIMIT 1`) as McpServerRow[];
     if (!rows[0]) return Response.json({ ok: false, error: "not found" }, { status: 404 });
@@ -18,6 +21,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
+  if (findBuiltinMcp(slug)) return Response.json({ ok: false, error: "built-in servers can't be edited" }, { status: 403 });
   try {
     const b = (await req.json()) as { tools?: unknown[]; workflows?: unknown[]; display_name?: string; description?: string; is_public?: boolean };
     // COALESCE: only overwrite fields that were actually sent (slug is immutable).

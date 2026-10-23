@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import { Plus, ArrowLeft, Store, Loader2, Terminal, Search, KeyRound, Zap, Play, Trash2 } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Toggle, Chip, Empty, short, CopyBtn } from "./ui";
 import { useWallet } from "@/lib/wallet";
+import { useNetwork } from "@/lib/network";
 
 type Api = {
   id: string; name: string; slug: string | null; description: string | null; category: string | null;
   tags: string[]; payment_address: string | null; target_url: string; http_method: string;
   content_type?: string; query_params?: string | null; example_response?: string | null;
   price: string; is_public: boolean; request_count: number; success_count?: number; earnings?: string;
+  builtin?: boolean; example_args?: Record<string, string>;
+  variables?: { name: string; required?: boolean; description?: string }[];
 };
 
 export function ApisSection() {
@@ -53,12 +56,12 @@ export function ApisSection() {
               <Panel className="h-full cursor-pointer transition hover:border-accent/40 hover:bg-white/[0.04]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10"><Store className="h-5 w-5 text-accent" /></div>
-                  <span className="font-mono text-[11px] text-neutral-500">{short(a.payment_address, 6, 4)}</span>
+                  {a.builtin ? <Chip accent>by Kage</Chip> : <span className="font-mono text-[11px] text-neutral-500">{short(a.payment_address, 6, 4)}</span>}
                 </div>
                 <p className="mt-3 text-lg font-semibold text-white">{a.name}</p>
                 <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{a.description}</p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <Chip accent>{a.price} USDC / call</Chip>
+                  <Chip accent>{a.builtin ? "free" : `${a.price} USDC / call`}</Chip>
                   <Chip>{a.http_method}</Chip>
                   {(a.tags ?? []).slice(0, 2).map((t) => <Chip key={t}>{t}</Chip>)}
                 </div>
@@ -72,6 +75,7 @@ export function ApisSection() {
 }
 
 function ApiDetail({ api, onBack }: { api: Api; onBack: () => void }) {
+  if (api.builtin) return <BuiltinApiDetail api={api} onBack={onBack} />;
   const endpoint = `https://kageai.me/x402/${api.slug ?? api.id}`;
   const curl = [
     `# 1. call it — unpaid requests get an x402 quote (HTTP 402)`,
@@ -147,10 +151,67 @@ function ApiDetail({ api, onBack }: { api: Api; onBack: () => void }) {
   );
 }
 
+// Built-in catalog API: free, runs on Kage's own server, callable over plain HTTP or
+// as an MCP tool. The test panel calls the real endpoint, so what you see is live.
+function BuiltinApiDetail({ api, onBack }: { api: Api; onBack: () => void }) {
+  const { network } = useNetwork();
+  const hasNet = (api.variables ?? []).some((v) => v.name === "network");
+  const example = { ...(api.example_args ?? {}), ...(hasNet ? { network } : {}) };
+  const qs = new URLSearchParams(example).toString();
+  const endpoint = `https://kageai.me/api/catalog/${api.slug}`;
+  const curl = `curl '${endpoint}${qs ? `?${qs}` : ""}'`;
+  const mcpTool = `api__${api.slug}`;
+
+  return (
+    <div className="space-y-6">
+      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to APIs</button>
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10"><Store className="h-6 w-6 text-accent" /></div>
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-white">{api.name}</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <Chip accent>by Kage</Chip><Chip>free</Chip><Chip>GET</Chip>
+            {(api.tags ?? []).map((t) => <Chip key={t}>{t}</Chip>)}
+          </div>
+        </div>
+      </div>
+
+      <Panel>
+        <p className="text-sm text-neutral-300">{api.description}</p>
+        {(api.variables ?? []).length > 0 && (
+          <div className="mt-4 divide-y divide-white/[0.06] rounded-xl border border-white/[0.08]">
+            {(api.variables ?? []).map((v) => (
+              <div key={v.name} className="flex items-center gap-3 px-3.5 py-2 text-xs">
+                <span className="w-24 shrink-0 font-mono text-white">{v.name}</span>
+                <span className="w-16 shrink-0 text-neutral-500">{v.required ? "required" : "optional"}</span>
+                <span className="text-neutral-400">{v.description}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
+            <Terminal className="h-3.5 w-3.5 text-accent" />
+            <span className="flex-1 truncate font-mono text-xs text-white">{curl}</span>
+            <CopyBtn text={curl} />
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
+            <span className="text-xs text-neutral-500">MCP tool</span>
+            <span className="flex-1 truncate font-mono text-xs text-white">{mcpTool}</span>
+            <CopyBtn text={mcpTool} />
+          </div>
+        </div>
+      </Panel>
+
+      <TestApi api={api} initialArgs={example} />
+    </div>
+  );
+}
+
 // Live proxied call through the fabric (/run/api → real upstream fetch). Not metered
 // here — this is the owner testing their own proxy; agents pay via x402 at the tool.
-function TestApi({ api }: { api: Api }) {
-  const [argsText, setArgsText] = useState("{}");
+function TestApi({ api, initialArgs }: { api: Api; initialArgs?: Record<string, string> }) {
+  const [argsText, setArgsText] = useState(initialArgs ? JSON.stringify(initialArgs, null, 2) : "{}");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<{ ok: boolean; status?: number; body?: unknown; error?: string } | null>(null);
 
@@ -160,6 +221,13 @@ function TestApi({ api }: { api: Api }) {
     try { args = argsText.trim() ? JSON.parse(argsText) : {}; }
     catch { setRes({ ok: false, error: "args is not valid JSON" }); setBusy(false); return; }
     try {
+      if (api.builtin) {
+        const qs = new URLSearchParams(Object.entries((args ?? {}) as Record<string, unknown>).map(([k, v]) => [k, String(v)])).toString();
+        const r = await fetch(`/api/catalog/${api.slug}${qs ? `?${qs}` : ""}`);
+        const d = await r.json();
+        setRes(d.ok ? { ok: true, status: r.status, body: d.data } : { ok: false, status: r.status, error: d.error });
+        return;
+      }
       const r = await fetch("/api/fabric/run", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind: "api", slug: api.slug ?? api.id, args }),
@@ -171,8 +239,8 @@ function TestApi({ api }: { api: Api }) {
   return (
     <Panel>
       <div className="flex items-center gap-2"><Play className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Test call</p><Chip accent>live</Chip></div>
-      <p className="mt-1 text-sm text-neutral-500">Proxies to <span className="font-mono text-neutral-400">{api.target_url}</span> with your args. Variables substitute <span className="font-mono text-neutral-400">{"{name}"}</span> in the URL / query.</p>
-      <div className="mt-4"><Field label="Args (JSON)"><Textarea rows={3} value={argsText} onChange={(e) => setArgsText(e.target.value)} className="font-mono" /></Field></div>
+      <p className="mt-1 text-sm text-neutral-500">{api.builtin ? "Calls the live endpoint with these args." : <>Proxies to <span className="font-mono text-neutral-400">{api.target_url}</span> with your args. Variables substitute <span className="font-mono text-neutral-400">{"{name}"}</span> in the URL / query.</>}</p>
+      <div className="mt-4"><Field label="Args (JSON)"><Textarea rows={api.builtin ? 5 : 3} value={argsText} onChange={(e) => setArgsText(e.target.value)} className="font-mono" /></Field></div>
       <div className="mt-3"><Button onClick={run} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} Send request</Button></div>
       {res && (
         <div className="mt-4">

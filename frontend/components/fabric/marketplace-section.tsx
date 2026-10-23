@@ -8,8 +8,8 @@ import { useEffect, useState } from "react";
 import { Loader2, Search, Server, Store, Workflow, Wrench, Globe } from "lucide-react";
 import { Panel, Input, Empty, Chip, CopyBtn, short } from "./ui";
 
-type Mcp = { id: string; slug: string | null; display_name: string; description: string | null; tools: string[]; workflows: string[]; owner_address: string | null };
-type Api = { id: string; slug: string | null; name: string; description: string | null; price: string; category: string | null };
+type Mcp = { id: string; slug: string | null; display_name: string; description: string | null; tools: string[]; workflows: string[]; owner_address: string | null; builtin?: boolean };
+type Api = { id: string; slug: string | null; name: string; description: string | null; price: string; category: string | null; builtin?: boolean };
 type Wf = { id: string; slug: string | null; name: string; description: string | null };
 
 export function MarketplaceSection() {
@@ -50,8 +50,9 @@ export function MarketplaceSection() {
           <div className="grid gap-4 sm:grid-cols-2">
             {fMcps.map((m) => {
               // Append the user's provisioned token so the URL/command is connect-ready.
-              const url = `https://kageai.me/mcp/${m.slug}${token ? `?token=${token}` : ""}`;
-              const cmd = `claude mcp add ${m.slug} --transport http https://kageai.me/mcp/${m.slug}${token ? ` --header "Authorization: Bearer ${token}"` : ""}`;
+              const tok = token && !m.builtin ? token : null;
+              const url = `https://kageai.me/mcp/${m.slug}${tok ? `?token=${tok}` : ""}`;
+              const cmd = `claude mcp add ${m.slug} --transport http https://kageai.me/mcp/${m.slug}${tok ? ` --header "Authorization: Bearer ${token}"` : ""}`;
               return (
                 <Panel key={m.id}>
                   <div className="flex items-center gap-2"><Server className="h-4 w-4 text-accent" /><p className="font-semibold text-white">{m.display_name}</p><Globe className="h-3 w-3 text-neutral-600" /></div>
@@ -59,13 +60,13 @@ export function MarketplaceSection() {
                   <div className="mt-3 flex items-center gap-4 text-xs text-neutral-400">
                     <span className="inline-flex items-center gap-1"><Wrench className="h-3.5 w-3.5 text-accent" /> {(m.tools ?? []).length} tools</span>
                     <span className="inline-flex items-center gap-1"><Workflow className="h-3.5 w-3.5 text-accent" /> {(m.workflows ?? []).length} workflows</span>
-                    <span className="font-mono text-[11px] text-neutral-600">{short(m.owner_address, 5, 4)}</span>
+                    {m.builtin ? <Chip accent>by Kage</Chip> : <span className="font-mono text-[11px] text-neutral-600">{short(m.owner_address, 5, 4)}</span>}
                   </div>
                   <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2">
                     <span className="flex-1 truncate font-mono text-[11px] text-neutral-300">{url}</span>
                     <CopyBtn text={cmd} />
                   </div>
-                  {!token && <p className="mt-1.5 text-[10px] text-neutral-600">Provision a Session Account (Dashboard) to get a connect-ready link with your token.</p>}
+                  {!token && !m.builtin && <p className="mt-1.5 text-[10px] text-neutral-600">Provision a Session Account (Dashboard) to get a connect-ready link with your token.</p>}
                 </Panel>
               );
             })}
@@ -80,7 +81,7 @@ export function MarketplaceSection() {
           <div className="grid gap-4 sm:grid-cols-2">
             {fApis.map((a) => (
               <Panel key={a.id}>
-                <div className="flex items-center justify-between"><p className="font-semibold text-white">{a.name}</p><Chip accent>${Number(a.price).toFixed(4)} / call</Chip></div>
+                <div className="flex items-center justify-between"><p className="font-semibold text-white">{a.name}</p><Chip accent>{a.builtin ? "free · by Kage" : `$${Number(a.price).toFixed(4)} / call`}</Chip></div>
                 <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{a.description}</p>
                 {a.category && <div className="mt-3"><Chip>{a.category}</Chip></div>}
               </Panel>
