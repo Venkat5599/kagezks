@@ -354,26 +354,29 @@ export function builtinApiRows() {
 
 // ---- built-in MCP servers -----------------------------------------------------------
 
-export type BuiltinMcp = { slug: string; display_name: string; description: string; tools: string[] };
+export type BuiltinMcp = { slug: string; display_name: string; description: string; tools: string[]; workflows: string[] };
 
 export const BUILTIN_MCPS: BuiltinMcp[] = [
   {
     slug: "stellar-tools",
     display_name: "Stellar Tools",
-    description: "Read Stellar for your agent: account balances, transaction lookups, fee levels, the XLM/USDC DEX price and the Kage pool — mainnet or testnet.",
+    description: "Lets your AI assistant check Stellar wallets, payments, fees, the XLM price and the Kage pool — and answer \"what is this wallet worth?\" or \"can it pay?\".",
     tools: ["api__stellar-account", "api__stellar-transaction", "api__stellar-fees", "api__xlm-usdc-price", "api__kage-pool"],
+    workflows: ["wallet-worth", "can-i-pay"],
   },
   {
     slug: "market-data",
     display_name: "Market Data",
-    description: "Crypto spot prices, fiat FX reference rates and the Stellar DEX XLM/USDC price in one server.",
+    description: "Lets your AI assistant look up crypto prices, currency exchange rates and give a quick market update.",
     tools: ["api__crypto-price", "api__fx-rates", "api__xlm-usdc-price"],
+    workflows: ["market-snapshot"],
   },
   {
     slug: "agent-essentials",
     display_name: "Agent Essentials",
-    description: "General-purpose lookups every agent needs: current weather for a city and Wikipedia summaries.",
+    description: "Everyday lookups for your AI assistant: weather anywhere, Wikipedia summaries and a travel brief.",
     tools: ["api__weather", "api__wikipedia"],
+    workflows: ["travel-brief"],
   },
 ];
 
@@ -387,7 +390,7 @@ export function builtinMcpRows() {
     description: m.description,
     is_public: true,
     tools: m.tools,
-    workflows: [],
+    workflows: m.workflows,
     owner_address: null,
     created_at: "2026-10-23T00:00:00.000Z",
     builtin: true,

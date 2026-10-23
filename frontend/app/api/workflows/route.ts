@@ -1,5 +1,6 @@
 // Workflows — list + create, persisted in Neon.
 import { sql, type WorkflowRow } from "@/lib/db";
+import { builtinWorkflowRows, findBuiltinWorkflow } from "@/lib/builtin-workflows";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -8,15 +9,16 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const owner = url.searchParams.get("owner");
   const scope = url.searchParams.get("scope");
+  const builtins = builtinWorkflowRows(); // visible to every user
   try {
     const rows = (scope === "public"
       ? await sql`SELECT * FROM workflows WHERE is_public = true ORDER BY created_at DESC`
       : owner
         ? await sql`SELECT * FROM workflows WHERE owner_address = ${owner} ORDER BY created_at DESC`
         : await sql`SELECT * FROM workflows ORDER BY created_at DESC`) as WorkflowRow[];
-    return Response.json({ ok: true, workflows: rows });
+    return Response.json({ ok: true, workflows: [...builtins, ...rows] });
   } catch (e) {
-    return Response.json({ ok: false, error: String(e) }, { status: 500 });
+    return Response.json({ ok: true, workflows: builtins, error: String(e) });
   }
 }
 
@@ -25,6 +27,7 @@ export async function POST(req: Request) {
     const b = await req.json();
     if (!b?.name) return Response.json({ ok: false, error: "name is required" }, { status: 400 });
     const slug = String(b.slug || b.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (findBuiltinWorkflow(slug)) return Response.json({ ok: false, error: "slug is reserved by a built-in workflow" }, { status: 409 });
     const rows = (await sql`
       INSERT INTO workflows (name, slug, description, is_public, input_variables, steps, output_mapping, allowed_contracts, tags, owner_address)
       VALUES (${b.name}, ${slug}, ${b.description ?? null}, ${Boolean(b.is_public)},

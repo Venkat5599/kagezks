@@ -37,7 +37,7 @@ export type ApiForPage = {
   servers?: { slug: string; name: string }[];
 };
 
-const humanize = (k: string) =>
+export const humanize = (k: string) =>
   /^[A-Z0-9]{2,6}$/.test(k)
     ? k // currency / ticker codes stay as-is
     : k
@@ -45,21 +45,19 @@ const humanize = (k: string) =>
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .toLowerCase()
     .replace(/^./, (c) => c.toUpperCase())
+    .replace(/\bxlm\b/g, "XLM")
     .replace(/^Xlm\b/, "XLM")
+    .replace(/\busdc\b/gi, "USDC")
     .replace(/ c$/, " (°C)")
     .replace(/ kmh$/, " (km/h)")
     .replace(/ pct$/, " (%)")
     .replace(/ usd$/, " (USD)")
     .replace(/ xlm$/, " (XLM)");
 
-export function ApiPage({ api, onBack }: { api: ApiForPage; onBack: () => void }) {
+export function ApiPage({ api, onBack, backLabel = "Back to APIs" }: { api: ApiForPage; onBack: () => void; backLabel?: string }) {
   const { network } = useNetwork();
   const vars = useMemo(() => api.variables ?? [], [api.variables]);
-  const initial = useMemo(() => {
-    const v: Record<string, string> = {};
-    for (const x of vars) v[x.name] = x.name === "network" ? network : (api.example_args?.[x.name] ?? "");
-    return v;
-  }, [vars, api.example_args, network]);
+  const initial = useMemo(() => initialValues(vars, api.example_args, network), [vars, api.example_args, network]);
 
   const [values, setValues] = useState<Record<string, string>>(initial);
   const [busy, setBusy] = useState(false);
@@ -96,7 +94,7 @@ export function ApiPage({ api, onBack }: { api: ApiForPage; onBack: () => void }
   return (
     <div className="space-y-6">
       <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white">
-        <ArrowLeft className="h-4 w-4" /> Back to APIs
+        <ArrowLeft className="h-4 w-4" /> {backLabel}
       </button>
 
       <div className="flex items-start gap-3">
@@ -119,38 +117,7 @@ export function ApiPage({ api, onBack }: { api: ApiForPage; onBack: () => void }
         <p className="text-lg font-semibold text-white">Try it</p>
         <p className="mt-1 text-sm text-neutral-500">Fill in the fields and press Run. This makes a real call, so the answer is live.</p>
         <form onSubmit={run} className="mt-5 space-y-4">
-          {vars.length === 0 && <p className="text-sm text-neutral-400">Nothing to fill in. Just press Run.</p>}
-          {vars.map((v) => (
-            <div key={v.name}>
-              <label className="block text-sm font-medium text-neutral-200">
-                {v.label ?? humanize(v.name)}
-                {!v.required && <span className="ml-1.5 text-xs font-normal text-neutral-500">optional</span>}
-              </label>
-              {v.description && <p className="mt-0.5 text-xs text-neutral-500">{v.description}</p>}
-              {v.options ? (
-                <div className="mt-2 inline-flex rounded-lg border border-white/[0.1] p-0.5">
-                  {v.options.map((o) => (
-                    <button
-                      type="button"
-                      key={o.value}
-                      onClick={() => setValues((s) => ({ ...s, [v.name]: o.value }))}
-                      className={`rounded-md px-3 py-1.5 text-sm transition ${values[v.name] === o.value ? "bg-accent text-black" : "text-neutral-400 hover:text-white"}`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <Input
-                  className="mt-2"
-                  value={values[v.name] ?? ""}
-                  placeholder={v.placeholder ?? ""}
-                  required={v.required}
-                  onChange={(e) => setValues((s) => ({ ...s, [v.name]: e.target.value }))}
-                />
-              )}
-            </div>
-          ))}
+          <FieldsForm vars={vars} values={values} setValues={setValues} />
           <Button type="submit" disabled={busy}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} {busy ? "Running…" : "Run"}
           </Button>
@@ -259,10 +226,10 @@ function Rows({ obj, compact }: { obj: Record<string, unknown>; compact?: boolea
   );
 }
 
-function ResultView({ data }: { data: unknown }) {
+export function ResultView({ data, title = "Answer" }: { data: unknown; title?: string }) {
   return (
     <div className="rounded-xl border border-accent/20 bg-accent/[0.04] p-4">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Answer</p>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">{title}</p>
       {data && typeof data === "object" && !Array.isArray(data) ? <Rows obj={data as Record<string, unknown>} /> : <Value v={data} />}
     </div>
   );
@@ -344,7 +311,7 @@ function UseIt({ api, values }: { api: ApiForPage; values: Record<string, string
   );
 }
 
-function Snippet({ text }: { text: string }) {
+export function Snippet({ text }: { text: string }) {
   return (
     <div className="relative mt-3">
       <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 pr-12 font-mono text-xs leading-relaxed text-neutral-200">{text}</pre>
@@ -353,4 +320,58 @@ function Snippet({ text }: { text: string }) {
       </div>
     </div>
   );
+}
+
+export function FieldsForm({
+  vars,
+  values,
+  setValues,
+}: {
+  vars: ApiVariable[];
+  values: Record<string, string>;
+  setValues: (fn: (s: Record<string, string>) => Record<string, string>) => void;
+}) {
+  return (
+    <>
+            {vars.length === 0 && <p className="text-sm text-neutral-400">Nothing to fill in. Just press Run.</p>}
+            {vars.map((v) => (
+              <div key={v.name}>
+                <label className="block text-sm font-medium text-neutral-200">
+                  {v.label ?? humanize(v.name)}
+                  {!v.required && <span className="ml-1.5 text-xs font-normal text-neutral-500">optional</span>}
+                </label>
+                {v.description && <p className="mt-0.5 text-xs text-neutral-500">{v.description}</p>}
+                {v.options ? (
+                  <div className="mt-2 inline-flex rounded-lg border border-white/[0.1] p-0.5">
+                    {v.options.map((o) => (
+                      <button
+                        type="button"
+                        key={o.value}
+                        onClick={() => setValues((s) => ({ ...s, [v.name]: o.value }))}
+                        className={`rounded-md px-3 py-1.5 text-sm transition ${values[v.name] === o.value ? "bg-accent text-black" : "text-neutral-400 hover:text-white"}`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <Input
+                    className="mt-2"
+                    value={values[v.name] ?? ""}
+                    placeholder={v.placeholder ?? ""}
+                    required={v.required}
+                    onChange={(e) => setValues((s) => ({ ...s, [v.name]: e.target.value }))}
+                  />
+                )}
+              </div>
+            ))}
+    </>
+  );
+}
+
+/** Starting values for a form: examples filled in, network follows the toggle. */
+export function initialValues(vars: ApiVariable[], example: Record<string, string> | undefined, network: string) {
+  const v: Record<string, string> = {};
+  for (const x of vars) v[x.name] = x.name === "network" ? network : (example?.[x.name] ?? "");
+  return v;
 }

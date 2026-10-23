@@ -1,6 +1,7 @@
 // MCP servers — list + create, persisted in Neon.
 import { sql, type McpServerRow } from "@/lib/db";
-import { builtinMcpRows, findBuiltinMcp } from "@/lib/builtin-catalog";
+import { findBuiltinMcp } from "@/lib/builtin-catalog";
+import { builtinMcpRowsFull as builtinMcpRows } from "@/lib/builtin-workflows";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

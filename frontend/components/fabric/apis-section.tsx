@@ -36,7 +36,7 @@ export function ApisSection() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight text-white">APIs</h1>
-          <p className="mt-1 text-neutral-400">Payment-gated API proxies — pay per call over x402, settled on Stellar.</p>
+          <p className="mt-1 text-neutral-400">Live data your app or AI assistant can use. Try any of them right here.</p>
         </div>
         <Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Create API</Button>
       </div>

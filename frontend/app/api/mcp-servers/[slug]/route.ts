@@ -1,7 +1,8 @@
 // Update an MCP server's exposed tools / workflows (post-create management, like
 // the Available Tools + Workflow Tools sections on the detail page).
 import { sql, type McpServerRow } from "@/lib/db";
-import { builtinMcpRows, findBuiltinMcp } from "@/lib/builtin-catalog";
+import { findBuiltinMcp } from "@/lib/builtin-catalog";
+import { builtinMcpRowsFull as builtinMcpRows } from "@/lib/builtin-workflows";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

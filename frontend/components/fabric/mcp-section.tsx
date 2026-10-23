@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Plus, ArrowLeft, Server, Loader2, Search, Wrench, Workflow, Check, X } from "lucide-react";
 import { Panel, Field, Input, Textarea, Button, Empty, short, Chip, CopyBtn } from "./ui";
 import { useWallet } from "@/lib/wallet";
 import { useNetwork } from "@/lib/network";
+import { FieldsForm, ResultView, initialValues, type ApiVariable } from "./api-page";
 
-type Mcp = {
+export type Mcp = {
   id: string; slug: string | null; display_name: string; description: string | null;
   is_public: boolean; tools: string[]; workflows: string[]; owner_address: string | null; created_at: string;
   builtin?: boolean;
@@ -30,7 +31,7 @@ export function McpSection() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight text-white">MCP Servers</h1>
-          <p className="mt-1 text-neutral-400">Discover AI-ready MCP servers with tools and workflows for your agents.</p>
+          <p className="mt-1 text-neutral-400">Connect one to Claude, ChatGPT or Cursor and your assistant gains new abilities.</p>
         </div>
         <Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Create MCP Server</Button>
       </div>
@@ -77,128 +78,154 @@ function McpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
   return <EditableMcpDetail mcp={mcp} onBack={onBack} />;
 }
 
-type ToolInfo = { name: string; description?: string; inputSchema?: { properties?: Record<string, { description?: string }>; required?: string[] } };
+export type ToolCard = { tool: string; kind: "api" | "workflow"; name: string; description: string; ask: string; inputs: ApiVariable[]; example: Record<string, string> };
 
 // Call the live MCP endpoint over JSON-RPC (Streamable HTTP, JSON responses) — the same
-// path an agent uses, so the panel proves the server works.
-async function mcpRpc(slug: string, method: string, params: Record<string, unknown> = {}): Promise<unknown> {
+// path an AI assistant uses, so the page proves the server works.
+async function mcpCall(slug: string, tool: string, args: Record<string, string>): Promise<{ ok: boolean; data: unknown; error?: string }> {
   const r = await fetch(`/mcp/${slug}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method: "tools/call", params: { name: tool, arguments: args } }),
   });
-  const d = (await r.json()) as { result?: unknown; error?: { message: string } };
-  if (d.error) throw new Error(d.error.message);
-  return d.result;
+  const d = (await r.json()) as { result?: { content?: { text?: string }[]; isError?: boolean }; error?: { message: string } };
+  if (d.error) return { ok: false, data: null, error: d.error.message };
+  const text = d.result?.content?.[0]?.text ?? "";
+  let data: unknown = text;
+  try { data = JSON.parse(text); } catch { /* plain text */ }
+  if (d.result?.isError) return { ok: false, data, error: (data as { error?: string })?.error ?? "The tool returned an error." };
+  return { ok: true, data };
 }
 
-function BuiltinMcpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
-  const { network } = useNetwork();
+const CLIENTS = [
+  { k: "claude", label: "Claude", steps: (url: string) => [<>Open <b>claude.ai</b> → Settings → <b>Connectors</b> → <b>Add custom connector</b>.</>, <>Name it anything and paste this link: <Code>{url}</Code></>, <>Start a new chat and ask your question. Claude asks permission the first time it uses a tool.</>] },
+  { k: "chatgpt", label: "ChatGPT", steps: (url: string) => [<>Open ChatGPT → Settings → <b>Apps &amp; Connectors</b> → Advanced → turn on <b>Developer mode</b>.</>, <>Click <b>Create</b>, paste this link as the server URL and choose <b>No authentication</b>: <Code>{url}</Code></>, <>In a new chat, pick the connector from the + menu, then ask your question.</>] },
+  { k: "cursor", label: "Cursor / VS Code", steps: (url: string) => [<>Open your MCP settings (Cursor: Settings → MCP → <b>Add new server</b>).</>, <>Paste this config:<pre className="mt-2 overflow-x-auto rounded-lg bg-black/60 p-3 font-mono text-[11px] text-neutral-200">{JSON.stringify({ mcpServers: { kage: { url } } }, null, 2)}</pre></>, <>Ask the agent your question in chat.</>] },
+  { k: "cli", label: "Claude Code", steps: (url: string) => [<>Run this once in a terminal: <Code>{`claude mcp add kage --transport http ${url}`}</Code></>, <>Start <b>claude</b> and ask your question.</>] },
+] as const;
+
+function Code({ children }: { children: string }) {
+  return (
+    <span className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/40 px-3 py-2">
+      <span className="flex-1 truncate font-mono text-xs text-white">{children}</span>
+      <CopyBtn text={children} />
+    </span>
+  );
+}
+
+export function BuiltinMcpDetail({ mcp, onBack, backLabel = "Back to MCP Servers" }: { mcp: Mcp & { cards?: ToolCard[] }; onBack: () => void; backLabel?: string }) {
   const slug = mcp.slug ?? "";
-  const url = `https://kageai.me/mcp/${slug}`;
-  const claudeCmd = `claude mcp add ${slug} --transport http ${url}`;
-  const config = JSON.stringify({ mcpServers: { [slug]: { type: "http", url } } }, null, 2);
-
-  const [tools, setTools] = useState<ToolInfo[] | null>(null);
-  const [pick, setPick] = useState<string>("");
-  const [argsText, setArgsText] = useState("{}");
-  const [busy, setBusy] = useState(false);
-  const [out, setOut] = useState<{ ok: boolean; text: string } | null>(null);
-
-  useEffect(() => {
-    mcpRpc(slug, "tools/list")
-      .then((r) => {
-        const list = ((r as { tools?: ToolInfo[] }).tools ?? []);
-        setTools(list);
-        if (list[0]) setPick(list[0].name);
-      })
-      .catch(() => setTools([]));
-  }, [slug]);
-
-  // Prefill args from the tool's schema; network-aware tools follow the toggle.
-  useEffect(() => {
-    const t = tools?.find((x) => x.name === pick);
-    if (!t) return;
-    const props = Object.keys(t.inputSchema?.properties ?? {});
-    const ex: Record<string, string> = {};
-    for (const p of props) ex[p] = p === "network" ? network : (EXAMPLES[p] ?? "");
-    setArgsText(JSON.stringify(ex, null, 2));
-    setOut(null);
-  }, [pick, tools, network]);
-
-  const run = async () => {
-    setBusy(true); setOut(null);
-    try {
-      const args = argsText.trim() ? JSON.parse(argsText) : {};
-      const r = (await mcpRpc(slug, "tools/call", { name: pick, arguments: args })) as { content?: { text?: string }[]; isError?: boolean };
-      setOut({ ok: !r.isError, text: r.content?.[0]?.text ?? JSON.stringify(r) });
-    } catch (e) {
-      setOut({ ok: false, text: String((e as Error).message) });
-    } finally { setBusy(false); }
-  };
+  // User servers that settle payments need the visitor's own session token in the link.
+  const [token] = useState<string | null>(() => (typeof window !== "undefined" && !mcp.builtin ? localStorage.getItem("kage_session_token") : null));
+  const url = `https://kageai.me/mcp/${slug}${token ? `?token=${token}` : ""}`;
+  const cards = mcp.cards ?? [];
+  const [client, setClient] = useState<(typeof CLIENTS)[number]["k"]>("claude");
+  const active = CLIENTS.find((c) => c.k === client)!;
 
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to MCP Servers</button>
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10"><Server className="h-6 w-6 text-accent" /></div>
+      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> {backLabel}</button>
+      <div className="flex items-start gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/10"><Server className="h-6 w-6 text-accent" /></div>
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-white">{mcp.display_name}</h1>
-          <div className="mt-1.5 flex flex-wrap items-center gap-2"><Chip accent>by Kage</Chip><Chip>free</Chip><Chip>{(mcp.tools ?? []).length} tools</Chip></div>
+          <p className="mt-1 max-w-2xl text-neutral-400">{mcp.description}</p>
+          <div className="mt-2 flex flex-wrap gap-2">{mcp.builtin ? <><Chip accent>Free</Chip><Chip>by Kage</Chip></> : <Chip>by {short(mcp.owner_address, 5, 4)}</Chip>}<Chip>{cards.length || (mcp.tools ?? []).length + (mcp.workflows ?? []).length} abilities</Chip></div>
         </div>
       </div>
 
-      <Panel><p className="text-sm text-neutral-300">{mcp.description}</p></Panel>
+      <Panel>
+        <p className="text-lg font-semibold text-white">What is this?</p>
+        <p className="mt-1 text-sm leading-relaxed text-neutral-400">
+          An MCP server gives an AI assistant new abilities. Connect it once, and your assistant can look things up live instead of guessing.
+          {mcp.builtin ? "You don\u2019t need an account or a key." : "Tools that move money run through your own Kage session; create one on the Dashboard first."}
+        </p>
+        <p className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-100">
+          Pasting the link into a chat won&apos;t work, because the assistant just opens it like a web page. Add it as a connector first (steps below).
+        </p>
+      </Panel>
 
       <Panel>
-        <p className="font-semibold text-white">Connect</p>
-        <p className="mt-1 text-sm text-neutral-500">No token needed — every tool here is free and read-only.</p>
-        <div className="mt-4 space-y-2">
-          {[["URL", url], ["Claude Code", claudeCmd]].map(([k, v]) => (
-            <div key={k} className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
-              <span className="w-20 shrink-0 text-xs text-neutral-500">{k}</span>
-              <span className="flex-1 truncate font-mono text-xs text-white">{v}</span>
-              <CopyBtn text={v ?? ""} />
-            </div>
+        <p className="text-lg font-semibold text-white">Connect it</p>
+        <div className="mt-3 flex flex-wrap gap-1 border-b border-white/[0.08]">
+          {CLIENTS.map((c) => (
+            <button key={c.k} onClick={() => setClient(c.k)} className={`-mb-px border-b-2 px-3 py-2 text-sm transition ${client === c.k ? "border-accent text-white" : "border-transparent text-neutral-500 hover:text-neutral-300"}`}>{c.label}</button>
           ))}
-          <div className="relative">
-            <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-black/60 p-4 font-mono text-xs text-neutral-200">{config}</pre>
-            <div className="absolute right-3 top-3"><CopyBtn text={config} /></div>
-          </div>
         </div>
+        <ol className="mt-4 space-y-3">
+          {active.steps(url).map((step, i) => (
+            <li key={i} className="flex gap-3 text-sm text-neutral-300">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent">{i + 1}</span>
+              <div className="min-w-0 flex-1 pt-0.5">{step}</div>
+            </li>
+          ))}
+        </ol>
       </Panel>
 
-      <Panel>
-        <div className="flex items-center gap-2"><Wrench className="h-4 w-4 text-accent" /><p className="font-semibold text-white">Try a tool</p><Chip accent>live</Chip></div>
-        <p className="mt-1 text-sm text-neutral-500">Calls this server over MCP, exactly like an agent would.</p>
-        {tools === null ? <Empty><Loader2 className="mx-auto h-5 w-5 animate-spin" /></Empty> : (
-          <>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {tools.map((t) => (
-                <button key={t.name} onClick={() => setPick(t.name)} className={`rounded-full border px-3 py-1 font-mono text-xs transition ${pick === t.name ? "border-accent/50 bg-accent/15 text-accent" : "border-white/[0.1] text-neutral-400 hover:text-white"}`}>{t.name}</button>
-              ))}
-            </div>
-            <p className="mt-3 text-xs text-neutral-500">{tools.find((t) => t.name === pick)?.description}</p>
-            <div className="mt-3"><Field label="Arguments (JSON)"><Textarea rows={4} value={argsText} onChange={(e) => setArgsText(e.target.value)} className="font-mono" /></Field></div>
-            <div className="mt-3"><Button onClick={run} disabled={busy || !pick}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />} Call {pick}</Button></div>
-            {out && <pre className={`mt-4 max-h-80 overflow-auto rounded-xl border bg-black/60 p-4 font-mono text-xs ${out.ok ? "border-white/[0.08] text-neutral-200" : "border-red-400/30 text-red-300"}`}>{out.text}</pre>}
-          </>
-        )}
-      </Panel>
+      <div>
+        <p className="mb-3 text-lg font-semibold text-white">What your assistant can do</p>
+        <div className="space-y-3">
+          {cards.map((c) => <ToolTry key={c.tool} slug={slug} card={c} />)}
+          {cards.length === 0 && (
+            <Panel>
+              <div className="flex flex-wrap gap-2">
+                {[...(mcp.tools ?? []), ...(mcp.workflows ?? []).map((w) => `wf__${w}`)].map((t) => <Chip key={t}>{t}</Chip>)}
+              </div>
+            </Panel>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-const EXAMPLES: Record<string, string> = {
-  address: "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6",
-  hash: "bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379",
-  ids: "stellar,bitcoin",
-  vs: "usd",
-  base: "USD",
-  symbols: "EUR,INR,GBP",
-  city: "Hyderabad",
-  title: "Zero-knowledge proof",
-};
+function ToolTry({ slug, card }: { slug: string; card: ToolCard }) {
+  const { network } = useNetwork();
+  const [open, setOpen] = useState(false);
+  const [values, setValues] = useState<Record<string, string>>(() => initialValues(card.inputs, card.example, network));
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<{ ok: boolean; data: unknown; error?: string } | null>(null);
+  const run = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true); setRes(null);
+    try {
+      setRes(await mcpCall(slug, card.tool, Object.fromEntries(Object.entries(values).filter(([, v]) => v.trim() !== ""))));
+    } catch (err) {
+      setRes({ ok: false, data: null, error: String((err as Error).message) });
+    } finally { setBusy(false); }
+  };
+  const answer = res?.ok && res.data && typeof res.data === "object" && "answer" in (res.data as object) ? (res.data as { answer: string; details?: unknown }) : null;
+
+  return (
+    <Panel className="!p-5">
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold text-white">{card.name}</p>
+            {card.kind === "workflow" && <Chip accent>workflow</Chip>}
+          </div>
+          <p className="mt-0.5 text-sm text-neutral-500">{card.description}</p>
+          <p className="mt-2 text-sm text-neutral-300">Ask: <span className="italic text-white">“{card.ask}”</span></p>
+        </div>
+        <Button variant="outline" onClick={() => setOpen((o) => !o)}>{open ? "Close" : "Try it"}</Button>
+      </div>
+      {open && (
+        <form onSubmit={run} className="mt-4 space-y-4 border-t border-white/[0.06] pt-4">
+          <FieldsForm vars={card.inputs} values={values} setValues={setValues} />
+          <Button type="submit" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />} {busy ? "Running…" : "Run"}</Button>
+          {res && (res.ok ? (
+            answer ? (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-accent/25 bg-accent/[0.06] p-4"><p className="text-xs font-semibold uppercase tracking-wider text-accent">Answer</p><p className="mt-1.5 text-white">{answer.answer}</p></div>
+                {answer.details != null && <ResultView data={answer.details} title="Details" />}
+              </div>
+            ) : <ResultView data={res.data} />
+          ) : <p className="rounded-xl border border-red-400/25 bg-red-400/[0.06] p-4 text-sm text-red-200">{res.error}</p>)}
+        </form>
+      )}
+    </Panel>
+  );
+}
 
 function EditableMcpDetail({ mcp, onBack }: { mcp: Mcp; onBack: () => void }) {
   const url = `https://kageai.me/mcp/${mcp.slug ?? ""}`;

@@ -12,6 +12,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { z } from "zod";
 import { sql, type McpServerRow } from "@/lib/db";
 import { builtinMcpRows, findBuiltinApi, runBuiltinApi } from "@/lib/builtin-catalog";
+import { findBuiltinWorkflow, runBuiltinWorkflow } from "@/lib/builtin-workflows";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -115,6 +116,18 @@ function buildServer(row: McpServerRow, auth: string | null, workflows: WfRow[])
 
   // Declared workflows → executable wf__<slug> tools (typed from input_variables).
   for (const ws of wfSlugs) {
+    // Built-in workflow → runs right here and returns one plain answer.
+    const bw = findBuiltinWorkflow(ws);
+    if (bw) {
+      const shape: Record<string, z.ZodTypeAny> = {};
+      for (const v of bw.inputs) shape[v.name] = v.required ? z.string().describe(v.description) : z.string().optional().describe(v.description);
+      server.registerTool(`wf__${ws}`, { title: bw.name, description: `${bw.description} (free)`, inputSchema: shape },
+        async (input: Record<string, unknown>) => {
+          const res = await runBuiltinWorkflow(ws, input);
+          return res.ok ? json(res.result) : { ...json({ error: res.error, steps: res.steps }), isError: true };
+        });
+      registered++; continue;
+    }
     const wf = workflows.find((w) => w.slug === ws);
     const shape: Record<string, z.ZodTypeAny> = {};
     for (const v of wf?.input_variables ?? []) shape[v.name] = v.required ? z.string() : z.string().optional();
