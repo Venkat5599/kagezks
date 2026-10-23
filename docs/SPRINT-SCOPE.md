@@ -53,10 +53,29 @@ agent integration one command.
 
 ---
 
+## Next milestone — product track
+
+The sprint above hardens the protocol. This milestone turns Kage into a product an agent
+developer signs up for, connects in one click, and pays real services through. Same rule:
+nothing is done without a link, a tx hash, or a test name.
+
+| Deliverable | Acceptance (how anyone can check it) |
+|---|---|
+| **Non-custodial provisioning** — the owner signs the SessionAccount deploy in the browser; the server never receives an owner secret | `/api/fabric/provision` rejects any request body carrying a secret (route test); a mainnet provision tx signed client-side |
+| **Accounts** — Google sign-in that stores only the public address and SessionAccount ID; the key stays encrypted on the user's device | DB schema has no key column; signing in on a second device restores the dashboard without exposing a key |
+| **Network switch** — mainnet / testnet toggle, active network shown on every page | Testnet pool + SessionAccount IDs in the README; a testnet payment and a mainnet payment from the same UI, both with tx hashes |
+| **One-click MCP connect** — OAuth on the fabric MCP endpoint plus "Connect" buttons for assistants that support remote MCP connectors (no copy-pasted config) | A fresh assistant account connects from the website and runs `kage_pool_status`; recorded walkthrough in the README |
+| **Marketplace with real services** — Kage's own paid tools plus at least 3 external APIs behind x402 | Each listing callable from the marketplace with a settled payment tx hash; no listing without a working endpoint |
+| **Private / public MCP servers** — visibility enforced server-side, not only hidden in the UI | Non-owner call to a private server returns 403 (route test); public servers listed in the marketplace |
+| **Contract review → external audit** — internal review of `veil` and `session`, fixes landed, then an external audit | Review findings + fixing commits in `docs/`; audit report linked when delivered |
+| **USDC pool** — a second pool for the stablecoin agents actually pay in | Mainnet USDC pool ID in the README; deposit → withdraw tx hashes |
+
+---
+
 ## Out of scope for this sprint
 
-- Third-party audit (prepared for here: the ceremony and the review fixes are its prerequisites).
-- Assets beyond native XLM.
+- Third-party audit inside the 30 days (it is in the next milestone; the ceremony and review fixes here are its prerequisites).
+- Assets beyond native XLM (USDC is in the next milestone).
 - Separate view and spend keys for stealth notes.
 
 ## Definition of done
