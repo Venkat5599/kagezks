@@ -1,9 +1,9 @@
 "use client";
 
-// Lightweight wallet identity for ownership scoping. Connects Freighter when present
-// (real Stellar address); otherwise falls back to a stable per-browser demo identity so
-// per-user isolation still works in a demo without the extension installed. The address
-// is the `owner_address` stamped on everything you create and used to filter "my" items.
+// Wallet identity for ownership scoping. Two wallets can live side by side: a
+// browser-generated session wallet and a connected Freighter wallet. The user picks the
+// active one; its address is the `owner_address` stamped on everything you create and
+// used to filter "my" items. Removing a wallet only forgets it in this browser.
 import {
   createContext,
   useContext,
@@ -13,28 +13,50 @@ import {
 } from "react";
 import { Keypair } from "@stellar/stellar-sdk";
 
+export type WalletKind = "generated" | "freighter";
+
 type WalletCtx = {
+  // The ACTIVE wallet — what every page uses for ownership and signing.
   address: string | null;
-  secret: string | null; // set only for a wallet we generated (shown once to import)
-  real: boolean; // true = Freighter; false = generated/demo
+  secret: string | null; // set only when the active wallet is the generated one
+  real: boolean; // true = Freighter; false = generated
   connecting: boolean;
-  connect: () => Promise<void>; // Freighter
-  generate: () => Promise<void>; // create a fresh Stellar wallet (fund it by sending XLM)
-  disconnect: () => void;
+  // Both wallets can live side by side; the user picks which one is active.
+  active: WalletKind | null;
+  generated: string | null; // public key of the browser-generated wallet, if any
+  freighter: string | null; // address of the connected Freighter wallet, if any
+  connect: () => Promise<void>; // connect Freighter (keeps the generated wallet)
+  generate: () => Promise<void>; // create a wallet — never overwrites an existing one
+  select: (kind: WalletKind) => void; // switch the active wallet
+  // Forget a wallet in THIS browser only. Nothing on chain changes; funds stay at the
+  // address. Forgetting the generated wallet drops its key, so the UI must make the
+  // user prove they saved it first.
+  forget: (kind: WalletKind) => void;
+  disconnect: () => void; // forget the active wallet
 };
 const Ctx = createContext<WalletCtx>({
   address: null,
   secret: null,
   real: false,
   connecting: false,
+  active: null,
+  generated: null,
+  freighter: null,
   connect: async () => {},
   generate: async () => {},
+  select: () => {},
+  forget: () => {},
   disconnect: () => {},
 });
 
 const KEY = "kage_owner";
 const SECKEY = "kage_owner_secret";
 const REALKEY = "kage_owner_real";
+// Per-wallet storage so a generated wallet and a Freighter wallet can coexist.
+const GEN_PUB = "kage_gen_pub";
+const GEN_SEC = "kage_gen_secret";
+const FREIGHTER = "kage_freighter_addr";
+const ACTIVE = "kage_active_wallet";
 
 // Record the wallet against the onboarding table. Fire-and-forget on purpose:
 // tracking must never block or fail a connect, so a dead endpoint or an offline
@@ -143,21 +165,60 @@ async function tryFreighter(): Promise<FreighterResult> {
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [address, setAddress] = useState<string | null>(null);
-  const [secret, setSecret] = useState<string | null>(null);
-  const [real, setReal] = useState(false);
+  const [genPub, setGenPub] = useState<string | null>(null);
+  const [genSec, setGenSec] = useState<string | null>(null);
+  const [freighter, setFreighter] = useState<string | null>(null);
+  const [active, setActive] = useState<WalletKind | null>(null);
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem(KEY);
-    if (saved) {
-      setAddress(saved);
-      setReal(localStorage.getItem(REALKEY) === "1");
-      setSecret(localStorage.getItem(SECKEY));
+    // One-time migration from the single-slot layout (kage_owner*), so a wallet created
+    // before this change is never lost.
+    const legacy = localStorage.getItem(KEY);
+    if (legacy && !localStorage.getItem(ACTIVE)) {
+      const legacySec = localStorage.getItem(SECKEY);
+      if (localStorage.getItem(REALKEY) === "1") {
+        localStorage.setItem(FREIGHTER, legacy);
+        localStorage.setItem(ACTIVE, "freighter");
+      } else if (legacySec) {
+        localStorage.setItem(GEN_PUB, legacy);
+        localStorage.setItem(GEN_SEC, legacySec);
+        localStorage.setItem(ACTIVE, "generated");
+      }
     }
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(SECKEY);
+    localStorage.removeItem(REALKEY);
+
+    const gp = localStorage.getItem(GEN_PUB);
+    const gs = localStorage.getItem(GEN_SEC);
+    const fr = localStorage.getItem(FREIGHTER);
+    const hasGen = !!(gp && gs);
+    setGenPub(hasGen ? gp : null);
+    setGenSec(hasGen ? gs : null);
+    setFreighter(fr);
+    const want = localStorage.getItem(ACTIVE) as WalletKind | null;
+    const pick: WalletKind | null =
+      want === "generated" && hasGen
+        ? "generated"
+        : want === "freighter" && fr
+          ? "freighter"
+          : hasGen
+            ? "generated"
+            : fr
+              ? "freighter"
+              : null;
+    setActive(pick);
   }, []);
 
+  const activate = (kind: WalletKind | null) => {
+    setActive(kind);
+    if (kind) localStorage.setItem(ACTIVE, kind);
+    else localStorage.removeItem(ACTIVE);
+  };
+
   // Connect an existing Freighter wallet (no key material leaves the extension).
+  // The generated wallet, if any, is kept so the user can switch back to it.
   const connect = async () => {
     setConnecting(true);
     try {
@@ -174,57 +235,82 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         );
         return;
       }
-      setAddress(res.address);
-      setReal(true);
-      setSecret(null);
-      localStorage.setItem(KEY, res.address);
-      localStorage.setItem(REALKEY, "1");
-      localStorage.removeItem(SECKEY);
+      setFreighter(res.address);
+      localStorage.setItem(FREIGHTER, res.address);
+      activate("freighter");
       registerUser(res.address, "freighter");
     } finally {
       setConnecting(false);
     }
   };
 
-  // Generate a fresh Stellar wallet in the browser (the user funds it with XLM). The secret
-  // is shown once for the user to import into their wallet app (mirrors the smart-account
-  // wallet-generation flow). Each user gets a distinct address = distinct owner identity.
+  // Generate a fresh Stellar wallet in the browser (the user funds it with XLM). If one
+  // already exists we switch to it instead: replacing the key would strand its funds.
   const generate = async () => {
+    if (genPub && genSec) {
+      activate("generated");
+      return;
+    }
     setConnecting(true);
     try {
       const kp = Keypair.random();
       const pub = kp.publicKey();
       const sec = kp.secret();
-      setAddress(pub);
-      setSecret(sec);
-      setReal(false);
-      localStorage.setItem(KEY, pub);
-      localStorage.setItem(SECKEY, sec);
-      localStorage.setItem(REALKEY, "0");
+      setGenPub(pub);
+      setGenSec(sec);
+      localStorage.setItem(GEN_PUB, pub);
+      localStorage.setItem(GEN_SEC, sec);
+      activate("generated");
       registerUser(pub, "generated");
     } finally {
       setConnecting(false);
     }
   };
 
-  const disconnect = () => {
-    setAddress(null);
-    setSecret(null);
-    setReal(false);
-    localStorage.removeItem(KEY);
-    localStorage.removeItem(SECKEY);
-    localStorage.removeItem(REALKEY);
+  const select = (kind: WalletKind) => {
+    if (kind === "generated" && genPub) activate("generated");
+    if (kind === "freighter" && freighter) activate("freighter");
   };
+
+  const forget = (kind: WalletKind) => {
+    if (kind === "generated") {
+      setGenPub(null);
+      setGenSec(null);
+      localStorage.removeItem(GEN_PUB);
+      localStorage.removeItem(GEN_SEC);
+      // The per-user session was provisioned by this wallet's key.
+      localStorage.removeItem("kage_session_token");
+      localStorage.removeItem("kage_session_id");
+      if (active === "generated") activate(freighter ? "freighter" : null);
+    } else {
+      setFreighter(null);
+      localStorage.removeItem(FREIGHTER);
+      if (active === "freighter") activate(genPub ? "generated" : null);
+    }
+  };
+
+  const disconnect = () => {
+    if (active) forget(active);
+  };
+
+  const address =
+    active === "generated" ? genPub : active === "freighter" ? freighter : null;
+  const secret = active === "generated" ? genSec : null;
 
   return (
     <Ctx.Provider
       value={{
         address,
         secret,
-        real,
+        real: active === "freighter",
         connecting,
+        active,
+        generated: genPub,
+        freighter,
         connect,
         generate,
+        select,
+        forget,
         disconnect,
       }}
     >
