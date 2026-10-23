@@ -8,9 +8,9 @@
 //   an MCP tool `api__<slug>` on any Kage MCP server (built-in or user-created)
 import { Address, StrKey } from "@stellar/stellar-sdk";
 import { NETWORKS, parseNetwork } from "./networks";
-import { readContract, toHex } from "./chain-read";
+import { readContract } from "./chain-read";
 
-export type BuiltinVar = { name: string; in: "query"; required: boolean; description: string };
+export type BuiltinVar = { name: string; label: string; in: "query"; required: boolean; description: string; placeholder?: string; options?: { value: string; label: string }[] };
 
 export type BuiltinApi = {
   slug: string;
@@ -20,6 +20,7 @@ export type BuiltinApi = {
   tags: string[];
   variables: BuiltinVar[];
   example: Record<string, string>;
+  ask: string; // what you'd type to an AI agent that has this tool
   run: (args: Record<string, string>) => Promise<unknown>;
 };
 
@@ -56,7 +57,7 @@ const need = (args: Record<string, string>, k: string): string => {
 
 const netArg = (args: Record<string, string>) => NETWORKS[parseNetwork(args.network)];
 
-const networkVar: BuiltinVar = { name: "network", in: "query", required: false, description: "mainnet (default) or testnet" };
+const networkVar: BuiltinVar = { name: "network", label: "Network", in: "query", required: false, description: "Real money (Mainnet) or the free test network (Testnet).", options: [{ value: "mainnet", label: "Mainnet" }, { value: "testnet", label: "Testnet" }] };
 
 type HorizonBalance = { asset_type: string; asset_code?: string; asset_issuer?: string; balance: string };
 
@@ -64,29 +65,28 @@ export const BUILTIN_APIS: BuiltinApi[] = [
   {
     slug: "stellar-account",
     name: "Stellar account",
-    description: "Balances, sequence and signer count for any Stellar address, on mainnet or testnet.",
+    description: "See what any Stellar wallet holds: its XLM and every token balance.",
     category: "Stellar",
     tags: ["stellar", "wallet", "balances"],
-    variables: [{ name: "address", in: "query", required: true, description: "G... account address" }, networkVar],
+    variables: [{ name: "address", label: "Wallet address", in: "query", required: true, description: "A Stellar wallet address — starts with G.", placeholder: "G…" }, networkVar],
     example: { address: "GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6", network: "mainnet" },
+    ask: "How much XLM does wallet GCNF…TXX6 hold?",
     run: async (args) => {
       const address = need(args, "address");
       if (!StrKey.isValidEd25519PublicKey(address)) throw new CatalogError(400, "address is not a valid G... account");
       const net = netArg(args);
       const { status, body } = await getJson(`${net.horizon}/accounts/${address}`);
-      if (status === 404) return { network: net.name, address, funded: false, balances: [] };
+      if (status === 404) return { network: net.name, address, active: false, note: "This wallet has never received any XLM, so it doesn't exist on the network yet.", balances: [] };
       if (status !== 200) throw new CatalogError(502, `horizon ${status}`);
-      const a = body as { sequence: string; subentry_count: number; signers: unknown[]; balances: HorizonBalance[] };
+      const a = body as { balances: HorizonBalance[] };
       return {
         network: net.name,
         address,
-        funded: true,
-        sequence: a.sequence,
-        subentries: a.subentry_count,
-        signers: a.signers.length,
+        active: true,
         balances: a.balances.map((b) => ({
-          asset: b.asset_type === "native" ? "XLM" : `${b.asset_code}:${b.asset_issuer}`,
-          balance: b.balance,
+          token: b.asset_type === "native" ? "XLM" : (b.asset_code ?? "?"),
+          amount: Number(b.balance),
+          ...(b.asset_issuer ? { issuedBy: b.asset_issuer } : {}),
         })),
       };
     },
@@ -94,11 +94,12 @@ export const BUILTIN_APIS: BuiltinApi[] = [
   {
     slug: "stellar-transaction",
     name: "Stellar transaction",
-    description: "Look up a transaction by hash: success, ledger, time, fee, operation count and memo.",
+    description: "Check whether a Stellar payment went through, when it happened and what it cost.",
     category: "Stellar",
     tags: ["stellar", "transactions", "explorer"],
-    variables: [{ name: "hash", in: "query", required: true, description: "64-char transaction hash" }, networkVar],
+    variables: [{ name: "hash", label: "Transaction ID", in: "query", required: true, description: "The 64-character ID shown after a payment.", placeholder: "bd2de9fa…" }, networkVar],
     example: { hash: "bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379", network: "mainnet" },
+    ask: "Did transaction bd2de9fa… succeed?",
     run: async (args) => {
       const hash = need(args, "hash").toLowerCase();
       if (!/^[0-9a-f]{64}$/.test(hash)) throw new CatalogError(400, "hash must be 64 hex characters");
@@ -109,48 +110,51 @@ export const BUILTIN_APIS: BuiltinApi[] = [
       const t = body as { successful: boolean; ledger: number; created_at: string; fee_charged: string; operation_count: number; memo_type: string; memo?: string; source_account: string };
       return {
         network: net.name,
-        hash,
-        successful: t.successful,
-        ledger: t.ledger,
-        createdAt: t.created_at,
-        feeChargedStroops: t.fee_charged,
-        operations: t.operation_count,
+        succeeded: t.successful,
+        when: t.created_at,
+        sentFrom: t.source_account,
+        feePaidXlm: Number(t.fee_charged) / 1e7,
+        actions: t.operation_count,
         memo: t.memo_type === "none" ? null : (t.memo ?? null),
-        source: t.source_account,
-        explorer: `${net.explorer}/tx/${hash}`,
+        viewOnExplorer: `${net.explorer}/tx/${hash}`,
       };
     },
   },
   {
     slug: "stellar-fees",
-    name: "Stellar fee stats",
-    description: "Current network fee levels (p10 / p50 / p90 / max) and ledger capacity usage — pick a fee before submitting.",
+    name: "Stellar network fees",
+    description: "What sending a Stellar transaction costs right now, and how busy the network is.",
     category: "Stellar",
     tags: ["stellar", "fees"],
     variables: [networkVar],
     example: { network: "mainnet" },
+    ask: "How busy is the Stellar network right now?",
     run: async (args) => {
       const net = netArg(args);
       const { status, body } = await getJson(`${net.horizon}/fee_stats`);
       if (status !== 200) throw new CatalogError(502, `horizon ${status}`);
       const f = body as { last_ledger: string; last_ledger_base_fee: string; ledger_capacity_usage: string; fee_charged: Record<string, string> };
+      const usage = Number(f.ledger_capacity_usage);
+      const xlm = (stroops?: string) => Number(stroops ?? 0) / 1e7;
       return {
         network: net.name,
-        lastLedger: Number(f.last_ledger),
-        baseFeeStroops: f.last_ledger_base_fee,
-        ledgerCapacityUsage: Number(f.ledger_capacity_usage),
-        feeChargedStroops: { p10: f.fee_charged.p10, p50: f.fee_charged.p50, p90: f.fee_charged.p90, max: f.fee_charged.max },
+        howBusy: usage > 0.9 ? "Very busy" : usage > 0.5 ? "Busy" : "Quiet",
+        capacityUsedPct: Math.round(usage * 100),
+        minimumFeeXlm: xlm(f.last_ledger_base_fee),
+        typicalFeeXlm: xlm(f.fee_charged.p50),
+        fastFeeXlm: xlm(f.fee_charged.p90),
       };
     },
   },
   {
     slug: "xlm-usdc-price",
     name: "XLM / USDC price (Stellar DEX)",
-    description: "Best bid, best ask and mid price for XLM in USDC, read live from the Stellar DEX order book.",
+    description: "The live price of XLM in US dollars (USDC), straight from Stellar's own exchange.",
     category: "Markets",
     tags: ["stellar", "dex", "price", "usdc"],
     variables: [],
     example: {},
+    ask: "What is XLM trading at right now?",
     run: async () => {
       const net = NETWORKS.mainnet;
       const q = `selling_asset_type=native&buying_asset_type=credit_alphanum4&buying_asset_code=USDC&buying_asset_issuer=${USDC_MAINNET_ISSUER}&limit=5`;
@@ -160,79 +164,79 @@ export const BUILTIN_APIS: BuiltinApi[] = [
       const bid = ob.bids[0] ? Number(ob.bids[0].price) : null;
       const ask = ob.asks[0] ? Number(ob.asks[0].price) : null;
       return {
-        pair: "XLM/USDC",
-        source: "Stellar DEX (mainnet order book)",
-        bestBid: bid,
-        bestAsk: ask,
-        mid: bid != null && ask != null ? Number(((bid + ask) / 2).toFixed(7)) : null,
-        spreadPct: bid && ask ? Number((((ask - bid) / ((ask + bid) / 2)) * 100).toFixed(3)) : null,
-        at: new Date().toISOString(),
+        priceUsd: bid != null && ask != null ? Number(((bid + ask) / 2).toFixed(5)) : null,
+        buyAtUsd: ask,
+        sellAtUsd: bid,
+        source: "Stellar's built-in exchange (XLM/USDC)",
+        checkedAt: new Date().toISOString(),
       };
     },
   },
   {
     slug: "kage-pool",
     name: "Kage pool status",
-    description: "Live state of the Kage shielded pool: note count, Merkle root and XLM held, read on-chain.",
+    description: "How many private payments the Kage pool holds and how much XLM is in it, read live from the chain.",
     category: "Stellar",
     tags: ["kage", "zk", "pool"],
     variables: [networkVar],
     example: { network: "mainnet" },
+    ask: "How many payments are in the Kage pool?",
     run: async (args) => {
       const net = netArg(args);
-      const [leafCount, root, balance] = await Promise.all([
+      const [leafCount, balance] = await Promise.all([
         readContract(net, net.pool, "leaf_count"),
-        readContract(net, net.pool, "current_root"),
         readContract(net, net.xlmSac, "balance", new Address(net.pool).toScVal()),
       ]);
       if (leafCount == null) throw new CatalogError(502, `could not read the ${net.name} pool`);
       return {
         network: net.name,
-        pool: net.pool,
-        notes: Number(leafCount),
-        merkleRoot: toHex(root) || null,
-        pooledXlm: balance != null ? (Number(balance) / 1e7).toFixed(7) : null,
-        explorer: `${net.explorer}/contract/${net.pool}`,
+        privatePayments: Number(leafCount),
+        xlmInPool: balance != null ? Number(balance) / 1e7 : null,
+        poolContract: net.pool,
+        viewOnExplorer: `${net.explorer}/contract/${net.pool}`,
       };
     },
   },
   {
     slug: "crypto-price",
     name: "Crypto prices",
-    description: "Spot prices for one or more coins (CoinGecko ids such as stellar, bitcoin, ethereum, usd-coin).",
+    description: "Current price and 24-hour change for any coins — Bitcoin, Ethereum, Stellar and thousands more.",
     category: "Markets",
     tags: ["crypto", "price"],
     variables: [
-      { name: "ids", in: "query", required: true, description: "comma-separated CoinGecko ids, e.g. stellar,bitcoin" },
-      { name: "vs", in: "query", required: false, description: "quote currency, default usd" },
+      { name: "ids", label: "Coins", in: "query", required: true, description: "Coin names separated by commas.", placeholder: "bitcoin, ethereum, stellar" },
+      { name: "vs", label: "Price in", in: "query", required: false, description: "Currency to show prices in.", placeholder: "usd" },
     ],
-    example: { ids: "stellar,bitcoin,ethereum", vs: "usd" },
+    example: { ids: "bitcoin,ethereum,stellar", vs: "usd" },
+    ask: "What are Bitcoin and Ethereum worth right now?",
     run: async (args) => {
-      const ids = need(args, "ids").toLowerCase().replace(/[^a-z0-9,-]/g, "");
+      const ids = need(args, "ids").toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9,-]/g, "");
       const vs = (args.vs || "usd").toLowerCase().replace(/[^a-z]/g, "");
       const { status, body } = await getJson(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=${vs}&include_24hr_change=true`);
       if (status === 429) throw new CatalogError(429, "price source is rate-limiting, retry in a minute");
       if (status !== 200) throw new CatalogError(502, `price source ${status}`);
-      const out: Record<string, { price: number; change24hPct: number | null }> = {};
+      const out: Record<string, { price: number; dayChangePct: number | null }> = {};
+      // keyed by coin id, e.g. { bitcoin: { price, dayChangePct } }
       for (const [id, v] of Object.entries(body as Record<string, Record<string, number>>)) {
         const ch = v[`${vs}_24h_change`];
-        out[id] = { price: v[vs] ?? NaN, change24hPct: ch != null ? Number(ch.toFixed(2)) : null };
+        out[id] = { price: v[vs] ?? NaN, dayChangePct: ch != null ? Number(ch.toFixed(2)) : null };
       }
       if (Object.keys(out).length === 0) throw new CatalogError(404, "no known coin ids in 'ids'");
-      return { vs, prices: out, source: "CoinGecko", at: new Date().toISOString() };
+      return { currency: vs.toUpperCase(), prices: out, source: "CoinGecko", checkedAt: new Date().toISOString() };
     },
   },
   {
     slug: "fx-rates",
     name: "Currency exchange rates",
-    description: "Daily reference FX rates (European Central Bank) between fiat currencies.",
+    description: "Today's exchange rates between regular currencies like USD, EUR and INR.",
     category: "Markets",
     tags: ["fx", "fiat", "rates"],
     variables: [
-      { name: "base", in: "query", required: false, description: "base currency, default USD" },
-      { name: "symbols", in: "query", required: false, description: "comma-separated targets, e.g. EUR,INR,GBP" },
+      { name: "base", label: "From", in: "query", required: false, description: "The currency you have.", placeholder: "USD" },
+      { name: "symbols", label: "To", in: "query", required: false, description: "Currencies to convert into, separated by commas. Leave empty for all.", placeholder: "EUR, INR, GBP" },
     ],
     example: { base: "USD", symbols: "EUR,INR,GBP" },
+    ask: "How many rupees is one US dollar today?",
     run: async (args) => {
       const base = (args.base || "USD").toUpperCase().replace(/[^A-Z]/g, "");
       const symbols = (args.symbols || "").toUpperCase().replace(/[^A-Z,]/g, "");
@@ -240,17 +244,18 @@ export const BUILTIN_APIS: BuiltinApi[] = [
       if (status === 404 || status === 422) throw new CatalogError(400, "unknown currency code");
       if (status !== 200) throw new CatalogError(502, `fx source ${status}`);
       const b = body as { base: string; date: string; rates: Record<string, number> };
-      return { base: b.base, date: b.date, rates: b.rates, source: "European Central Bank via Frankfurter" };
+      return { from: b.base, date: b.date, oneUnitEquals: b.rates, source: "European Central Bank" };
     },
   },
   {
     slug: "weather",
     name: "Weather now",
-    description: "Current temperature, wind and conditions for any city.",
+    description: "Current temperature, humidity, wind and conditions for any city.",
     category: "Data",
     tags: ["weather"],
-    variables: [{ name: "city", in: "query", required: true, description: "city name, e.g. Hyderabad" }],
+    variables: [{ name: "city", label: "City", in: "query", required: true, description: "Any city name.", placeholder: "Hyderabad" }],
     example: { city: "Hyderabad" },
+    ask: "What's the weather in Hyderabad?",
     run: async (args) => {
       const city = need(args, "city");
       const geo = await getJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`);
@@ -263,12 +268,12 @@ export const BUILTIN_APIS: BuiltinApi[] = [
       const c = (fc.body as { current: Record<string, number | string> }).current;
       return {
         place: `${place.name}${place.country ? `, ${place.country}` : ""}`,
-        time: c.time,
+        conditions: WEATHER_CODES[Number(c.weather_code)] ?? `code ${c.weather_code}`,
+        localTime: String(c.time).replace("T", " "),
         temperatureC: c.temperature_2m,
         feelsLikeC: c.apparent_temperature,
         humidityPct: c.relative_humidity_2m,
         windKmh: c.wind_speed_10m,
-        conditions: WEATHER_CODES[Number(c.weather_code)] ?? `code ${c.weather_code}`,
         source: "Open-Meteo",
       };
     },
@@ -276,18 +281,19 @@ export const BUILTIN_APIS: BuiltinApi[] = [
   {
     slug: "wikipedia",
     name: "Wikipedia summary",
-    description: "Plain-text summary and link for a Wikipedia article title.",
+    description: "A short, plain-text summary of any topic from Wikipedia.",
     category: "Data",
     tags: ["knowledge", "wikipedia"],
-    variables: [{ name: "title", in: "query", required: true, description: "article title, e.g. Zero-knowledge proof" }],
+    variables: [{ name: "title", label: "Topic", in: "query", required: true, description: "What you want to know about.", placeholder: "Zero-knowledge proof" }],
     example: { title: "Zero-knowledge proof" },
+    ask: "Explain zero-knowledge proofs in two lines.",
     run: async (args) => {
       const title = need(args, "title").replace(/ /g, "_");
       const { status, body } = await getJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}?redirect=true`);
       if (status === 404) throw new CatalogError(404, "no article with that title");
       if (status !== 200) throw new CatalogError(502, `wikipedia ${status}`);
       const w = body as { title: string; description?: string; extract: string; content_urls?: { desktop?: { page?: string } } };
-      return { title: w.title, description: w.description ?? null, summary: w.extract, url: w.content_urls?.desktop?.page ?? null };
+      return { title: w.title, about: w.description ?? null, summary: w.extract, readMore: w.content_urls?.desktop?.page ?? null };
     },
   },
 ];
@@ -332,6 +338,8 @@ export function builtinApiRows() {
     variables: a.variables,
     example_response: null,
     example_args: a.example,
+    ask: a.ask,
+    servers: BUILTIN_MCPS.filter((m) => m.tools.includes(`api__${a.slug}`)).map((m) => ({ slug: m.slug, name: m.display_name })),
     price: "0",
     auth_headers: [],
     is_public: true,
