@@ -63,7 +63,8 @@ nothing is done without a link, a tx hash, or a test name.
 |---|---|
 | **Non-custodial provisioning** — the owner signs the SessionAccount deploy in the browser; the server never receives an owner secret | `/api/fabric/provision` rejects any request body carrying a secret (route test); a mainnet provision tx signed client-side |
 | **Accounts** — Google sign-in that stores only the public address and SessionAccount ID; the key stays encrypted on the user's device | DB schema has no key column; signing in on a second device restores the dashboard without exposing a key |
-| **Network switch** — mainnet / testnet toggle, active network shown on every page | Testnet pool + SessionAccount IDs in the README; a testnet payment and a mainnet payment from the same UI, both with tx hashes |
+| **Network switch** ✅ shipped — one-click mainnet / testnet toggle across the dashboard | Testnet pool `CCQWGM…GJXC` in the README; testnet payment `f2255956…3786a2d` sent from the dashboard |
+| **Stellar agent toolkit** ✅ shipped — 4 MCP servers, 9 read APIs, 5 workflows | `kageai.me/mcp/stellar-tools` lists 14 tools; README shows real output |
 | **One-click MCP connect** — OAuth on the fabric MCP endpoint plus "Connect" buttons for assistants that support remote MCP connectors (no copy-pasted config) | A fresh assistant account connects from the website and runs `kage_pool_status`; recorded walkthrough in the README |
 | **Marketplace with real services** — Kage's own paid tools plus at least 3 external APIs behind x402 | Each listing callable from the marketplace with a settled payment tx hash; no listing without a working endpoint |
 | **Private / public MCP servers** — visibility enforced server-side, not only hidden in the UI | Non-owner call to a private server returns 403 (route test); public servers listed in the marketplace |

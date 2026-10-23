@@ -12,6 +12,7 @@ const footerLinks = {
   menu: [
     { label: "Live dashboard", href: "/dashboard" },
     { label: "How it works", href: "#how-it-works" },
+    { label: "Agent tools", href: "#agent-tools" },
     { label: "FAQ", href: "#faq" },
   ],
   onchain: [

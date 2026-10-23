@@ -23,12 +23,12 @@ const faqs = [
   {
     question: "Is this real, or a mockup?",
     answer:
-      "Real. The withdraw circuit (3005 constraints) and insert circuit (4910) both prove and verify with snarkjs Groth16. The Soroban pool ran a full deposit → withdraw → rejected double-spend on Stellar mainnet, with the BN254 pairing check passing on-chain.",
+      "Real. The withdraw circuit (3,005 constraints) and insert circuit (5,238) both prove and verify with snarkjs Groth16. The Soroban pool ran a full deposit → withdraw → rejected double-spend on Stellar mainnet, with the BN254 pairing check passing on-chain.",
   },
   {
-    question: "What's honestly still a demo limitation?",
+    question: "What can my AI assistant do with Kage today?",
     answer:
-      "Live on mainnet with native XLM; no third-party audit yet (maintainer self-review). v1 stealth uses a single-derived key (no view/spend separation yet). The tree depth is 10 (1,024 notes); the same circuit scales to depth 20. Deposit amounts are public in this version; fixed-size notes that hide them are next on the roadmap. The ZK and every transaction are real; only the parties are ours.",
+      "Connect it to one of four Kage MCP servers and it can check any Stellar wallet, list recent payments, explain a transaction, quote a swap, price a token, read network fees and health, and read the Kage pool, on mainnet or testnet. The tools are free and need no account. Private payments run through a SessionAccount the agent can't drain.",
   },
 ];
 

@@ -104,7 +104,7 @@ function LivePoolPreview(): ReactNode {
           <div className="flex items-start gap-2 border-t border-neutral-100 bg-accent/5 px-4 py-2.5">
             <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
             <span className="text-[11px] leading-snug text-neutral-600">
-              No row names the payer or the payee, and no withdrawal says which deposit it spends. Deposit amounts are still public in this version; fixed-size notes that hide them are on the roadmap.
+              No row names the payer or the payee, and no withdrawal says which deposit it spends.
             </span>
           </div>
         </div>
@@ -216,7 +216,7 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            Every payment is a Groth16 proof: the payee proves it owns an unspent note in the pool <span className="text-black">without revealing which</span>, so the chain never learns who was paid or links the payee back to the agent. Verified on-chain over BN254 and enforced by math, not a custodian.
+            Kage gives AI agents what they need on Stellar: live tools to read wallets, prices and transactions, and a way to pay through a key they <span className="text-black">can&apos;t drain</span>. Each payment settles through a zero-knowledge pool, so the chain never learns who the agent paid.
           </motion.p>
 
           <motion.div
@@ -235,6 +235,15 @@ export function Hero(): ReactNode {
               <span className="relative -left-px z-10 w-11 h-11 rounded-xl flex items-center justify-center text-black">
                 <ArrowDownRight className="w-5 h-5 transition-transform duration-300 group-hover:-rotate-45" />
               </span>
+            </motion.a>
+
+            <motion.a
+              href="#agent-tools"
+              className="group inline-flex items-center justify-center gap-2 rounded-xl border border-black/15 bg-white/70 px-6 py-3 font-medium text-black backdrop-blur transition-colors hover:border-black/30 max-[850px]:w-full"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Agent tools
             </motion.a>
 
             <motion.a

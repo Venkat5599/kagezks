@@ -2,7 +2,7 @@
 
 # KAGE
 
-### Private payments for AI agents on Stellar: a session key the agent can't drain, settling through a zero-knowledge pool that hides who it paid.
+### Stellar tools and private payments for AI agents: MCP servers that read the chain live, and a session key the agent can't drain that pays through a zero-knowledge pool.
 
 [![Live](https://img.shields.io/badge/live-kageai.me-7C3AED)](https://kageai.me)
 [![Network](https://img.shields.io/badge/Stellar-mainnet-000000)](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV)
@@ -10,36 +10,44 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 ![Tests](https://img.shields.io/badge/contract%20tests-9%20passing-2ecc71)
 [![X](https://img.shields.io/badge/X-%40Kage__stellar-000000?logo=x)](https://x.com/Kage_stellar)
+![MCP](https://img.shields.io/badge/MCP%20servers-4%20·%2014%20tools-14151a)
 ![Stack](https://img.shields.io/badge/Soroban%20·%20Groth16%2FBN254%20·%20Circom%20·%20MCP-14151a)
 
-**[ Live app ↗ ](https://kageai.me)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
+**[ Live app ↗ ](https://kageai.me)** · **[ Agent tools ↓ ](#the-stellar-agent-toolkit)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
 
 </div>
 
-Give an AI agent a raw Stellar key and two things go wrong at once. It can move everything you own, and every payment it makes is public: each counterparty, each amount, a map of everything your treasury touches. Kage fixes both. The agent signs with a **scoped session key** that a Soroban account contract confines to one action (deposit into the pool, up to a cap, before an expiry), and every payment settles through a **Groth16 shielded pool** where the payee later proves, in zero knowledge, that it owns *some* note without revealing which. The chain sees commitments, random ephemeral keys, a Merkle root and nullifier hashes. It never sees who paid whom.
+An AI agent that works on Stellar needs two things: a way to see the chain and a way to pay on it. Kage gives it both.
 
-The pool is live on Stellar mainnet and holds real XLM. The BN254 pairing check runs inside the contract, on chain, on every deposit and every withdrawal.
+**To see**, an assistant connects to one of four Kage MCP servers and gets 14 live tools: wallet balances, recent payments, transaction lookups, fees, network health, token prices, swap quotes from the Stellar DEX, token facts and the Kage pool, on mainnet or testnet. They are free and need no account or API key, so Claude, ChatGPT or Cursor can answer "what is this wallet worth?" from the ledger instead of guessing.
+
+**To pay**, the agent signs with a **scoped session key** that a Soroban account contract confines to one action (deposit into the pool, up to a cap, before an expiry), and every payment settles through a **Groth16 shielded pool** where the payee later proves, in zero knowledge, that it owns *some* note without revealing which. The chain sees commitments, random ephemeral keys, a Merkle root and nullifier hashes. It never sees who paid whom.
+
+The pool is live on Stellar mainnet and holds real XLM. The BN254 pairing check runs inside the contract, on chain, on every deposit and every withdrawal: 32 deposits and 30 withdrawals so far, every one verified that way.
 
 ```
 SCOPED  ≠  CUSTODIED          the agent can pay, it cannot drain or redirect
 PAID    ≠  LINKED             a withdrawal never names the deposit it spends
 PROVEN  ≠  TRUSTED            the pool verifies every root change itself; nobody vouches for the tree
+READ    ≠  GUESSED            the assistant answers from live ledger data through MCP tools
 ```
 
 ## Live status
 
 | Surface | Status | The evidence |
 |---|---|---|
-| Shielded pool (mainnet) | ✅ live | [`CAEEKIM…GIXLV`](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) — `leaf_count = 32` at ledger 64976394 |
+| Shielded pool (mainnet) | ✅ live | [`CAEEKIM…GIXLV`](https://stellar.expert/explorer/public/contract/CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV) — `leaf_count = 32` at ledger 65093036; 32 deposits, 30 withdrawals in its event history |
+| Shielded pool (testnet) | ✅ live | [`CCQWGM…GJXC`](https://stellar.expert/explorer/testnet/contract/CCQWGM2CBTFTY4B3OTKNTQO3GMBJUHWTJOSU7NC2QRDZ26KCSMJQGJXC) — `leaf_count = 8`; the dashboard switches to it in one click |
+| Stellar MCP servers | ✅ live | `kageai.me/mcp/stellar-tools` answers `tools/list` with 14 tools; three focused servers alongside it |
 | Mainnet transactions | ✅ 101 / 101 successful | 20 wallets × 5 txs + 1 fee-sponsored tx, re-read from Horizon by [`scripts/verify-mainnet.sh`](scripts/verify-mainnet.sh) |
 | Web app | ✅ live | [kageai.me](https://kageai.me) — Next.js on Vercel, Neon Postgres |
 | Agent fabric (MCP) | ✅ live | `https://kageai.me/fabric/mcp` answers `initialize`; `/fabric/health` reports the mainnet pool |
 
 ## The 20-second pitch
 
-Agents are starting to pay for things: APIs, data, compute, each other. On a public ledger that is a privacy leak by default, and handing an agent a key is a custody risk by default. The usual answer is a server that holds the key and promises to behave.
+Agents are starting to do real work on chains: check balances, read payments, price tokens, pay for APIs and compute. Today an assistant asked about a Stellar wallet guesses, because it can't read the ledger. And when it pays, a raw key is a custody risk and every payment is public. The usual fix is a server that holds the key and promises to behave.
 
-**Kage takes the server out.** Scope is enforced by the account contract's `__check_auth`. Privacy is enforced by a zero-knowledge proof the pool verifies itself. The agent never holds anything it could drain, and an observer of the ledger never learns the payee.
+**Kage gives the agent eyes and a wallet it can't empty.** Fourteen MCP tools read Stellar live for any assistant. Payments go through a session key whose scope is enforced by the account contract's `__check_auth`, into a pool whose privacy is enforced by a zero-knowledge proof the contract verifies itself. The agent never holds anything it could drain, and an observer of the ledger never learns the payee.
 
 ```
 Raw key on a public chain:   Agent ──► Wallet ──► Ledger            drainable · fully public
@@ -56,6 +64,7 @@ Payee, later:                scan R with view key ──► prove membership in 
 ## Table of contents
 
 - [Verify every claim in one command](#verify-every-claim-in-one-command)
+- [The Stellar agent toolkit](#the-stellar-agent-toolkit)
 - [Screenshots](#screenshots)
 - [What Kage is NOT](#what-kage-is-not)
 - [The problem I set out to solve](#the-problem-i-set-out-to-solve)
@@ -92,7 +101,7 @@ Real output, run while writing this README:
 ```
 mainnet txs: 101/101 successful on Horizon (0 failed or missing)
 pool CAEEKIMKQVRDX6NH2RZIRGWOUF4VDGL6OPF2MGNQ3V2TIGPYJNDGIXLV
-  leaf_count = 32  (ledger 64976394)
+  leaf_count = 32  (ledger 65093036)
 ```
 
 The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-mainnet-proof.txt) (20 wallets, each funded → deposit → withdraw → two merges) and [`scripts/fee-sponsor-proof.txt`](scripts/fee-sponsor-proof.txt) (one gasless payment through a fee bump). One of each, if you would rather click:
@@ -102,6 +111,31 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 | Deposit | Groth16 insert proof (BN254 pairing), amount bound into the commitment, XLM pulled into the pool | [`bd2de9fa…9cd0d379`](https://stellar.expert/explorer/public/tx/bd2de9fa7612fbc1b8ac775cd29dcd13907ad1c29520c485363d295a9cd0d379) |
 | Withdraw | Groth16 membership proof, nullifier unused, payout address bound into the proof | [`5f3235cc…19461793`](https://stellar.expert/explorer/public/tx/5f3235cc72dd7091d72fc652ecc7bbcfe4599db0663d75a2105e53da19461793) |
 | Fee-sponsored payment | user signs with fee 0, sponsor wraps it in a fee bump | [`027cd20c…cd979397`](https://stellar.expert/explorer/public/tx/027cd20c2b04230ad8cfcb94962269bd815c51c29d175b40c3693f2fcd979397) |
+
+## The Stellar agent toolkit
+
+Four MCP servers, all reading Stellar through Horizon and Soroban RPC with nothing to sign up for. Each tool takes `network: mainnet | testnet`.
+
+| Server | URL | What an assistant can do with it |
+|---|---|---|
+| Stellar Tools | `https://kageai.me/mcp/stellar-tools` | everything below, 14 tools |
+| Stellar Wallets | `https://kageai.me/mcp/stellar-wallets` | balances, recent payments, what a wallet is worth, can it afford a payment, activity summary |
+| Stellar Markets | `https://kageai.me/mcp/stellar-markets` | token prices and swap quotes from the Stellar DEX (best path), token facts (holders, supply, freeze/clawback flags), a market snapshot |
+| Stellar Network | `https://kageai.me/mcp/stellar-network` | explain a transaction, fees, network health, the Kage pool |
+
+Tokens resolve only to their verified issuers (USDC and EURC from Circle, AQUA, yXLM) or to an explicit `CODE:ISSUER`, because Horizon lists every look-alike token with the same code.
+
+Every tool is also plain HTTP, so code can call it too. Real output from this commit's build (prices move, so your numbers will differ):
+
+```bash
+$ curl -s "https://kageai.me/api/flows/wallet-worth?address=GCNFKDC4S3T3DOQ5FUBNUQSDOEQB74FGY7U6HGRSXZ3G7346JGOETXX6" | jq -r .answer
+This wallet is worth about $0.48: 2.6955 XLM ($0.48).
+
+$ curl -s "https://kageai.me/api/catalog/stellar-convert?amount=100&from=XLM&to=USDC" | jq -r '.data | "\(.youGet) via \(.route)"'
+17.6841507 USDC via XLM → USDC
+```
+
+Connecting takes one step in each client: add the URL as a custom connector (Claude), an MCP app in developer mode with no authentication (ChatGPT), or `claude mcp add kage --transport http <url>` (Claude Code). Pasting the URL into a chat does not work; the client has to register it as a server. The dashboard's MCP pages walk through it and let you try every tool in the browser first.
 
 ## Screenshots
 
@@ -135,7 +169,8 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 - **Two circuits** (`circuits/`) — `veil_insert.circom` (append proof with amount binding) and `veil_withdraw.circom` (membership, nullifier, amount range, recipient binding).
 - **SDK** (`sdk/`) — stealth notes over X25519, the Poseidon tree, snarkjs → Soroban BN254 byte conversion, and `payThroughSession`, which builds the proof and signs the Soroban auth entry with the agent's session key.
 - **Agent fabric** (`agent/`) — an MCP server agents connect to. Tools include `kage_pool_status`, `kage_quote`, `kage_budget`, `kage_pay`, `workflow_list` and `workflow_run`; paid tools are gated by an x402-style Stellar payment.
-- **Web app** (`frontend/`) — landing, live pool dashboard, API/MCP/workflow builder, status page, and a client-side stealth address tool.
+- **Stellar agent toolkit** (`frontend/lib/builtin-catalog.ts`, `frontend/lib/builtin-workflows.ts`) — 9 read APIs and 5 workflows that chain them into one plain answer, served as 4 MCP servers at `/mcp/<server>` and as plain HTTP at `/api/catalog/<api>` and `/api/flows/<workflow>`.
+- **Web app** (`frontend/`) — landing, a dashboard with a one-click mainnet/testnet switch, two wallets side by side (a generated session wallet and Freighter), the toolkit's API, MCP and workflow pages with live "try it" forms, a status page, and a client-side stealth address tool.
 
 ## Architecture
 
@@ -183,7 +218,12 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 | `POST /fabric/mcp` | MCP endpoint for agents (public; settling still needs a per-agent bearer token) |
 | `GET /fabric/health` | fabric liveness + the pool it is bound to |
 | `GET /api/stats` | live pool read (leaf count) + builder totals |
-| `GET /api/wallet-status?address=G…` | native XLM balance from Horizon mainnet |
+| `GET /api/wallet-status?address=G…&network=` | native XLM balance from Horizon, either network |
+| `POST /mcp/<server>` | the four Stellar MCP servers (`stellar-tools`, `stellar-wallets`, `stellar-markets`, `stellar-network`) |
+| `GET /api/catalog/<api>?…` | any toolkit API as plain JSON |
+| `GET /api/flows/<workflow>?…` | any toolkit workflow: `{ answer, details, steps }` |
+| `GET /api/pool-activity` | the pool's full deposit and withdrawal history |
+| `POST /api/friendbot` | free testnet XLM for a new wallet |
 | `GET /status` | RPC, ledger and contract health, re-checked per load |
 
 ## The payment loop, step by step
@@ -238,7 +278,7 @@ The 101 hashes live in [`scripts/20-users-mainnet-proof.txt`](scripts/20-users-m
 
 ## The app
 
-[kageai.me](https://kageai.me) is the landing page, a live pool dashboard (`/dashboard`) with Freighter connect and a browser-generated session wallet, a builder for x402-priced APIs, MCP servers and workflows, a network status page (`/status`), an API reference (`/docs`), and a client-side stealth address tool (`/tools/stealth`). Freighter must be set to Mainnet; the connect flow refuses any other network.
+[kageai.me](https://kageai.me) is the landing page, the dashboard (`/dashboard`), a network status page (`/status`), an API reference (`/docs`), and a client-side stealth address tool (`/tools/stealth`). The dashboard switches between mainnet and testnet in one click; every balance, pool read, payment and explorer link follows it, and on testnet a new wallet can be funded from friendbot. It holds a browser-generated session wallet and a Freighter wallet side by side, and the connect flow checks that Freighter is on the same network as the app. The Marketplace lists every public API, workflow and MCP server, and each one opens a page where you can run it before connecting anything.
 
 ## Security
 
@@ -302,8 +342,8 @@ The next 30 days and the product milestone after it, each item with a check anyo
 |---|---|---|
 | 1 | ZK pool, SessionAccount, stealth notes | ✅ done |
 | 2 | CI, tests, hardening, onboarding | ✅ done |
-| 3 | Mainnet pool ✅ · mainnet agent settlement · fixed denominations · multi-party setup | 🟡 in progress |
-| 4 | One-command agent SDK, one-click MCP connect, sign-in + mainnet/testnet switch, non-custodial provisioning | ⬜ planned |
+| 3 | Mainnet pool ✅ · Stellar agent toolkit (4 MCP servers, 14 tools) ✅ · mainnet/testnet switch ✅ · mainnet agent settlement · fixed denominations · multi-party setup | 🟡 in progress |
+| 4 | One-command agent SDK, one-click MCP connect with OAuth, sign-in, non-custodial provisioning | ⬜ planned |
 | 5 | Marketplace with real x402 services, private/public MCP servers, USDC pool, external audit, view/spend key split | ⬜ planned |
 
 ## Tests
