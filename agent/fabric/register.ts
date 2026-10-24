@@ -11,7 +11,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { loadCatalog, type WorkflowRow } from "./catalog.ts";
 import { registerApiTool } from "./proxy-tool.ts";
 import { runWorkflow } from "./engine.ts";
-import { poolStatus } from "./steps.ts";
+import { poolStatus, runStep } from "./steps.ts";
 import { remainingBudget } from "../../sdk/kage-onchain.ts";
 import { currentScope } from "./auth.ts";
 
@@ -34,7 +34,40 @@ function registerBuiltins(server: McpServer) {
     async ({ sessionId }) => {
       const sid = sessionId ?? currentScope().sessionId;
       const remaining = await remainingBudget(sid);
-      return json({ remaining: remaining.toString(), unit: "USDC (7 decimals)", session: sid ?? "(default)" });
+      return json({ remaining: remaining.toString(), unit: "stroops of XLM (1 XLM = 10,000,000)", remainingXlm: Number(remaining) / 1e7, session: sid ?? "(default)" });
+    },
+  );
+
+  // Pay privately into the Kage pool from the caller's agent account. The token picks
+  // the account; the chain enforces its limit, expiry and pool-only payouts.
+  server.registerTool(
+    "kage_pay",
+    {
+      title: "Pay privately through Kage",
+      description:
+        "Send XLM privately into the Kage pool from your agent account (needs your agent account token). The payment can't exceed the account's spending limit or happen after its expiry; the chain enforces both.",
+      inputSchema: {
+        amount: z.union([z.string(), z.number()]).transform(String).describe("How much XLM to pay, e.g. 0.5"),
+        recipientScanKey: z.string().optional().describe("The payee's 64-character scan key. Leave out to pay the demo payee."),
+      },
+    },
+    async ({ amount, recipientScanKey }) => {
+      const scope = currentScope();
+      if (!scope.sessionId) {
+        return { ...json({ error: "No agent account: connect with your agent account token (Authorization: Bearer <token>, or ?token=<token> on the server URL). Create one at https://kageai.me/dashboard." }), isError: true };
+      }
+      const a = String(amount).trim();
+      if (!/^\d+(\.\d{1,7})?$/.test(a) || !(Number(a) > 0)) {
+        return { ...json({ error: "amount must be XLM above 0 with at most 7 decimals, like 0.5" }), isError: true };
+      }
+      const [whole, frac = ""] = a.split(".");
+      const stroops = (BigInt(whole!) * 10_000_000n + BigInt(frac.padEnd(7, "0"))).toString();
+      const r = await runStep(
+        { id: "pay", kind: "onchain", action: "kage_pay", recipientScanKey: recipientScanKey ?? "", amount: stroops },
+        { allowed_contracts: [] } as unknown as WorkflowRow,
+      );
+      const ok = r.status === "ok";
+      return { ...json({ paid: ok, amountXlm: Number(a), agentAccount: scope.sessionId, result: r }), ...(ok ? {} : { isError: true }) };
     },
   );
 }
@@ -62,8 +95,8 @@ function registerWorkflowTool(server: McpServer, wf: WorkflowRow) {
 }
 
 // Register everything currently in the catalog. Returns the names registered.
-export async function registerCatalog(server: McpServer): Promise<{ apis: string[]; workflows: string[] }> {
-  const { apis, workflows } = await loadCatalog(true);
+export async function registerCatalog(server: McpServer, force = true): Promise<{ apis: string[]; workflows: string[] }> {
+  const { apis, workflows } = await loadCatalog(force);
   const apiNames: string[] = [];
   for (const a of apis) {
     try {
@@ -84,9 +117,10 @@ export async function registerCatalog(server: McpServer): Promise<{ apis: string
   return { apis: apiNames, workflows: wfNames };
 }
 
-export async function buildFabricServer(McpServerCtor: typeof McpServer): Promise<{ server: McpServer; registered: { apis: string[]; workflows: string[] } }> {
+// `force` refetches the catalog; per-request builds reuse the briefly cached one.
+export async function buildFabricServer(McpServerCtor: typeof McpServer, force = true): Promise<{ server: McpServer; registered: { apis: string[]; workflows: string[] } }> {
   const server = new McpServerCtor({ name: "kage-fabric", version: "0.2.0" });
   registerBuiltins(server);
-  const registered = await registerCatalog(server);
+  const registered = await registerCatalog(server, force);
   return { server, registered };
 }

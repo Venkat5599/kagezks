@@ -475,7 +475,23 @@ export function DashboardHome() {
                 <span className="flex-1 truncate font-mono text-[11px] text-accent">{prov.token}</span>
                 <CopyBtn text={prov.token} />
               </div>
-              <div className="mt-2"><CopyBtn text={`claude mcp add kage --transport http https://kageai.me/mcp/kage --header "Authorization: Bearer ${prov.token}"`} /></div>
+              <div className="mt-3 space-y-2 text-[11px] text-neutral-400">
+                <div>
+                  <p>Claude Code, Cursor and other apps that take a header:</p>
+                  <div className="mt-1 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-black/40 px-3 py-2">
+                    <span className="flex-1 truncate font-mono text-neutral-300">claude mcp add kage --transport http https://kageai.me/fabric/mcp --header &quot;Authorization: Bearer …&quot;</span>
+                    <CopyBtn text={`claude mcp add kage --transport http https://kageai.me/fabric/mcp --header "Authorization: Bearer ${prov.token}"`} />
+                  </div>
+                </div>
+                <div>
+                  <p>ChatGPT or claude.ai (add as a connector with no authentication). Keep this link private: it carries your token.</p>
+                  <div className="mt-1 flex items-center gap-2 rounded-lg border border-white/[0.1] bg-black/40 px-3 py-2">
+                    <span className="flex-1 truncate font-mono text-neutral-300">https://kageai.me/fabric/mcp?token=…</span>
+                    <CopyBtn text={`https://kageai.me/fabric/mcp?token=${prov.token}`} />
+                  </div>
+                </div>
+                <p>Then ask it, for example: &quot;Pay 0.5 XLM privately through Kage.&quot;</p>
+              </div>
               <button
                 onClick={() => { setProv(null); localStorage.removeItem("kage_session_token"); localStorage.removeItem("kage_session_id"); localStorage.removeItem("kage_session_net"); }}
                 className="mt-3 text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-300"

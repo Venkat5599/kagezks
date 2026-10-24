@@ -41,7 +41,7 @@ const ROOT = join(HERE, "..");
 const SDKB = join(ROOT, "sdk", "build");
 const CIRCB = join(ROOT, "circuits", "build");
 
-import { RPC_URL, PASSPHRASE, deployment } from "./network.ts";
+import { RPC_URL, PASSPHRASE, deployment, NETWORK } from "./network.ts";
 export { RPC_URL, PASSPHRASE };
 
 // Manifest genesis commitment (leaf 0 of a freshly-deployed pool). Used to seed the
@@ -155,6 +155,29 @@ export async function remainingBudget(sessionId?: string): Promise<bigint> {
 // required: the insert proof's oldRoot must equal the pool's current root and the
 // leaf index must equal the pool's leaf_count, or the deposit reverts (StaleRoot /
 // BadLeafIndex). We verify the rebuilt tree against `leafCount` before returning.
+// Every deposit the pool ever emitted, as leaf index → commitment, from Stellar Expert.
+async function expertDeposits(veil: string): Promise<Map<number, bigint>> {
+  const out = new Map<number, bigint>();
+  let url: string | null = `https://api.stellar.expert/explorer/${NETWORK === "mainnet" ? "public" : "testnet"}/contract/${veil}/events?order=asc&limit=200`;
+  for (let page = 0; url && page < 50; page++) {
+    const r = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+    if (!r.ok) throw new Error(`stellar.expert ${r.status}`);
+    const d = (await r.json()) as { _embedded?: { records?: { topics: string[]; bodyXdr: string }[] }; _links?: { next?: { href?: string } } };
+    const recs = d._embedded?.records ?? [];
+    for (const e of recs) {
+      if (!e.topics?.includes("deposit")) continue;
+      try {
+        const v = scValToNative(xdr.ScVal.fromXDR(e.bodyXdr, "base64")) as unknown[];
+        if (Array.isArray(v) && v[0] instanceof Uint8Array && Number.isFinite(Number(v[3]))) {
+          out.set(Number(v[3]), BigInt("0x" + Buffer.from(v[0]).toString("hex")));
+        }
+      } catch {}
+    }
+    url = recs.length === 200 && d._links?.next?.href ? `https://api.stellar.expert${d._links.next.href}` : null;
+  }
+  return out;
+}
+
 async function rebuildTree(veil: string, leafCount: number): Promise<MerkleTree> {
   const tree = await MerkleTree.create();
   const byIdx = new Map<number, bigint>();
@@ -190,6 +213,16 @@ async function rebuildTree(veil: string, leafCount: number): Promise<MerkleTree>
     startLedger = undefined;
     if (!res.events || res.events.length === 0) break;
   }
+  // 2. RPC keeps only about a week of events. Older deposits come from Stellar Expert's
+  // full event history for the pool (the same source the web app uses).
+  if (byIdx.size < leafCount) {
+    try {
+      for (const [idx, c] of await expertDeposits(veil)) if (!byIdx.has(idx)) byIdx.set(idx, c);
+    } catch (e) {
+      console.error(`stellar.expert history unavailable: ${(e as Error).message}`);
+    }
+  }
+
   // The freshly-deployed pool's leaf 0 is the manifest genesis commitment (the e2e
   // deposit veil-deploy.ts makes). Public testnet RPC event retention can drop that
   // event out of the query window, so seed leaf 0 from the known constant when the
