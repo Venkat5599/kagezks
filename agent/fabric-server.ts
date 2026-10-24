@@ -27,10 +27,10 @@ import { config } from "../sdk/kage-onchain.ts";
 // port; sharing the name collides with veil-mcp when both read the same .env).
 const PORT = Number(process.env.KAGE_FABRIC_PORT ?? 8403);
 
-// One persistent server + transport for the process (stateless Streamable HTTP).
+// Built once at start for /health and /reload. MCP requests each get their own server
+// and transport (below): a stateless transport can serve only one request, so sharing
+// one made every request after the first fail with a 500.
 const { server, registered } = await buildFabricServer(McpServer);
-const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-await server.connect(transport);
 
 const app = express();
 app.use(express.json());
@@ -52,8 +52,13 @@ app.post("/reload", async (_req, res) => {
 // REST run surface — lets the dashboard (and any plain HTTP caller) execute a
 // workflow or test an API without speaking MCP. Same scope routing as /mcp: the
 // bearer token selects which SessionAccount the on-chain step signs through.
+// The agent token comes from `Authorization: Bearer <token>` or, for chat apps whose
+// connectors can't set headers (ChatGPT, claude.ai), from `?token=<token>` on the URL.
+const bearerOf = (req: express.Request) =>
+  req.header("authorization") ?? (typeof req.query.token === "string" && req.query.token ? `Bearer ${req.query.token}` : undefined);
+
 app.post("/run/workflow", async (req, res) => {
-  const scope = resolveScope(req.header("authorization"));
+  const scope = resolveScope(bearerOf(req));
   const { slug, input } = (req.body ?? {}) as { slug?: string; input?: Record<string, unknown> };
   if (!slug) return res.status(400).json({ ok: false, error: "slug required" });
   const wf = await findWorkflow(slug);
@@ -109,8 +114,19 @@ app.post("/run/api", async (req, res) => {
 // Every MCP call runs inside the resolved agent scope so the on-chain step signs
 // with that agent's session key. No token → the process default session.
 app.post("/mcp", async (req, res) => {
-  const scope = resolveScope(req.header("authorization"));
-  await withScope(scope, () => transport.handleRequest(req, res, req.body));
+  const scope = resolveScope(bearerOf(req));
+  try {
+    const { server: s } = await buildFabricServer(McpServer, false);
+    const t = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    res.on("close", () => {
+      t.close().catch(() => {});
+      s.close().catch(() => {});
+    });
+    await s.connect(t);
+    await withScope(scope, () => t.handleRequest(req, res, req.body));
+  } catch (e) {
+    if (!res.headersSent) res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: (e as Error).message }, id: null });
+  }
 });
 
 // stdio transport for local/agent-subprocess use (mirrors mcp-server.ts).
