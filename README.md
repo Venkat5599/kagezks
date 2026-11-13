@@ -13,7 +13,11 @@
 ![MCP](https://img.shields.io/badge/MCP%20servers-4%20·%2014%20tools-14151a)
 ![Stack](https://img.shields.io/badge/Soroban%20·%20Groth16%2FBN254%20·%20Circom%20·%20MCP-14151a)
 
-**[ Live app ↗ ](https://kageai.me)** · **[ Developer tooling ↓ ](#developer-tooling)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
+**[ Live app ↗ ](https://kageai.me)** · **[ Demo video ▶ ](https://youtu.be/fT5ZHanN2jQ)** · **[ Developer tooling ↓ ](#developer-tooling)** · **[ Network status ↗ ](https://kageai.me/status)** · **[ Verify every claim ↓ ](#verify-every-claim-in-one-command)** · **[ 30-day scope ↗ ](docs/SPRINT-SCOPE.md)**
+
+### Demo video
+
+[![Watch the Kage demo](docs/screenshots/demo-video.jpg)](https://youtu.be/fT5ZHanN2jQ)
 
 </div>
 
